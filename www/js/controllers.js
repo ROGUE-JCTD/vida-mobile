@@ -16,7 +16,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
       } else {
         config.headers['Authorization'] = '';
       }
-      //var authenURL = "https://demo.geoshape.org/account/login/"; //going here
       var authenURL = "https://demo.geoshape.org/geoserver/rest/process/batchdownload/arbiterAuthenticatedUserLoginTest";
       $http.get(authenURL, config).then(function(xhr) {
         if (xhr.status === 200){
@@ -32,8 +31,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     } else {
       alert("Username/Password Undefined");
     }
-
-    $location.path(url);
   };
 })
 
