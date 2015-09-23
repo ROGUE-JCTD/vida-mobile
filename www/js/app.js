@@ -32,7 +32,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.controllers', 'vida.directiv
       // ios/android testing
       if (!(window.cordova.plugins)){
           alert("window.cordova.plugins: " + window.cordova.plugins);
-
+      } else {
           if (!(window.cordova.plugins.Keyboard)) {
               alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
           }
