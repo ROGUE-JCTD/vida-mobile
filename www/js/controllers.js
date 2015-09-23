@@ -31,6 +31,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     } else {
       alert("Username/Password Undefined");
     }
+    $location.path(url);
   };
 })
 
