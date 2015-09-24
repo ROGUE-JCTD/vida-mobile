@@ -67,17 +67,18 @@
                                 <button class="button button-stable button-block  icon ion-images">&nbsp; Find By Pictures</button>
                             </form>
                             <ion-list>
+                                <div ng-repeat="this_person in peopleInShelter">
                                 <ion-item class="item-thumbnail-left">
-                                    <img src="/img/avatar-img.png">
-                                    <h2>Syrus Mesdaghi</h2>
-                                    <p>Injured</p>
+                                    <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
+                                    <h2>{{this_person.full_name || Name}}</h2>
+                                    <p>Status: {{this_person.status || Status}}</p>
+                                    <h4>ID: {{this_person.id || Number}}</h4>
                                 </ion-item>
-                                <ion-item class="item-thumbnail-left">
-                                    <img src="/img/avatar-img.png">
-                                    <h2>Xavier Gonzo</h2>
-                                    <p>Injured</p>
-                                </ion-item>
+                                </div>
                             </ion-list>
+                            <form>
+                                <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
+                            </form>
                         </ion-content>
                     </ion-pane>
                 </ion-tab>
@@ -129,16 +130,16 @@
                                     <div>
                                         <p>
                                             Registered
-                                            <b>38</b>new persons
+                                            <b>38</b> new persons
                                         </p>
                                         <p>
-                                            <b>14</b>people as injured
+                                            <b>14</b> people as injured
                                         </p>
                                         <p>
-                                            <b>2</b>people deceased
+                                            <b>2</b> people deceased
                                         </p>
                                         <p>
-                                            <b>1</b>person was found
+                                            <b>1</b> person was found
                                         </p>
                                     </div>
                                 </div>

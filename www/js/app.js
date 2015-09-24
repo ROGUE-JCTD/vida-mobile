@@ -42,7 +42,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.controllers', 'vida.directiv
           alert("navigator.camera: " + navigator.camera);
       }
     } else {
-      alert("window.cordova: " + window.cordova);
+      //alert("window.cordova: " + window.cordova);
     }
   });
 })

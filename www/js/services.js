@@ -16,7 +16,7 @@ angular.module('vida.services', [])
       }, options);
       return q.promise;
     }
-  }
+  };
 }])
 
 // Services
