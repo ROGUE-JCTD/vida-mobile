@@ -45,7 +45,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 
   $scope.savePerson = function() {
-    var Name = $scope.person.firstName + " " + $scope.person.middleName + " " + $scope.person.lastName;
+    var Name = $scope.person.fullName;
     var Address = $scope.person.address;
     var City = $scope.person.city;
     var DoB = $scope.person.date_of_birth;
