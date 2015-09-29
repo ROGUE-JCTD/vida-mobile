@@ -1,3 +1,6 @@
+var authenURL = "http://192.168.1.65/api/v1/person/"; // Will need to use dynamic server IP
+var ServiceURL = 'http://192.168.1.65/api/v1/fileservice/';
+
 angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
 //TODO: Abstract controllers to separate tabs/functionalities (each tab gets it's own controller?)
@@ -17,7 +20,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         config.headers.Authorization = '';
       }
 
-      var authenURL = "http://192.168.33.15/api/v1/person/"; // Will need to use dynamic server IP
       $http.get(authenURL, config).then(function(xhr) {
         if (xhr.status === 200){
           // Success!
@@ -32,14 +34,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     } else {
       alert("Username/Password Undefined");
     }
-    //$location.path(url);
+    $location.path(url); // debug so don't need to login
   };
 })
 
-.controller('createCtrl', function($scope, $location, $http, $cordovaCamera){
+.controller('createCtrl', function($scope, $location, $http, $cordovaCamera, $ionicModal){
   // Declarations
   $scope.person = {};
   $scope.peopleInShelter = [];
+
+  // Initial Values
+  $scope.person.gender = "--Choose Gender--";
+
+  $ionicModal.fromTemplateUrl('Camera_Modal.html', {
+    scope: $scope,
+    animation: 'slide-in-up'
+  }).then(function(modal) {
+    $scope.CameraChooseModal = modal;
+    $scope.CameraChooseModal.hide();
+  });
 
   // Functions
   $scope.logout = function(url) {
@@ -60,7 +73,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
       config.headers.Authorization = '';
     }
 
-    var authenURL = "http://192.168.33.15/api/v1/person/"; // Will need to use dynamic server IP
     $http.get(authenURL, config).then(function(xhr) {
       if (xhr.status === 200) {
         if (xhr.data !== null) {
@@ -97,9 +109,17 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     var City = $scope.person.city;
     var DoB = $scope.person.date_of_birth;
     var Status = "Made Locally";
+
+    var Gender = $scope.person.gender;
+    if (Gender === "--Choose Gender--") {
+      Gender = undefined;
+    }
+
+    var phoneNumber = $scope.person.phone_number;
+
     var Photo = null;
-    if ($scope.srcImage !== undefined){
-        Photo = $scope.srcImage;
+    if ($scope.person.photo !== undefined){
+        Photo = $scope.person.photo;
     }
 
     var newPerson = [];
@@ -120,23 +140,101 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     if (!duplicate) {
         $scope.peopleInShelter.push(newPerson);
 
+        var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+        var config = {};
+        config.headers = {};
+        if (authentication !== null) {
+          config.headers.Authorization = 'Basic ' + authentication;
+        } else {
+          config.headers.Authorization = '';
+        }
+
+        var formData = new FormData();
+        formData.append('file', newPerson.photo, newPerson.full_name + "_Example.jpg");
+
+        $http.post(ServiceURL, formData, {
+            withCredentials: true,
+            headers: {
+                "Authorization": config.headers.Authorization,
+                "Content-Type": undefined
+            },
+            transformRequest: angular.identity
+        }).success(function(){
+          alert("Person posted!");
+        }).error(function(e){
+          alert(e.error_message);
+        });
+
+                /*var request = $http({
+          method  : 'POST',
+          url     : 'http://192.168.33.15/api/v1/fileservice/',
+          data    : $.param(formData),
+          headers : { 'Content-Type': 'multipart/form-data'}
+        }).then(function(xhr){
+          alert("Picture uploaded");
+        });*/
+
+        /*$.ajax({
+            type: "POST",
+            url: ServiceURL,
+            data: formData,
+            contentType: 'multipart/form-data',
+            processData: false,
+            headers: {
+                "Authorization": config.headers.Authorization,
+                "Access-Control-Allow-Origin": '*'
+            },
+            success: function(responseData, textStatus, jqXHR) {
+                alert("Data saved: " + responseData);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                alert(errorThrown);
+            }
+        });*/
+
+        /*$('form').submit(function(e){
+          var formData, xhr;
+
+          formData = new FormData();
+          formData.append('file', newPerson.photo);
+
+          xhr = new XMLHttpRequest();
+
+          xhr.open('POST', "http://192.168.33.15/api/v1/fileservice/", true );
+          xhr.onreadystatechange = function(response) {};
+          xhr.send(formData);
+
+          e.preventDefault();
+        });*/
+
         // debug
-        alert("Saved!\n" +
-          "Name: " + Name + "\n" +
-          "Address: " + Address + "\n" +
-          "City: " + City + "\n" +
-          "Date of Birth: " + DoB + "\n");
+        //alert("Saved!\n" +
+        //  "Name: " + Name + "\n" +
+        //  "Address: " + Address + "\n" +
+        //  "City: " + City + "\n" +
+        //  "Date of Birth: " + DoB + "\n" +
+        //  "Gender: " + Gender + "\n");
     } else {
         alert("Person already exists!");
     }
   };
 
-  $scope.takeCameraPhoto = function() {
+  $scope.showCameraModal = function() {
+    $scope.CameraChooseModal.show();
+  };
+
+  $scope.closeCameraModel = function() {
+    $scope.CameraChooseModal.hide();
+  }
+
+  $scope.takeCameraPhoto = function(source) {
+
+    $scope.closeCameraModel();
 
     var options = {
         quality: 80,
         destinationType: Camera.DestinationType.DATA_URL,
-        sourceType: Camera.PictureSourceType.CAMERA,
+        sourceType: source,
         allowEdit: true,
         encodingType: Camera.EncodingType.JPEG,
         targetWidth: 250,
@@ -147,10 +245,30 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     $cordovaCamera.getPicture(options).then(function(imageData) {
         $scope.srcImage = "data:image/jpeg;base64," + imageData;
+        $scope.person.photo = imageData;
     }, function(err) {
         // error
         alert("picture not taken: " + err);
     });
+  };
+
+  $scope.filterValues = function($event){
+    var whichKey = $event.which;
+
+    // 13 is 'return', 40 is '(', 41 is ')', 45 is '-'
+    //    if this list gets any bigger, make array and iterate through for readability
+
+    if( (isNaN(String.fromCharCode($event.keyCode))) ){
+      if ((whichKey == 13 ||
+           whichKey == 40 ||
+           whichKey == 41 ||
+           whichKey == 45)) {
+        // don't remove key
+      } else {
+        // remove key
+        $event.preventDefault();
+      }
+    }
   };
 })
 ;

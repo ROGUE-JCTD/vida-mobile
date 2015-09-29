@@ -18,18 +18,17 @@
     <!-- ionic/angularjs js -->
     <script src="lib/ionic/js/ionic.bundle.js"></script>
 
+    <!--<link href="http://code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet">-->
 
-    <link href="http://code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet">
+    <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above-->
+    <link href="css/ionic.app.css" rel="stylesheet">
+
+    <!-- JQuery Include
+    <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script> -->
+    <script src="lib/jquery/jquery-2.1.4.js"></script>
 
     <script src="lib/ngCordova/dist/ng-cordova.min.js"></script>
     <script src="cordova.js"></script>
-
-    <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above
-    <link href="css/ionic.app.css" rel="stylesheet">
-    -->
-
-    <!-- JQuery Include -->
-    <!--<script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
 
     <!-- VIDA js files -->
     <script src="js/app.js"></script>
@@ -39,7 +38,7 @@
 
   </head>
 
-<body ng-app="vida" animation="slide-left-right-ios7">
+  <body ng-app="vida" animation="slide-left-right-ios7">
     <div>
         <div>
             <ion-nav-bar class="bar-stable">
@@ -104,9 +103,22 @@
                                     <span class="input-label">Date of Birth</span>
                                     <input type="text" placeholder="" ng-model="person.date_of_birth">
                                 </label>
+                                <label class="item item-input item-select">
+                                    <span class="input-label">Gender</span>
+                                    <select ng-model="person.gender">
+                                        <option>Not Specified</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                        <option>Other</option>
+                                    </select>
+                                </label>
+                                <label class="item item-input">
+                                    <span class="input-label">Phone Number</span>
+                                    <input type="text" placeholder="" ng-keypress="filterValues($event)" ng-model="person.phone_number">
+                                </label>
                                 <ion-list>
-                                    <ion-item class="item-thumbnail-left" ng-click="takeCameraPhoto()">
-                                        <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.image">
+                                    <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
+                                        <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
                                         <h2>Title</h2>
                                         <p>Item</p>
                                     </ion-item>
@@ -198,6 +210,25 @@
                 </ion-content>
             </ion-view>
     </script>
-</body>
+
+    <!-- Extra Modals -->
+    <script id="Camera_Modal.html" type="text/ng-template">
+      <div class="modal">
+        <ion-pane>
+            <header class="bar bar-header bar-positive">
+                <h1 class="title">Choose Photo Source</h1>
+            </header>
+            <ion-content class="has-header" padding="true">
+              <div class="buttons">
+                  <button class="button button-full" ng-click="takeCameraPhoto(1)">Take Photo</button> <!-- 1 = Camera.PictureSourceType.CAMERA -->
+                  <button class="button button-full" ng-click="takeCameraPhoto(0)">From Library</button> <!-- 0 = Camera.PictureSourceType.PHOTOLIBRARY -->
+              </div>
+              <button class="button button-full button-energized" ng-click="closeCameraModel()">Cancel</button>
+            </ion-content>
+        </ion-pane>
+      </div>
+    </script>
+
+  </body>
 
 </html>
