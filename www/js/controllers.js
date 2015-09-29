@@ -38,7 +38,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
-.controller('createCtrl', function($scope, $location, $http, $cordovaCamera, $ionicModal){
+.controller('createCtrl', function($scope, $cordovaBarcodeScanner, $location, $http, $cordovaCamera, $ionicModal){
   // Declarations
   $scope.person = {};
   $scope.peopleInShelter = [];
@@ -60,6 +60,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     // Can go directly to /login'
     $location.path(url);
+  };
+
+  $scope.scanBarcode = function() {
+    $cordovaBarcodeScanner.scan().then(function(barcodeData){
+        // Success!
+        alert("Barcode Data Retrieved:\nFormat: " + barcodeData.format + "\nCode: " + barcodeData.text);
+    }, function(error){
+        // Error!
+    });
   };
 
   $scope.getPeopleList = function() {
@@ -225,7 +234,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
   $scope.closeCameraModel = function() {
     $scope.CameraChooseModal.hide();
-  }
+  };
 
   $scope.takeCameraPhoto = function(source) {
 
