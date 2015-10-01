@@ -38,7 +38,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
-.controller('createCtrl', function($scope, $cordovaBarcodeScanner, $location, $http, $cordovaCamera, $ionicModal){
+.controller('createCtrl', function($scope, $cordovaBarcodeScanner, fileUpload, $location, $http, $cordovaCamera, $ionicModal){
   // Declarations
   $scope.person = {};
   $scope.peopleInShelter = [];
@@ -149,80 +149,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     if (!duplicate) {
         $scope.peopleInShelter.push(newPerson);
 
-        var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
-        var config = {};
-        config.headers = {};
-        if (authentication !== null) {
-          config.headers.Authorization = 'Basic ' + authentication;
-        } else {
-          config.headers.Authorization = '';
-        }
+        // Upload person to fileService
+        fileUpload.uploadPhotoToUrl(newPerson.photo, ServiceURL);
 
-        var formData = new FormData();
-        formData.append('file', newPerson.photo, newPerson.full_name + "_Example.jpg");
-
-        $http.post(ServiceURL, formData, {
-            withCredentials: true,
-            headers: {
-                "Authorization": config.headers.Authorization,
-                "Content-Type": undefined
-            },
-            transformRequest: angular.identity
-        }).success(function(){
-          alert("Person posted!");
-        }).error(function(e){
-          alert(e.error_message);
-        });
-
-                /*var request = $http({
-          method  : 'POST',
-          url     : 'http://192.168.33.15/api/v1/fileservice/',
-          data    : $.param(formData),
-          headers : { 'Content-Type': 'multipart/form-data'}
-        }).then(function(xhr){
-          alert("Picture uploaded");
-        });*/
-
-        /*$.ajax({
-            type: "POST",
-            url: ServiceURL,
-            data: formData,
-            contentType: 'multipart/form-data',
-            processData: false,
-            headers: {
-                "Authorization": config.headers.Authorization,
-                "Access-Control-Allow-Origin": '*'
-            },
-            success: function(responseData, textStatus, jqXHR) {
-                alert("Data saved: " + responseData);
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                alert(errorThrown);
-            }
-        });*/
-
-        /*$('form').submit(function(e){
-          var formData, xhr;
-
-          formData = new FormData();
-          formData.append('file', newPerson.photo);
-
-          xhr = new XMLHttpRequest();
-
-          xhr.open('POST', "http://192.168.33.15/api/v1/fileservice/", true );
-          xhr.onreadystatechange = function(response) {};
-          xhr.send(formData);
-
-          e.preventDefault();
-        });*/
-
-        // debug
-        //alert("Saved!\n" +
-        //  "Name: " + Name + "\n" +
-        //  "Address: " + Address + "\n" +
-        //  "City: " + City + "\n" +
-        //  "Date of Birth: " + DoB + "\n" +
-        //  "Gender: " + Gender + "\n");
     } else {
         alert("Person already exists!");
     }
