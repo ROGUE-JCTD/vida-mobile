@@ -9,10 +9,11 @@ var sh = require('shelljs');
 var jshint = require('gulp-jshint');
 
 var paths = {
-  sass: ['./scss/**/*.scss']
+  sass: ['./scss/**/*.scss'],
+  lint: ['./www/js/*.js']
 };
 
-gulp.task('default', ['sass']);
+gulp.task('default', ['sass', 'lint']);
 
 gulp.task('sass', function(done) {
   gulp.src('./scss/ionic.app.scss')
@@ -30,6 +31,7 @@ gulp.task('sass', function(done) {
 
 gulp.task('watch', function() {
   gulp.watch(paths.sass, ['sass']);
+  gulp.watch(paths.lint, ['lint']);
 });
 
 gulp.task('install', ['git-check'], function() {
@@ -53,7 +55,7 @@ gulp.task('git-check', function(done) {
 });
 
 gulp.task('lint', function() {
-  return gulp.src('./www/js/*.js')
+  return gulp.src(paths.lint)
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'));
 });
