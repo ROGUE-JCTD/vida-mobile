@@ -14,25 +14,44 @@ Once both are installed, you can begin by cloning the repo, and following these 
 ```sh
 git clone <this repo>
 cd vida-mobile
-ionic plugin add cordova-plugin-camera
-ionic plugin add cordova-plugin-device
-ionic plugin add com.ionic.keyboard
-ionic platform add android
-ionic platform add ios
-npm install
+./clean-build.sh
 ```
 Then you can say these commands to being using the app:
 ```
 'ionic serve' - Will host the app in an internet browser
 
-Android:
-'ionic build android --release' - Will build an APK (needs to be signed to install)
-'ionic emulate android' - Will launch an emulator alongside the app (if available)
-
-iOS:
-'ionic build ios' - Will build the iOS version of the app
-'ionic emulate ios' - Will launch an emulator alongside the app (if available)
+*Android*
 ```
+# launch an android emulator
+ionic emulate android
+
+# launch the application on the connected android device
+ionic run android
+
+# build an APK (needs to be signed to install)
+ionic build android --release
+```
+To Debug:
+- launch chrome and use the developer tools. Works for emulator and you can and you can go to 'chrome://inspect/#devices'
+  in the address bar to connect to a physical android device
+
+
+*iOS*
+```
+# launch ios emulator (on OSX only)
+ionic emulate ios
+
+# Will build the iOS version of the app
+ionic build ios
+```
+To run application on the iOS device:
+- launch platforms/ios/vida-mobile.xcodeproj in xcode
+- click the "build and then run" button to launch the app on device
+
+To Debug:
+- use Safari's developer tools / inspector to vew console output and debug DOM /js code
+- in Safari console, run 'window.location.reload()' to reload the app to see console output from when the app is launched
+
 
 Thank you and enjoy! 
 
