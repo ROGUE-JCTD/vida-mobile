@@ -3,7 +3,7 @@
 ### How to install:
 
 VIDA requires _Ionic_ which can be downloaded by using this command:
-```
+```sh
 $ npm install -g ionic
 ```
 
@@ -16,13 +16,17 @@ git clone <this repo>
 cd vida-mobile
 ./clean-build.sh
 ```
-Then you can say these commands to being using the app:
-```
-'ionic serve' - Will host the app in an internet browser
+Next, run the app in one of the following platforms
 
-*Android*
+#### Chrome
+```sh
+# launch app in chrome for easy and fast development
+ionic serve
 ```
-# launch an android emulator
+
+#### Android
+```sh
+# launch the android emulator
 ionic emulate android
 
 # launch the application on the connected android device
@@ -31,24 +35,25 @@ ionic run android
 # build an APK (needs to be signed to install)
 ionic build android --release
 ```
-To Debug:
+###### Debug
 - launch chrome and use the developer tools. Works for emulator and you can and you can go to 'chrome://inspect/#devices'
   in the address bar to connect to a physical android device
-```
 
-*iOS*
-```
+#### iOS
+```sh
 # launch ios emulator (on OSX only)
 ionic emulate ios
 
-# Will build the iOS version of the app
+# build the iOS version of the app
 ionic build ios
 ```
-To run application on the iOS device:
+###### Launch on iOS device
+- you need to have a Apple Developer License which costs 99$ per year
+- when you launch xcode, you can log in with your apple account to utilize the license
 - launch platforms/ios/vida-mobile.xcodeproj in xcode
-- click the "build and then run" button to launch the app on device
+- click the "build and then run" (play) button to launch the app on device
 
-To Debug:
+###### Debug
 - use Safari's developer tools / inspector to vew console output and debug DOM /js code
 - in Safari console, run 'window.location.reload()' to reload the app to see console output from when the app is launched
 
