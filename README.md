@@ -34,7 +34,7 @@ ionic build android --release
 To Debug:
 - launch chrome and use the developer tools. Works for emulator and you can and you can go to 'chrome://inspect/#devices'
   in the address bar to connect to a physical android device
-
+```
 
 *iOS*
 ```
