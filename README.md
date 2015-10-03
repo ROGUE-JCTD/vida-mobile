@@ -2,17 +2,17 @@
 ---
 ### How to install:
 
-VIDA requires _Ionic_ which can be downloaded by using this command:
+VIDA uses [Ionic Framework](1) which can be downloaded by using this command:
 ```sh
 $ npm install -g ionic
 ```
 
-VIDA will also require [NodeJS (v0.12.2 tested)](0) to be installed.
+VIDA will also require [NodeJS](0) (tested on v0.12.2) to be installed.
 
 
-Once both are installed, you can begin by cloning the repo, and following these steps:
+Once both are installed, run the following:
 ```sh
-git clone <this repo>
+git clone https://github.com/ROGUE-JCTD/vida-mobile.git
 cd vida-mobile
 ./clean-build.sh
 ```
@@ -57,10 +57,10 @@ ionic build ios
 - use Safari's developer tools / inspector to vew console output and debug DOM /js code
 - in Safari console, run 'window.location.reload()' to reload the app to see console output from when the app is launched
 
-
-Thank you and enjoy! 
-
-_VIDA Team_
+#### Notes
+- to add a new plugin, add it to `clean-build.sh` and then run clean bulild as opposed to running the ionic/cordova command directly. This will ensure that all platforms get the plug ing setup properly. 
+- before committing, run `clean-build.sh` and do a test on emulators as well as any devices you have to help catch problems across platforms
 
 
 [0]: https://nodejs.org/en/blog/release/v0.12.2/
+[1]: http://ionicframework.com/
