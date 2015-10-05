@@ -36,8 +36,8 @@ angular.module('vida.services', [])
     // Service stuff goes here
 })
 
-.service('fileUpload', ['$http', function($http) {
-  this.uploadPhotoToUrl = function(photo, uploadUrl) {
+.service('uploadService', ['$http', function($http) {
+  this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
 
     var dataURL = canvas.toDataURL('image/jpeg', 0.5);
     var photoData = dataURItoBlob(dataURL);
@@ -50,10 +50,31 @@ angular.module('vida.services', [])
         'Content-Type': undefined,
         'Authorization': 'Basic ' + btoa('admin:admin')
       }
-    }).success(function() {
-      alert('File uploaded!');
+    }).success(function(data) {
+      alert('Photo uploaded!');
+      callSuccess(data);
     }).error(function(err) {
-      alert('File not uploaded! Error: ' + err.error_message);
+      alert('Photo not uploaded! Error: ' + err.error_message);
+      // if err is null, server not found?
+      callFailure();
+    });
+  };
+
+  this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
+
+    var JSONPerson = '{' + '"given_name":"' + person.full_name + '"}';
+
+    $http.post(uploadUrl, JSONPerson, {
+      transformRequest: angular.identity,
+      headers: {
+        'Authorization': 'Basic ' + btoa('admin:admin')
+      }
+    }).success(function() {
+      alert('Person uploaded!');
+      callSuccess();
+    }).error(function(err) {
+      alert('Person not uploaded! Error: ' + err.error_message);
+      callFailure();
     });
   };
 }]);

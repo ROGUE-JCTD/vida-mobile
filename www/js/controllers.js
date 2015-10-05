@@ -38,7 +38,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
-.controller('createCtrl', function($scope, $cordovaBarcodeScanner, fileUpload, $location, $http, $cordovaCamera, $ionicModal){
+.controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location, $http, $cordovaCamera, $ionicModal){
   // Declarations
   $scope.person = {};
   $scope.peopleInShelter = [];
@@ -135,7 +135,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     newPerson.full_name = Name;
     newPerson.status = Status;
     newPerson.photo = Photo;
+    newPerson.photo_filename = 'undefined';
     newPerson.id = $scope.peopleInShelter.length + 1;
+
+    // TAKE CARE OF UNDEFINED
 
     // Check for local duplicates (only based on names so far)
     var duplicate = false;
@@ -147,10 +150,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     }
 
     if (!duplicate) {
-        $scope.peopleInShelter.push(newPerson);
 
         // Upload person to fileService
-        fileUpload.uploadPhotoToUrl(newPerson.photo, ServiceURL);
+        uploadService.uploadPhotoToUrl(newPerson.photo, ServiceURL, function(data) {
+          // Success
+          newPerson.photo_filename = data.name;
+
+            uploadService.uploadPersonToUrl(newPerson, authenURL, function() {
+                // Successful entirely
+
+                // Re-get all people in array
+                $scope.peopleInShelter = []; // Assign to a new empty array
+                $scope.getPeopleList();
+
+            }, function() {
+                // Error uploading person
+            });
+        }, function() {
+          // Error uploading photo
+        });
 
     } else {
         alert("Person already exists!");
