@@ -51,18 +51,18 @@ angular.module('vida.services', [])
         'Authorization': 'Basic ' + btoa('admin:admin')
       }
     }).success(function(data) {
-      alert('Photo uploaded!');
       callSuccess(data);
     }).error(function(err) {
-      alert('Photo not uploaded! Error: ' + err.error_message);
+      // can be moved to callFailure(err)
       // if err is null, server not found?
+      alert('Photo not uploaded! Error: ' + err.error_message);
       callFailure();
     });
   };
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
 
-    var JSONPerson = '{' + '"given_name":"' + person.full_name + '"}';
+    var JSONPerson = '{' + '"given_name":"' + person.given_name + '"}';
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
@@ -70,9 +70,9 @@ angular.module('vida.services', [])
         'Authorization': 'Basic ' + btoa('admin:admin')
       }
     }).success(function() {
-      alert('Person uploaded!');
       callSuccess();
     }).error(function(err) {
+      // can be moved to callFailure(err)
       alert('Person not uploaded! Error: ' + err.error_message);
       callFailure();
     });

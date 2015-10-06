@@ -1,5 +1,8 @@
-var authenURL = "http://192.168.1.65/api/v1/person/"; // Will need to use dynamic server IP
-var ServiceURL = 'http://192.168.1.65/api/v1/fileservice/';
+var baseServerURL = 'http://192.168.10.15/'; // Will need to use dynamic server IP
+
+var authenURL = baseServerURL + 'api/v1/person/';
+var searchURL = baseServerURL + 'api/v1/person/?custom_query=';
+var serviceURL = baseServerURL + 'api/v1/fileservice/';
 
 angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
@@ -38,25 +41,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
-.controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location, $http, $cordovaCamera, $ionicModal){
+.controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location, $http,
+                                   $cordovaCamera, $cordovaActionSheet, $ionicModal){
   // Declarations
   $scope.person = {};
   $scope.peopleInShelter = [];
+  $scope.searchRequestCounter = 0;
 
   // Initial Values
   $scope.person.gender = "--Choose Gender--";
 
-  $ionicModal.fromTemplateUrl('Camera_Modal.html', {
+    // Deprecated (see bottom of index.html)
+  /*$ionicModal.fromTemplateUrl('Camera_Modal.html', {
     scope: $scope,
     animation: 'slide-in-up'
   }).then(function(modal) {
     $scope.CameraChooseModal = modal;
     $scope.CameraChooseModal.hide();
-  });
+  });*/
 
   // Functions
   $scope.logout = function(url) {
-    // Request logout?
+    // TODO: logout
 
     // Can go directly to /login'
     $location.path(url);
@@ -64,10 +70,54 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
   $scope.scanBarcode = function() {
     $cordovaBarcodeScanner.scan().then(function(barcodeData){
+      if (barcodeData.cancelled === false) {
         // Success!
         alert("Barcode Data Retrieved:\nFormat: " + barcodeData.format + "\nCode: " + barcodeData.text);
+      } else {
+        alert("Barcode scan cancelled!"); // Debug
+      }
     }, function(error){
         // Error!
+    });
+  };
+
+  $scope.searchPerson = function(query) {
+    var URL = searchURL + query;
+
+    var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+    var config = {};
+    config.headers = {};
+    if (authentication !== null) {
+      config.headers.Authorization = 'Basic ' + authentication;
+    } else {
+      config.headers.Authorization = '';
+    }
+
+    $scope.searchRequestCounter++; //TODO: Take care of Errors in case SRC doesn't get decremented
+    $http.get(URL, config).then(function(xhr) {
+      if (xhr.status === 200) {
+        if (xhr.data !== null) {
+          console.log(xhr.data);
+          $scope.peopleInShelter = [];    // Reset list, is safe
+          $scope.searchRequestCounter--;
+
+          // Temporary (search with '' returns all objects (since all contain ''))
+          if (query === '') {
+            //$scope.peopleInShelter = []; // already done
+          } else {
+            for (var i = 0; i < xhr.data.objects.length; i++) {
+              var personOnServer = xhr.data.objects[i];
+              var newPerson = {};
+
+              newPerson.given_name = personOnServer.given_name;
+              newPerson.status = 'On Server';
+              newPerson.id = personOnServer.id;
+
+              $scope.peopleInShelter.push(xhr.data.objects[i]);
+            }
+          }
+        }
+      }
     });
   };
 
@@ -88,10 +138,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
           for (var i = 0; i < xhr.data.objects.length; i++) {
             var personOnServer = xhr.data.objects[i];
 
-            // Check for duplicates (only names then ID so far)
+            // Check for duplicates (only names - then ID so far)
             var duplicate = false;
             for (var j = 0; j < $scope.peopleInShelter.length; j++) {
-              if ($scope.peopleInShelter[j].full_name === personOnServer.given_name){
+              if ($scope.peopleInShelter[j].given_name === personOnServer.given_name){
                 if ($scope.peopleInShelter[j].id === personOnServer.id){
                   duplicate = true;
                   break;
@@ -100,7 +150,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
             }
 
             if (!duplicate) {
-              personOnServer.full_name = personOnServer.given_name;  //TEMPORARY (just to show name in list)
               personOnServer.status = "On Server";  //TEMPORARY
 
               $scope.peopleInShelter.push(personOnServer);
@@ -113,7 +162,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
   $scope.savePerson = function() {
     //TODO: Overhaul with fields
-    var Name = $scope.person.fullName;
+    var Name = $scope.person.given_name;
     var Address = $scope.person.address;
     var City = $scope.person.city;
     var DoB = $scope.person.date_of_birth;
@@ -131,19 +180,18 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         Photo = $scope.person.photo;
     }
 
+    // TODO: TAKE CARE OF UNDEFINED
     var newPerson = [];
-    newPerson.full_name = Name;
+    newPerson.given_name = Name;
     newPerson.status = Status;
     newPerson.photo = Photo;
     newPerson.photo_filename = 'undefined';
     newPerson.id = $scope.peopleInShelter.length + 1;
 
-    // TAKE CARE OF UNDEFINED
-
-    // Check for local duplicates (only based on names so far)
+    // TODO: Only checks for duplicates based on Name
     var duplicate = false;
     for (var i = 0; i < $scope.peopleInShelter.length; i++) {
-        if ($scope.peopleInShelter[i].full_name === Name){
+        if ($scope.peopleInShelter[i].given_name === Name){
             duplicate = true;
             break;
         }
@@ -151,17 +199,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     if (!duplicate) {
 
+        //TODO: Reformat? (Person/Photo seperate - if Photo gets uploaded then have promise to set it later?)
         // Upload person to fileService
-        uploadService.uploadPhotoToUrl(newPerson.photo, ServiceURL, function(data) {
+        uploadService.uploadPhotoToUrl(newPerson.photo, serviceURL, function(data) {
           // Success
+          alert('Photo for ' + Name + ' uploaded!');
           newPerson.photo_filename = data.name;
 
             uploadService.uploadPersonToUrl(newPerson, authenURL, function() {
-                // Successful entirely
+              // Successful entirely
+              alert(Name + ' has been uploaded!\nUpdating local list of people..');
 
-                // Re-get all people in array
-                $scope.peopleInShelter = []; // Assign to a new empty array
-                $scope.getPeopleList();
+              // Re-get all people in array
+              $scope.peopleInShelter = []; // Assign to a new empty array
+              $scope.getPeopleList();
 
             }, function() {
                 // Error uploading person
@@ -176,14 +227,48 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 
   $scope.showCameraModal = function() {
-    $scope.CameraChooseModal.show();
+    var options = {
+      title: 'Picture',
+      buttonLabels: ['Take Photo', 'Choose From Library'],
+      addCancelButtonWithLabel: 'Cancel',
+      androidEnableCancelButton : true,
+      winphoneEnableCancelButton : true
+    };
+
+    $cordovaActionSheet.show(options)
+      .then(function(btnIndex) {
+        $scope.takeCameraPhoto_Personal(btnIndex);
+      });
   };
 
   $scope.closeCameraModel = function() {
-    $scope.CameraChooseModal.hide();
+    $cordovaActionSheet.hide();
   };
 
-  $scope.takeCameraPhoto = function(source) {
+    // TODO: Find way to not copy paste functions (Search Camera/Personal Info Camera)
+  $scope.takeCameraPhoto_Search = function(source) {
+    var options = {
+      quality: 80,
+      destinationType: Camera.DestinationType.DATA_URL,
+      sourceType: source,
+      allowEdit: true,
+      encodingType: Camera.EncodingType.JPEG,
+      targetWidth: 250,
+      targetHeight: 250,
+      popoverOptions: CameraPopoverOptions,
+      saveToPhotoAlbum: false
+    };
+
+    $cordovaCamera.getPicture(options).then(function(imageData) {
+      var webViewImg = "data:image/jpeg;base64," + imageData;
+      alert("Picture Received: " + imageData);
+    }, function(err) {
+      // error
+      alert("Picture not taken: " + err);
+    });
+  };
+
+  $scope.takeCameraPhoto_Personal = function(source) {
 
     $scope.closeCameraModel();
 
@@ -208,6 +293,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     });
   };
 
+    // Probably not needed :(
   $scope.filterValues = function($event){
     var whichKey = $event.which;
 

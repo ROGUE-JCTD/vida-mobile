@@ -27,7 +27,12 @@
       "id": "phonegap-plugin-barcodescanner"
     },
     "cordova-plugin-camera",
-    "cordova-plugin-network-information"
+    "cordova-plugin-network-information",
+    "cordova-plugin-dialogs",
+    {
+      "locator": "https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git",
+      "id": "cordova-plugin-actionsheet"
+    }
   ],
   "cordovaPlatforms": [
     "android",

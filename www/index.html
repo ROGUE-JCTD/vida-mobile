@@ -1,234 +1,243 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
-    <title></title>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <title></title>
 
-    <style>
-      .angular-google-map-container {
-          width: 100%;
-          height: 504px;
-      }
-    </style>
+  <style>
+    .angular-google-map-container {
+      width: 100%;
+      height: 504px;
+    }
+  </style>
 
-    <!-- compiled css output -->
-    <link href="lib/ionic/css/ionic.css" rel="stylesheet">
+  <!-- compiled css output -->
+  <link href="lib/ionic/css/ionic.css" rel="stylesheet">
 
-    <!-- ionic/angularjs js -->
-    <script src="lib/ionic/js/ionic.bundle.js"></script>
+  <!-- ionic/angularjs js -->
+  <script src="lib/ionic/js/ionic.bundle.js"></script>
 
-    <!--<link href="http://code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet">-->
+  <!--<link href="http://code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet">-->
 
-    <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above-->
-    <link href="css/ionic.app.css" rel="stylesheet">
+  <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above-->
+  <link href="css/ionic.app.css" rel="stylesheet">
 
-    <!-- JQuery Include
-    <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script> -->
-    <script src="lib/jquery/jquery-2.1.4.js"></script>
+  <!-- JQuery Include
+  <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script> -->
+  <script src="lib/jquery/jquery-2.1.4.js"></script>
 
-    <script src="lib/ngCordova/dist/ng-cordova.min.js"></script>
-    <script src="cordova.js"></script>
+  <script src="lib/ngCordova/dist/ng-cordova.min.js"></script>
+  <script src="cordova.js"></script>
 
-    <!-- VIDA js files -->
-    <script src="js/app.js"></script>
-    <script src="js/controllers.js"></script>
-    <script src="js/directives.js"></script>
-    <script src="js/services.js"></script>
+  <!-- VIDA js files -->
+  <script src="js/app.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/directives.js"></script>
+  <script src="js/services.js"></script>
 
-  </head>
+</head>
 
-  <body ng-app="vida" animation="slide-left-right-ios7">
-    <div>
-        <div>
-            <ion-nav-bar class="bar-stable">
-                <ion-nav-back-button class="button-icon icon ion-ios-arrow-back">Back</ion-nav-back-button>
-            </ion-nav-bar>
-            <ion-nav-view></ion-nav-view>
-        </div>
-    </div>
+<body ng-app="vida" animation="slide-left-right-ios7">
+<div>
+  <div>
+    <ion-nav-bar class="bar-stable">
+      <ion-nav-back-button class="button-icon icon ion-ios-arrow-back">Back</ion-nav-back-button>
+    </ion-nav-bar>
+    <ion-nav-view></ion-nav-view>
+  </div>
+</div>
 
-    <!--TODO: Abstract out into each own .html to not crowd this file-->
-    <script id="page1.html" type="text/ng-template">
-        <ion-view title="VIDA">
-            <ion-tabs class="tabs-stable tabs-icon-top">
+<!--TODO: Abstract out into each own .html to not crowd this file-->
+<script id="page1.html" type="text/ng-template">
+  <ion-view title="VIDA">
+    <ion-tabs class="tabs-stable tabs-icon-top">
 
-                <!--Search Tab-->
-                <ion-tab title="Search" icon-off="ion-ios-people-outline" icon-on="ion-ios-people">
-                    <ion-pane>
-                        <ion-content padding="true" class="has-header">
-                            <form>
-                                <label class="item item-input" name="search-people">
-                                    <i class="icon ion-search placeholder-icon"></i>
-                                    <input type="search" placeholder="">
-                                </label>
-                                <button class="button button-stable button-block  icon ion-android-promotion" ng-click="scanBarcode()">&nbsp; Find By Tag</button>
-                                <button class="button button-stable button-block  icon ion-images">&nbsp; Find By Pictures</button>
-                            </form>
-                            <ion-list>
-                                <div ng-repeat="this_person in peopleInShelter">
-                                <ion-item class="item-thumbnail-left">
-                                    <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
-                                    <h2>{{this_person.full_name || Name}}</h2>
-                                    <p>Status: {{this_person.status || Status}}</p>
-                                    <h4>ID: {{this_person.id || Number}}</h4>
-                                </ion-item>
-                                </div>
-                            </ion-list>
-                            <form>
-                                <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
-                            </form>
-                        </ion-content>
-                    </ion-pane>
-                </ion-tab>
-
-                <!--Create Tab-->
-                <ion-tab title="Create" icon-off="ion-ios-personadd-outline" icon-on="ion-ios-personadd">
-                    <ion-pane>
-                        <ion-content padding="true" class="has-header">
-                            <form>
-                                <label class="item item-input">
-                                    <span class="input-label">Full Name</span>
-                                    <input type="text" placeholder="" ng-model="person.fullName">
-                                </label>
-                                <label class="item item-input">
-                                    <span class="input-label">Address</span>
-                                    <input type="text" placeholder="" ng-model="person.address">
-                                </label>
-                                <label class="item item-input">
-                                    <span class="input-label">City</span>
-                                    <input type="text" placeholder="" ng-model="person.city">
-                                </label>
-                                <label class="item item-input">
-                                    <span class="input-label">Date of Birth</span>
-                                    <input type="text" placeholder="" ng-model="person.date_of_birth">
-                                </label>
-                                <label class="item item-input item-select">
-                                    <span class="input-label">Gender</span>
-                                    <select ng-model="person.gender">
-                                        <option>Not Specified</option>
-                                        <option>Male</option>
-                                        <option>Female</option>
-                                        <option>Other</option>
-                                    </select>
-                                </label>
-                                <label class="item item-input">
-                                    <span class="input-label">Phone Number</span>
-                                    <input type="text" placeholder="" ng-keypress="filterValues($event)" ng-model="person.phone_number">
-                                </label>
-                                <ion-list>
-                                    <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
-                                        <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
-                                        <h2>Title</h2>
-                                        <p>Item</p>
-                                    </ion-item>
-                                </ion-list>
-                                <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
-                            </form>
-                        </ion-content>
-                    </ion-pane>
-                </ion-tab>
-
-                <!--Shelter Tab-->
-                <ion-tab title="Shelter" icon-off="ion-ios-home-outline" icon-on="ion-ios-home">
-                    <ion-pane>
-                        <ion-content padding="true" class="has-header">
-                            <form>
-                                <ion-list></ion-list>
-                            </form>
-                            <div class="list card">
-                                <div class="item item-divider">Shelter Tegu4</div>
-                                <div class="item item-body">
-                                    <div>
-                                        <p>
-                                            Registered
-                                            <b>38</b> new persons
-                                        </p>
-                                        <p>
-                                            <b>14</b> people as injured
-                                        </p>
-                                        <p>
-                                            <b>2</b> people deceased
-                                        </p>
-                                        <p>
-                                            <b>1</b> person was found
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <form>
-                                <label class="item item-input">
-                                    <i class="icon ion-search placeholder-icon"></i>
-                                    <input type="search" placeholder="Find Shelter">
-                                </label>
-                            </form>
-                        </ion-content>
-                    </ion-pane>
-                </ion-tab>
-
-                <!--Settings Tab-->
-                <ion-tab title="Settings" icon-off="ion-ios-gear-outline" icon-on="ion-ios-gear">
-                    <ion-pane>
-                        <ion-content padding="true" class="has-header">
-                            <form>
-                                <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
-                                <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
-                                <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
-                            </form>
-                        </ion-content>
-                    </ion-pane>
-                </ion-tab>
-            </ion-tabs>
-        </ion-view>
-    </script>
-
-    <script id="page2.html" type="text/ng-template">
-            <ion-view title="VIDA Login">
-                <ion-content padding="true" class="has-header">
-                    <div>
-                        <p>
-                            Log in with your
-                            <b>VIDA</b> account
-                        </p>
-                    </div>
-                    <form>
-                        <div class="spacer" style="width: 300px; height: 18px;"></div>
-                        <ion-list>
-                            <label class="item item-input">
-                                <span class="input-label">Username</span>
-                                <input type="text" placeholder="" ng-model="credentials.username">
-                            </label>
-                            <label class="item item-input">
-                                <span class="input-label">Password</span>
-                                <input type="password" placeholder="" ng-model="credentials.password">
-                            </label>
-                        </ion-list>
-                        <div class="spacer" style="height: 40px;"></div>
-                        <button class="button button-positive button-block" ng-click="login('/tabs')">Log in</button>
-                        <a href="#/signup" class="button button-positive button-clear button-block ">Or request an account</a>
-                    </form>
-                </ion-content>
-            </ion-view>
-    </script>
-
-    <!-- Extra Modals -->
-    <script id="Camera_Modal.html" type="text/ng-template">
-      <div class="modal">
+      <!--Search Tab-->
+      <ion-tab title="Search" icon-off="ion-ios-people-outline" icon-on="ion-ios-people">
         <ion-pane>
-            <header class="bar bar-header bar-positive">
-                <h1 class="title">Choose Photo Source</h1>
-            </header>
-            <ion-content class="has-header" padding="true">
-              <div class="buttons">
-                  <button class="button button-full" ng-click="takeCameraPhoto(1)">Take Photo</button> <!-- 1 = Camera.PictureSourceType.CAMERA -->
-                  <button class="button button-full" ng-click="takeCameraPhoto(0)">From Library</button> <!-- 0 = Camera.PictureSourceType.PHOTOLIBRARY -->
+          <ion-content padding="false" class="has-header">
+            <div class="item item-input-inset">
+              <label class="item-input-wrapper margin-right-8px" name="search-people">
+                <div ng-if="searchRequestCounter <= 0">
+                  <i class="icon ion-search placeholder-icon"></i>
+                </div>
+                <div ng-if="searchRequestCounter > 0">
+                  <ion-spinner icon="ripple"></ion-spinner>
+                </div>
+                <input type="search" ng-model='searchText' ng-model-options='{debounce: 1000}' ng-change='searchPerson(searchText)' placeholder="">
+              </label>
+              <div>
+                <button class="button button-small button-stable button-block icon ion-camera" ng-click="takeCameraPhoto_Search(1)"></button>
               </div>
-              <button class="button button-full button-energized" ng-click="closeCameraModel()">Cancel</button>
-            </ion-content>
+              <div>
+                <button class="button button-small button-stable button-block icon ion-pricetag" ng-click="scanBarcode()"></button>
+              </div>
+            </div>
+            <ion-list>
+              <div ng-repeat="this_person in peopleInShelter">
+                <ion-item class="item-thumbnail-left">
+                  <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
+                  <h2>{{this_person.given_name || Name}}</h2>
+                  <p>Status: {{this_person.status || Status}}</p>
+                  <h4>ID: {{this_person.id || Number}}</h4>
+                </ion-item>
+              </div>
+            </ion-list>
+          </ion-content>
         </ion-pane>
-      </div>
-    </script>
+      </ion-tab>
 
-  </body>
+      <!--Create Tab-->
+      <ion-tab title="Create" icon-off="ion-ios-personadd-outline" icon-on="ion-ios-personadd">
+        <ion-pane>
+          <ion-content padding="true" class="has-header">
+            <form>
+              <label class="item item-input">
+                <span class="input-label">Full Name</span>
+                <input type="text" placeholder="" ng-model="person.given_name">
+              </label>
+              <label class="item item-input">
+                <span class="input-label">Address</span>
+                <input type="text" placeholder="" ng-model="person.address">
+              </label>
+              <label class="item item-input">
+                <span class="input-label">City</span>
+                <input type="text" placeholder="" ng-model="person.city">
+              </label>
+              <label class="item item-input">
+                <span class="input-label">Date of Birth</span>
+                <input type="text" placeholder="" ng-model="person.date_of_birth">
+              </label>
+              <label class="item item-input item-select">
+                <span class="input-label">Gender</span>
+                <select ng-model="person.gender">
+                  <option>Not Specified</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <label class="item item-input">
+                <span class="input-label">Phone Number</span>
+                <input type="text" placeholder="" ng-keypress="filterValues($event)" ng-model="person.phone_number">
+              </label>
+              <ion-list>
+                <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
+                  <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
+                  <h2>Title</h2>
+                  <p>Item</p>
+                </ion-item>
+              </ion-list>
+              <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
+            </form>
+          </ion-content>
+        </ion-pane>
+      </ion-tab>
+
+      <!--Shelter Tab-->
+      <ion-tab title="Shelter" icon-off="ion-ios-home-outline" icon-on="ion-ios-home">
+        <ion-pane>
+          <ion-content padding="true" class="has-header">
+            <form>
+              <ion-list></ion-list>
+            </form>
+            <div class="list card">
+              <div class="item item-divider">Shelter Tegu4</div>
+              <div class="item item-body">
+                <div>
+                  <p>
+                    Registered
+                    <b>38</b> new persons
+                  </p>
+                  <p>
+                    <b>14</b> people as injured
+                  </p>
+                  <p>
+                    <b>2</b> people deceased
+                  </p>
+                  <p>
+                    <b>1</b> person was found
+                  </p>
+                </div>
+              </div>
+            </div>
+            <form>
+              <label class="item item-input">
+                <i class="icon ion-search placeholder-icon"></i>
+                <input type="search" placeholder="Find Shelter">
+              </label>
+            </form>
+          </ion-content>
+        </ion-pane>
+      </ion-tab>
+
+      <!--Settings Tab-->
+      <ion-tab title="Settings" icon-off="ion-ios-gear-outline" icon-on="ion-ios-gear">
+        <ion-pane>
+          <ion-content padding="true" class="has-header">
+            <form>
+              <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
+              <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
+              <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
+            </form>
+          </ion-content>
+        </ion-pane>
+      </ion-tab>
+    </ion-tabs>
+  </ion-view>
+</script>
+
+<script id="page2.html" type="text/ng-template">
+  <ion-view title="VIDA Login">
+    <ion-content padding="true" class="has-header">
+      <div>
+        <p>
+          Log in with your
+          <b>VIDA</b> account
+        </p>
+      </div>
+      <form>
+        <div class="spacer" style="width: 300px; height: 18px;"></div>
+        <ion-list>
+          <label class="item item-input">
+            <span class="input-label">Username</span>
+            <input type="text" placeholder="" ng-model="credentials.username">
+          </label>
+          <label class="item item-input">
+            <span class="input-label">Password</span>
+            <input type="password" placeholder="" ng-model="credentials.password">
+          </label>
+        </ion-list>
+        <div class="spacer" style="height: 40px;"></div>
+        <button class="button button-positive button-block" ng-click="login('/tabs')">Log in</button>
+        <a href="#/signup" class="button button-positive button-clear button-block ">Or request an account</a>
+      </form>
+    </ion-content>
+  </ion-view>
+</script>
+
+<!-- Extra Modals -->
+
+<!-- deprecated - maybe save for future custom dialogs? -->
+<!--<script id="Camera_Modal.html" type="text/ng-template">
+  <div class="modal">
+    <ion-pane>
+      <header class="bar bar-header bar-positive">
+        <h1 class="title">Choose Photo Source</h1>
+      </header>
+      <ion-content class="has-header" padding="true">
+        <div class="buttons">
+          <button class="button button-full" ng-click="takeCameraPhoto(1)">Take Photo</button> &lt;!&ndash; 1 = Camera.PictureSourceType.CAMERA &ndash;&gt;
+          <button class="button button-full" ng-click="takeCameraPhoto(0)">From Library</button> &lt;!&ndash; 0 = Camera.PictureSourceType.PHOTOLIBRARY &ndash;&gt;
+        </div>
+        <button class="button button-full button-energized" ng-click="closeCameraModel()">Cancel</button>
+      </ion-content>
+    </ion-pane>
+  </div>
+</script>-->
+
+
+</body>
 
 </html>
