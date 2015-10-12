@@ -75,7 +75,7 @@
               </div>
             </div>
             <ion-list>
-              <div ng-repeat="this_person in peopleInShelter">
+              <div ng-repeat="this_person in peopleInShelter | limitTo:totalDisplayed">
                 <ion-item class="item-thumbnail-left">
                   <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
                   <h2>{{this_person.given_name || Name}}</h2>
@@ -84,6 +84,12 @@
                 </ion-item>
               </div>
             </ion-list>
+            <div ng-if="peopleInShelter.length > 0">
+              <ion-infinite-scroll
+                  on-infinite="loadMorePeople()"
+                  distance="100%">
+              </ion-infinite-scroll>
+            </div>
           </ion-content>
         </ion-pane>
       </ion-tab>
@@ -180,6 +186,14 @@
               <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
               <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
               <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
+              <div>
+                <label class="item item-input">
+                  <span class="input-label">Server IP:</span>
+                  <input type="text" placeholder="" ng-model="baseServerURL">
+                </label>
+                <button class="button button-positive button-block" ng-click="saveServerIP(baseServerURL)">Save IP</button>
+              </div>
+              <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
             </form>
           </ion-content>
         </ion-pane>

@@ -1,14 +1,10 @@
-var baseServerURL = 'http://192.168.10.15/'; // Will need to use dynamic server IP
-
-var authenURL = baseServerURL + 'api/v1/person/';
-var searchURL = baseServerURL + 'api/v1/person/?custom_query=';
-var serviceURL = baseServerURL + 'api/v1/fileservice/';
-
 angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
 //TODO: Abstract controllers to separate tabs/functionalities (each tab gets it's own controller?)
 
 .controller('loginCtrl', function($scope, $location, $http){
+  $scope.baseServerURL = '192.168.1.55'; // Can't be set outside of program :(
+
   $scope.credentials = {};
   $scope.login = function(url) {
     // Request authorization
@@ -23,6 +19,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         config.headers.Authorization = '';
       }
 
+      var authenURL = 'http://' + $scope.baseServerURL + '/api/v1/person/';
       $http.get(authenURL, config).then(function(xhr) {
         if (xhr.status === 200){
           // Success!
@@ -49,7 +46,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   $scope.searchRequestCounter = 0;
 
   // Initial Values
+  $scope.totalDisplayed = 20;
   $scope.person.gender = "--Choose Gender--";
+  $scope.baseServerURL = '192.168.1.55';
+
+  var authenURL = 'http://' + $scope.baseServerURL + '/api/v1/person/';
+  var searchURL = 'http://' + $scope.baseServerURL + '/api/v1/person/?custom_query=';
+  var serviceURL = 'http://' + $scope.baseServerURL + '/api/v1/fileservice/';
 
     // Deprecated (see bottom of index.html)
   /*$ionicModal.fromTemplateUrl('Camera_Modal.html', {
@@ -183,9 +186,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     // TODO: TAKE CARE OF UNDEFINED
     var newPerson = [];
     newPerson.given_name = Name;
+    newPerson.address = Address;
+    newPerson.gender = Gender;
+    newPerson.city = City;
+    newPerson.date_of_birth = DoB;
     newPerson.status = Status;
     newPerson.photo = Photo;
-    newPerson.photo_filename = 'undefined';
+    newPerson.pic_filename = 'undefined';
     newPerson.id = $scope.peopleInShelter.length + 1;
 
     // TODO: Only checks for duplicates based on Name
@@ -204,7 +211,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         uploadService.uploadPhotoToUrl(newPerson.photo, serviceURL, function(data) {
           // Success
           alert('Photo for ' + Name + ' uploaded!');
-          newPerson.photo_filename = data.name;
+          newPerson.pic_filename = data.name;
 
             uploadService.uploadPersonToUrl(newPerson, authenURL, function() {
               // Successful entirely
@@ -286,11 +293,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     $cordovaCamera.getPicture(options).then(function(imageData) {
         $scope.srcImage = "data:image/jpeg;base64," + imageData;
-        $scope.person.photo = imageData;
+        $scope.person.photo = "data:image/jpeg;base64," + imageData; // If there is a reason to separate it, the choice is there
     }, function(err) {
         // error
         alert("picture not taken: " + err);
     });
+  };
+
+  $scope.loadMorePeople = function(){
+      $scope.totalDisplayed += 20;
   };
 
     // Probably not needed :(
@@ -312,5 +323,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
       }
     }
   };
+
+  $scope.saveServerIP = function(IP) {
+    $scope.baseServerURL = IP;
+
+    authenURL = 'http://' + IP + '/api/v1/person/';
+    searchURL = 'http://' + IP + '/api/v1/person/?custom_query=';
+    serviceURL = 'http://' + IP + '/api/v1/fileservice/';
+  }
 })
 ;

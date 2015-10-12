@@ -1,14 +1,12 @@
 // Global Functions
-function dataURItoBlob(dataURI) {
-    var binary = atob(dataURI.split(',')[1]);
-    var array = [];
-    for(var i = 0; i < binary.length; i++) {
-        array.push(binary.charCodeAt(i));
-    }
-    return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+function dataURLtoBlob(dataURI) {
+  var binary = atob(dataURI.split(',')[1]);
+  var array = [];
+  for(var i = 0; i < binary.length; i++) {
+    array.push(binary.charCodeAt(i));
+  }
+  return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
 }
-
-var canvas = document.createElement('canvas');
 
 angular.module('vida.services', [])
 
@@ -39,10 +37,9 @@ angular.module('vida.services', [])
 .service('uploadService', ['$http', function($http) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
 
-    var dataURL = canvas.toDataURL('image/jpeg', 0.5);
-    var photoData = dataURItoBlob(dataURL);
-    var formData = new FormData(photo);
-    formData.append('file', photoData);
+    var photoBlob = dataURLtoBlob(photo);
+    var formData = new FormData();
+    formData.append("file", photoBlob, 'filename.jpg');
 
     $http.post(uploadUrl, formData, {
       transformRequest: angular.identity,
@@ -62,7 +59,9 @@ angular.module('vida.services', [])
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
 
-    var JSONPerson = '{' + '"given_name":"' + person.given_name + '"}';
+    var JSONPerson = '{' + '"given_name":"' + person.given_name + '", ' +
+                         '"pic_filename":"' + person.pic_filename + '", ' +
+                         '"gender":"' + person.gender + '"' + '}';
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
