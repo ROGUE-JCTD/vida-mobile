@@ -164,11 +164,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 
   $scope.savePerson = function() {
-    //TODO: Overhaul with fields
-    var Name = $scope.person.given_name;
-    var Address = $scope.person.address;
-    var City = $scope.person.city;
-    var DoB = $scope.person.date_of_birth;
     var Status = "Made Locally";
 
     var Gender = $scope.person.gender;
@@ -176,29 +171,38 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
       Gender = undefined;
     }
 
-    var phoneNumber = $scope.person.phone_number;
-
     var Photo = null;
     if ($scope.person.photo !== undefined){
         Photo = $scope.person.photo;
     }
 
-    // TODO: TAKE CARE OF UNDEFINED
     var newPerson = [];
-    newPerson.given_name = Name;
-    newPerson.address = Address;
+    newPerson.age = $scope.person.age;
+    newPerson.barcode = '';//later
+    newPerson.city = $scope.person.city;
+    newPerson.description = $scope.person.description;
+    newPerson.family_name = $scope.person.family_name;
+    newPerson.fathers_given_name = $scope.person.fathers_given_name;
+    newPerson.given_name = $scope.person.given_name;
     newPerson.gender = Gender;
-    newPerson.city = City;
-    newPerson.date_of_birth = DoB;
-    newPerson.status = Status;
-    newPerson.photo = Photo;
+    newPerson.mothers_given_name = $scope.person.mothers_given_name;
+    newPerson.neighborhood = $scope.person.neighborhood;
+    newPerson.notes = '';
     newPerson.pic_filename = 'undefined';
-    newPerson.id = $scope.peopleInShelter.length + 1;
+    newPerson.province_or_state = '';
+    newPerson.shelter = '';
+    newPerson.street_and_number = $scope.person.street_and_number;
+
+    // Not in /api/v1/person/
+    newPerson.date_of_birth = $scope.person.date_of_birth;
+    newPerson.status = Status;
+    newPerson.phone_number = $scope.person.phone_number;
+    newPerson.photo = Photo;
 
     // TODO: Only checks for duplicates based on Name
     var duplicate = false;
     for (var i = 0; i < $scope.peopleInShelter.length; i++) {
-        if ($scope.peopleInShelter[i].given_name === Name){
+        if ($scope.peopleInShelter[i].given_name === newPerson.given_name){
             duplicate = true;
             break;
         }
@@ -210,12 +214,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         // Upload person to fileService
         uploadService.uploadPhotoToUrl(newPerson.photo, serviceURL, function(data) {
           // Success
-          alert('Photo for ' + Name + ' uploaded!');
+          alert('Photo for ' + newPerson.given_name + ' uploaded!');
           newPerson.pic_filename = data.name;
 
             uploadService.uploadPersonToUrl(newPerson, authenURL, function() {
               // Successful entirely
-              alert(Name + ' has been uploaded!\nUpdating local list of people..');
+              alert(newPerson.given_name + ' has been uploaded!\nUpdating local list of people..');
 
               // Re-get all people in array
               $scope.peopleInShelter = []; // Assign to a new empty array
@@ -255,13 +259,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     // TODO: Find way to not copy paste functions (Search Camera/Personal Info Camera)
   $scope.takeCameraPhoto_Search = function(source) {
     var options = {
-      quality: 80,
+      quality: 90,
       destinationType: Camera.DestinationType.DATA_URL,
       sourceType: source,
       allowEdit: true,
       encodingType: Camera.EncodingType.JPEG,
-      targetWidth: 250,
-      targetHeight: 250,
       popoverOptions: CameraPopoverOptions,
       saveToPhotoAlbum: false
     };
@@ -280,13 +282,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     $scope.closeCameraModel();
 
     var options = {
-        quality: 80,
+        quality: 90,
         destinationType: Camera.DestinationType.DATA_URL,
         sourceType: source,
         allowEdit: true,
         encodingType: Camera.EncodingType.JPEG,
-        targetWidth: 250,
-        targetHeight: 250,
         popoverOptions: CameraPopoverOptions,
         saveToPhotoAlbum: false
     };

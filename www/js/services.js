@@ -59,9 +59,21 @@ angular.module('vida.services', [])
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
 
-    var JSONPerson = '{' + '"given_name":"' + person.given_name + '", ' +
-                         '"pic_filename":"' + person.pic_filename + '", ' +
-                         '"gender":"' + person.gender + '"' + '}';
+    var JSONPerson = '{' +
+      '"age":"' + person.age + '", ' +
+      //'"barcode":"' + "" + '", ' +
+      '"city":"' + person.city + '", ' +
+      '"description":"' + person.description + '", ' +
+      '"family_name":"' + person.family_name + '", ' +
+      '"fathers_given_name":"' + person.fathers_given_name + '", ' +
+      '"gender":"' + person.gender + '", ' +
+      '"given_name":"' + person.given_name + '", ' +
+      '"mothers_given_name":"' + person.mothers_given_name + '", ' +
+      '"neighborhood":"' + person.neighborhood + '", ' +
+      '"notes":"' + person.notes + '", ' +
+      '"pic_filename":"' + person.pic_filename + '", ' +
+      '"province_or_state":"' + person.province_or_state + '", ' +
+      '"street_and_number":"' + person.street_and_number + '"' + '}';
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
