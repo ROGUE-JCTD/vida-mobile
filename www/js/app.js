@@ -66,6 +66,12 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.controllers', 'vida.directiv
       templateUrl: 'page2.html',
       controller: 'loginCtrl'
     })
+
+    .state('person_detail', {
+      url: '/tabs/person',
+      templateUrl: 'page3.html',
+      controller: 'createCtrl'
+    })
     ;
 
   // if none of the above states are matched, use this as the fallback

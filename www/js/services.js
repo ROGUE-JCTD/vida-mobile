@@ -61,7 +61,7 @@ angular.module('vida.services', [])
 
     var JSONPerson = '{' +
       '"age":"' + person.age + '", ' +
-      //'"barcode":"' + "" + '", ' +
+      '"barcode":"' + person.barcode + '", ' +
       '"city":"' + person.city + '", ' +
       '"description":"' + person.description + '", ' +
       '"family_name":"' + person.family_name + '", ' +
