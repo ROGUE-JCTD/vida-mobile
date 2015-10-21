@@ -1,5 +1,5 @@
 {
-  "name": "HelloIonic",
+  "name": "vida-moile",
   "private": "true",
   "devDependencies": {
     "ionic": "driftyco/ionic-bower#1.1.0",
@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "angularjs-toaster": "~0.4.14",
-    "leaflet": "~0.7.3"
+    "leaflet": "~0.7.3",
+    "ngCordova": "~0.1.20-alpha"
   }
 }
