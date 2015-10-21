@@ -20,10 +20,16 @@ fi
 
 echo ========== Cleaning Node Modules ==========
 rm -rf node_modules
+
 echo ========== Installing Node Modules ==========
 npm install
 
+echo ========== Cleaning Platforms ==========
 rm -rf platforms
+
+echo ========== Cleaning Plugins ==========
+rm -rf plugins
+
 ionic platform add android
 ionic platform add ios
 ionic plugin add ionic-plugin-keyboard

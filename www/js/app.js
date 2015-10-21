@@ -55,57 +55,64 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
   // Each state's controller can be found in controllers.js
   $stateProvider
 
-  // setup an abstract state for the tabs directive
-  .state('tabs', {
-    url: "/tabs",
+  .state('login', {
+    url: '/login',
+    templateUrl: 'views/login.html',
+    controller: 'loginCtrl'
+  })
+
+
+    // setup an abstract state for the vida directive
+  .state('vida', {
+    url: "/vida",
     abstract: true,
-    templateUrl: "views/tabs.html",
+    templateUrl: "views/vida.html",
     controller: 'AppCtrl'
   })
 
   // Each tab has its own nav history stack:
 
-  .state('tabs.person-search', {
+  .state('vida.person-search', {
     url: '/person-search',
     views: {
-      'person-search-view': {
+      'view-person-search': {
         templateUrl: 'views/person-search.html',
         controller: 'PersonSearchCtrl'
       }
     }
   })
 
-  .state('tabs.person-search.person-detail', {
+  .state('vida.person-search.person-detail', {
     url: "/person-detail/:personId",
     views: {
-      'person-search-view@tabs': {
+      'view-person-search@vida': {
         templateUrl: "views/person-detail.html",
         controller: 'PersonDetailCtrl'
       }
     }
   })
 
-  .state('tabs.person-create', {
+  .state('vida.person-create', {
     url: '/person-create',
     views: {
-      'person-create': {
+      'view-person-create': {
         templateUrl: 'views/person-create.html',
         controller: 'PersonCreateCtrl'
       }
     }
   })
 
-  .state('tabs.shelter-search', {
+  .state('vida.shelter-search', {
     url: '/shelter-search',
     views: {
-      'shelter-search-view': {
+      'view-shelter-search': {
         templateUrl: 'views/shelter-search.html',
         controller: 'ShelterSearchCtrl'
       }
     }
   })
 
-  .state('tabs.settings', {
+  .state('vida.settings', {
     url: '/settings',
     views: {
       'view-account': {
@@ -152,5 +159,5 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
   // if none of the above states are matched, use this as the fallback
 
-  $urlRouterProvider.otherwise('/tabs');
+  $urlRouterProvider.otherwise('/vida/person-search');
 });

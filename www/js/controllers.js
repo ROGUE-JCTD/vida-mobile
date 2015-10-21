@@ -2,6 +2,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
 
 .controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout) {
+  console.log('---------------------------------- AppCtrl');
 
   $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeStart to '+toState.to+'- fired when the transition begins. toState,toParams : \n',toState, toParams);
@@ -26,7 +27,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   });
 
   // Create the login modal that we will use later
-  $ionicModal.fromTemplateUrl('views/modal_sample.html', {
+  $ionicModal.fromTemplateUrl('views/modal-sample.html', {
     scope: $scope
   }).then(function(modal) {
     $scope.modal = modal;
@@ -48,7 +49,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
+.controller('PersonSearchCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- PersonSearchCtrl');
+})
+
+.controller('PersonDetailCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- PersonDetailCtrl');
+})
+
+.controller('PersonCreateCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- PersonCreateCtrl');
+})
+
+.controller('ShelterSearchCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- ShelterSearchCtrl');
+})
+
+.controller('SettingsCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- SettingsCtrl');
+})
+
 .controller('loginCtrl', function($scope, $location, $http){
+  console.log('---------------------------------- loginCtrl');
   $scope.baseServerURL = '10.0.0.55'; // Can't be set outside of program :(
 
   $scope.credentials = {};
@@ -80,7 +102,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     } else {
       alert("Username/Password Undefined");
     }
-    $location.path(url); // debug so don't need to login
+    //$location.path(url); // debug so don't need to login
   };
 })
 
