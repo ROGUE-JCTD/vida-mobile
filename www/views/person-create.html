@@ -1,0 +1,94 @@
+  <ion-pane>
+    <ion-content padding="true" class="has-header">
+      <form>
+        <label class="item item-input">
+          <span class="input-label">Given Name</span>
+          <input type="text" placeholder="" ng-model="person.given_name">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Family Name</span>
+          <input type="text" placeholder="" ng-model="person.family_name">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Fathers Given Name</span>
+          <input type="text" placeholder="" ng-model="person.fathers_given_name">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Mothers Given Name</span>
+          <input type="text" placeholder="" ng-model="person.mothers_given_name">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Age</span>
+          <input type="text" placeholder="" ng-model="person.age">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Date of Birth</span>
+          <input type="text" placeholder="" ng-model="person.date_of_birth">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Address</span>
+          <input type="text" placeholder="" ng-model="person.street_and_number">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">City</span>
+          <input type="text" placeholder="" ng-model="person.city">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Neighborhood</span>
+          <input type="text" placeholder="" ng-model="person.neighborhood">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Description</span>
+          <input type="text" placeholder="" ng-model="person.description">
+        </label>
+        <label class="item item-input item-select">
+          <span class="input-label">Gender</span>
+          <select ng-model="person.gender">
+            <option>Not Specified</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Phone Number</span>
+          <input type="text" placeholder="" ng-keypress="filterValues($event)" ng-model="person.phone_number">
+        </label>
+        <ion-list>
+          <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
+            <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
+            <div class="row-center col-center">
+              <h2>Take Picture</h2>
+            </div>
+          </ion-item>
+        </ion-list>
+        <ion-item class="item-input">
+          <div>
+            <span class="input-label">Barcode</span>
+            <h2>&nbsp;</h2>
+            <div ng-if="person.barcode.code">
+              <button class="button button-positive" ng-click="clearBarcode()" ng-disabled="false">Clear</button>
+            </div>
+            <div ng-if="!person.barcode.code">
+              <button class="button button-positive" ng-click="clearBarcode()" ng-disabled="true">Clear</button>
+            </div>
+          </div>
+          <div class="item-input-inset" ng-click="scanBarcode(true)">
+            <ion-item>
+              <div>
+                <!--<div>
+                  <span class="input-label">Format:</span>
+                  <input type="text" placeholder="" ng-model="person.barcode.format" ng-disabled="true">
+                </div>-->
+                <div>
+                  <span class="input-label">Code:</span>
+                  <input type="text" placeholder="" ng-model="person.barcode.code" ng-disabled="true">
+                </div>
+              </div>
+            </ion-item>
+          </div>
+        </ion-item>
+        <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
+      </form>
+    </ion-content>
+  </ion-pane>

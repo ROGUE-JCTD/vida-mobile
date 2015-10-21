@@ -6,7 +6,7 @@
 // 'vida.services' is found in services.js
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
-angular.module('vida', ['ionic', 'ngCordova', 'vida.controllers', 'vida.directives', 'vida.services'])
+angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services'])
 
 .run(function($ionicPlatform, $window) {
   $ionicPlatform.ready(function() {
@@ -55,26 +55,102 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.controllers', 'vida.directiv
   // Each state's controller can be found in controllers.js
   $stateProvider
 
-    .state('page1', {
-      url: '/tabs',
-      templateUrl: 'page1.html',
-      controller: 'createCtrl'
-    })
+  // setup an abstract state for the tabs directive
+  .state('tabs', {
+    url: "/tabs",
+    abstract: true,
+    templateUrl: "views/tabs.html",
+    controller: 'AppCtrl'
+  })
 
-    .state('page2', {
-      url: '/login',
-      templateUrl: 'page2.html',
-      controller: 'loginCtrl'
-    })
+  // Each tab has its own nav history stack:
 
-    .state('person_detail', {
-      url: '/tabs/person',
-      templateUrl: 'page3.html',
-      controller: 'createCtrl'
-    })
-    ;
+  .state('tabs.person-search', {
+    url: '/person-search',
+    views: {
+      'person-search-view': {
+        templateUrl: 'views/person-search.html',
+        controller: 'PersonSearchCtrl'
+      }
+    }
+  })
+
+  .state('tabs.person-search.person-detail', {
+    url: "/person-detail/:personId",
+    views: {
+      'person-search-view@tabs': {
+        templateUrl: "views/person-detail.html",
+        controller: 'PersonDetailCtrl'
+      }
+    }
+  })
+
+  .state('tabs.person-create', {
+    url: '/person-create',
+    views: {
+      'person-create': {
+        templateUrl: 'views/person-create.html',
+        controller: 'PersonCreateCtrl'
+      }
+    }
+  })
+
+  .state('tabs.shelter-search', {
+    url: '/shelter-search',
+    views: {
+      'shelter-search-view': {
+        templateUrl: 'views/shelter-search.html',
+        controller: 'ShelterSearchCtrl'
+      }
+    }
+  })
+
+  .state('tabs.settings', {
+    url: '/settings',
+    views: {
+      'view-account': {
+        templateUrl: 'views/settings.html',
+        controller: 'SettingsCtrl'
+      }
+    }
+  })
+
+  .state('geofence', {
+    url: '/geofence/:geofenceId',
+    templateUrl: 'views/geofence.html',
+    controller: 'GeofenceCtrl',
+    resolve: {
+      geofence: function ($stateParams, geofenceService, $q) {
+        var geofence = geofenceService.findById($stateParams.geofenceId);
+        if (geofence) {
+          return $q.when(geofence);
+        }
+        return $q.reject('Cannot find geofence with id: ' + $stateParams.geofenceId);
+      }
+    }
+  });
+
+  /*
+  .state('page1', {
+    url: '/tabs',
+    templateUrl: 'page1.html',
+    controller: 'createCtrl'
+  })
+  .state('page2', {
+    url: '/login',
+    templateUrl: 'page2.html',
+    controller: 'loginCtrl'
+  })
+
+  .state('person_detail', {
+    url: '/tabs/person',
+    templateUrl: 'page3.html',
+    controller: 'createCtrl'
+  })
+  */
+
 
   // if none of the above states are matched, use this as the fallback
 
-  $urlRouterProvider.otherwise('/login');
+  $urlRouterProvider.otherwise('/tabs');
 });

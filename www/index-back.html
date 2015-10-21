@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <title></title>
+
+  <style>
+    .angular-google-map-container {
+      width: 100%;
+      height: 504px;
+    }
+  </style>
+
+  <!-- compiled css output -->
+  <link href="lib/ionic/css/ionic.css" rel="stylesheet">
+
+  <!-- ionic/angularjs js -->
+  <script src="lib/ionic/js/ionic.bundle.js"></script>
+
+  <!--<link href="http://code.ionicframework.com/ionicons/1.5.2/css/ionicons.min.css" rel="stylesheet">-->
+
+  <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above-->
+  <link href="css/ionic.app.css" rel="stylesheet">
+
+  <!-- JQuery Include
+  <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script> -->
+  <script src="lib/jquery/jquery-2.1.4.js"></script>
+  <script src="lib/angular-leaflet-directive/angular-leaflet-directive.js"></script>
+  <script src="lib/uuid/uuid.js"></script>
+
+  <script src="lib/ngCordova/dist/ng-cordova.min.js"></script>
+  <script src="cordova.js"></script>
+
+  <!-- VIDA js files -->
+  <script src="js/app.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/directives.js"></script>
+  <script src="js/services.js"></script>
+
+</head>
+
+<body ng-app="vida" animation="slide-left-right-ios7">
+<div>
+  <div>
+    <ion-nav-bar ng-controller="createCtrl" class="bar-stable">
+      <ion-nav-back-button class="button-icon icon ion-ios-arrow-back">Back</ion-nav-back-button>
+    </ion-nav-bar>
+    <ion-nav-view></ion-nav-view>
+  </div>
+</div>
+
+<!--TODO: Abstract out into each own .html to not crowd this file-->
+<script id="page1.html" type="text/ng-template">
+  <ion-view title="VIDA">
+    <ion-tabs class="tabs-stable tabs-icon-top">
+
+
+
+    </ion-tabs>
+  </ion-view>
+</script>
+
+<script id="page2.html" type="text/ng-template">
+
+</script>
+
+<script id="page3.html" type="text/ng-template">
+</script>
+
+<!-- Extra Modals -->
+
+<!-- deprecated - maybe save for future custom dialogs? -->
+<!--<script id="Camera_Modal.html" type="text/ng-template">
+  <div class="modal">
+    <ion-pane>
+      <header class="bar bar-header bar-positive">
+        <h1 class="title">Choose Photo Source</h1>
+      </header>
+      <ion-content class="has-header" padding="true">
+        <div class="buttons">
+          <button class="button button-full" ng-click="takeCameraPhoto(1)">Take Photo</button> &lt;!&ndash; 1 = Camera.PictureSourceType.CAMERA &ndash;&gt;
+          <button class="button button-full" ng-click="takeCameraPhoto(0)">From Library</button> &lt;!&ndash; 0 = Camera.PictureSourceType.PHOTOLIBRARY &ndash;&gt;
+        </div>
+        <button class="button button-full button-energized" ng-click="closeCameraModel()">Cancel</button>
+      </ion-content>
+    </ion-pane>
+  </div>
+</script>-->
+
+
+</body>
+
+</html>
