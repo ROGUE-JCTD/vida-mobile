@@ -1,17 +1,19 @@
-<ion-pane>
-  <ion-content padding="true" class="has-header">
-    <form>
-      <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
-      <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
-      <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
-      <div>
-        <label class="item item-input">
-          <span class="input-label">Server IP:</span>
-          <input type="text" placeholder="" ng-model="baseServerURL">
-        </label>
-        <button class="button button-positive button-block" ng-click="saveServerIP(baseServerURL)">Save IP</button>
-      </div>
-      <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
-    </form>
-  </ion-content>
-</ion-pane>
+<ion-view title="Settings">
+  <ion-pane>
+    <ion-content padding="true" class="has-header">
+      <form>
+        <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
+        <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
+        <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
+        <div>
+          <label class="item item-input">
+            <span class="input-label">Server IP:</span>
+            <input type="text" placeholder="" ng-model="baseServerURL">
+          </label>
+          <button class="button button-positive button-block" ng-click="saveServerIP(baseServerURL)">Save IP</button>
+        </div>
+        <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
+      </form>
+    </ion-content>
+  </ion-pane>
+</ion-view>

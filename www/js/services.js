@@ -253,4 +253,101 @@ angular.module('vida.services', [])
         return $q.when(currentPositionCache);
       }
     };
+  })
+
+.service('peopleService', function($http) {
+    var peopleInShelter = [];
+
+    this.getPerson = function(URL, query, success, error) {
+      var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+      var config = {};
+      config.headers = {};
+      if (authentication !== null) {
+        config.headers.Authorization = 'Basic ' + authentication;
+      } else {
+        config.headers.Authorization = '';
+      }
+
+      $http.get(URL, config).then(function(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data !== null) {
+            peopleInShelter = [];    // Reset list, is safe
+
+            if (query !== '') { // Temporary fix (search with '' returns all objects (since all contain ''))
+              for (var i = 0; i < xhr.data.objects.length; i++) {
+                var personOnServer = xhr.data.objects[i];
+                var newPerson = {};
+
+                newPerson.given_name = personOnServer.given_name;
+                newPerson.status = 'On Server';
+                newPerson.id = personOnServer.id;
+
+                peopleInShelter.push(xhr.data.objects[i]);
+              }
+            }
+
+            success();
+          } else {
+            error();
+          }
+        } else {
+          error();
+        }
+      }, function(e) {
+        error();
+      });
+    };
+
+    this.updateAllPeople = function(URL) {
+      var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+      var config = {};
+      config.headers = {};
+      if (authentication !== null) {
+        config.headers.Authorization = 'Basic ' + authentication;
+      } else {
+        config.headers.Authorization = '';
+      }
+
+      $http.get(URL, config).then(function(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data !== null) {
+            peopleInShelter = [];
+
+            for (var i = 0; i < xhr.data.objects.length; i++) {
+              var personOnServer = xhr.data.objects[i];
+
+              // Check for duplicates (only names - then ID so far)
+              var duplicate = false;
+              for (var j = 0; j < peopleInShelter.length; j++) {
+                if (peopleInShelter[j].given_name === personOnServer.given_name){
+                  if (peopleInShelter[j].id === personOnServer.id){
+                    duplicate = true;
+                    break;
+                  }
+                }
+              }
+
+              if (!duplicate) {
+                personOnServer.status = "On Server";  //TEMPORARY
+                personOnServer.photo = {};
+
+                peopleInShelter.push(personOnServer);
+              }
+            }
+
+            alert("Person list retrieval completed!");
+          }
+        }
+      });
+    };
+
+    this.printToConsole = function() {
+      for (var i = 0; i < peopleInShelter.length; i++) {
+        console.log(peopleInShelter[i].given_name);
+      }
+    };
+
+    this.getPeopleInShelter = function() {
+      return peopleInShelter;
+    };
   });

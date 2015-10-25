@@ -1,35 +1,37 @@
-<ion-pane>
-  <ion-content padding="false" class="has-header">
-    <div class="item item-input-inset">
-      <label class="item-input-wrapper margin-right-8px" name="search-people">
-        <div ng-if="searchRequestCounter <= 0">
-          <i class="icon ion-search placeholder-icon"></i>
+<ion-view title="Search">
+  <ion-pane>
+    <ion-content padding="false" class="has-header">
+      <div class="item item-input-inset">
+        <label class="item-input-wrapper margin-right-8px" name="search-people">
+          <div ng-if="searchRequestCounter <= 0">
+            <i class="icon ion-search placeholder-icon"></i>
+          </div>
+          <div ng-if="searchRequestCounter > 0">
+            <ion-spinner icon="ripple"></ion-spinner>
+          </div>
+          <input type="search" id="searchText" ng-model="searchText" ng-model-options='{debounce: 700}' ng-change='searchPerson(searchText)' placeholder="">
+        </label>
+        <div>
+          <button class="button button-small button-stable button-block icon ion-camera" ng-click="takeCameraPhoto_Search(1)"></button>
         </div>
-        <div ng-if="searchRequestCounter > 0">
-          <ion-spinner icon="ripple"></ion-spinner>
+        <div>
+          <button class="button button-small button-stable button-block icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
-        <input type="search" id="searchText" ng-model="searchText" ng-model-options='{debounce: 700}' ng-change='searchPerson(searchText)' placeholder="">
-      </label>
-      <div>
-        <button class="button button-small button-stable button-block icon ion-camera" ng-click="takeCameraPhoto_Search(1)"></button>
       </div>
-      <div>
-        <button class="button button-small button-stable button-block icon ion-pricetag" ng-click="scanBarcode(false)"></button>
+      <ion-list>
+        <div ng-repeat="this_person in peopleInShelter.getPeopleInShelter() | limitTo:totalDisplayed">
+          <ion-item class="item-thumbnail-left" ng-click="changeWindow('/vida/person-search/person-detail/{{this_person.id}}')">
+            <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
+            <h2>{{this_person.given_name || Name}}</h2>
+            <p>Status: {{this_person.status || Status}}</p>
+            <h4>ID: {{this_person.id || Number}}</h4>
+          </ion-item>
+        </div>
+      </ion-list>
+      <div ng-if="peopleInShelter.length > 0">
+        <ion-infinite-scroll on-infinite="loadMorePeople()" distance="0%">
+        </ion-infinite-scroll>
       </div>
-    </div>
-    <ion-list>
-      <div ng-repeat="this_person in peopleInShelter | limitTo:totalDisplayed">
-        <ion-item class="item-thumbnail-left" ng-click="changeWindow('/tabs/person')">
-          <img ng-src="{{this_person.photo || 'img/placeholder.jpg'}}" id="this_person.photo" ng-model="this_person.photo">
-          <h2>{{this_person.given_name || Name}}</h2>
-          <p>Status: {{this_person.status || Status}}</p>
-          <h4>ID: {{this_person.id || Number}}</h4>
-        </ion-item>
-      </div>
-    </ion-list>
-    <div ng-if="peopleInShelter.length > 0">
-      <ion-infinite-scroll on-infinite="loadMorePeople()" distance="0%">
-      </ion-infinite-scroll>
-    </div>
-  </ion-content>
-</ion-pane>
+    </ion-content>
+  </ion-pane>
+</ion-view>

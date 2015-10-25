@@ -1,3 +1,4 @@
+<ion-view title="Create Person">
   <ion-pane>
     <ion-content padding="true" class="has-header">
       <form>
@@ -52,7 +53,7 @@
         </label>
         <label class="item item-input">
           <span class="input-label">Phone Number</span>
-          <input type="text" placeholder="" ng-keypress="filterValues($event)" ng-model="person.phone_number">
+          <input type="text" placeholder="" ng-model="person.phone_number">
         </label>
         <ion-list>
           <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
@@ -62,33 +63,13 @@
             </div>
           </ion-item>
         </ion-list>
-        <ion-item class="item-input">
-          <div>
-            <span class="input-label">Barcode</span>
-            <h2>&nbsp;</h2>
-            <div ng-if="person.barcode.code">
-              <button class="button button-positive" ng-click="clearBarcode()" ng-disabled="false">Clear</button>
-            </div>
-            <div ng-if="!person.barcode.code">
-              <button class="button button-positive" ng-click="clearBarcode()" ng-disabled="true">Clear</button>
-            </div>
-          </div>
-          <div class="item-input-inset" ng-click="scanBarcode(true)">
-            <ion-item>
-              <div>
-                <!--<div>
-                  <span class="input-label">Format:</span>
-                  <input type="text" placeholder="" ng-model="person.barcode.format" ng-disabled="true">
-                </div>-->
-                <div>
-                  <span class="input-label">Code:</span>
-                  <input type="text" placeholder="" ng-model="person.barcode.code" ng-disabled="true">
-                </div>
-              </div>
-            </ion-item>
-          </div>
-        </ion-item>
+        <label class="item item-input">
+          <span class="input-label">Barcode</span>
+          <input type="text" placeholder="" ng-model="person.barcode.code">
+          <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
+        </label>
         <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
       </form>
     </ion-content>
   </ion-pane>
+</ion-view>

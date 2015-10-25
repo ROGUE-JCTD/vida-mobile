@@ -18,7 +18,12 @@
           <input type="password" placeholder="" ng-model="credentials.password">
         </label>
       </ion-list>
-      <div class="spacer" style="height: 40px;"></div>
+      <div ng-if="loginRequest > 0">
+        <ion-spinner style="text-align: center;" icon="ripple"></ion-spinner>
+      </div>
+      <div ng-if="loginRequest <= 0">
+        <div class="spacer" style="height: 30px;"></div> <!--Test-->
+      </div>
       <button class="button button-positive button-block" ng-click="login('/tabs')">Log in</button>
       <a href="#/signup" class="button button-positive button-clear button-block ">Or request an account</a>
     </form>

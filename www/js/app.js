@@ -115,7 +115,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
   .state('vida.settings', {
     url: '/settings',
     views: {
-      'view-account': {
+      'view-settings': {
         templateUrl: 'views/settings.html',
         controller: 'SettingsCtrl'
       }
