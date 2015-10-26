@@ -255,11 +255,11 @@ angular.module('vida.services', [])
     };
   })
 
-.service('peopleService', function($http) {
+.service('peopleService', function($http, networkService) {
     var peopleInShelter = [];
 
     this.getPerson = function(URL, query, success, error) {
-      var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+      var authentication = networkService.getCredentials();
       var config = {};
       config.headers = {};
       if (authentication !== null) {
@@ -299,7 +299,7 @@ angular.module('vida.services', [])
     };
 
     this.updateAllPeople = function(URL) {
-      var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
+      var authentication = networkService.getCredentials();
       var config = {};
       config.headers = {};
       if (authentication !== null) {
@@ -349,5 +349,51 @@ angular.module('vida.services', [])
 
     this.getPeopleInShelter = function() {
       return peopleInShelter;
+    };
+  })
+
+.service('networkService', function($http) {
+    var networkIP = '192.168.1.55'; // Needs to be set by something else
+
+    var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
+    var authenURL = 'http://' + networkIP + '/api/v1/person/';
+    var peopleURL = 'http://' + networkIP + '/api/v1/person/';
+    var searchURL = 'http://' + networkIP + '/api/v1/person/?custom_query=';
+    var serviceURL = 'http://' + networkIP + '/api/v1/fileservice/';
+
+    this.getServerAddress = function() {
+      return networkIP;
+    };
+
+    this.setServerAddress = function(Addr) {
+      networkIP = Addr;
+      authenURL = 'http://' + networkIP + '/api/v1/person/';
+      peopleURL = 'http://' + networkIP + '/api/v1/person/';
+      searchURL = 'http://' + networkIP + '/api/v1/person/?custom_query=';
+      serviceURL = 'http://' + networkIP + '/api/v1/fileservice/';
+    };
+
+    this.setCredentials = function(authen){
+      authentication = authen;
+    };
+
+    this.getCredentials = function(){
+      return authentication;
+    };
+
+    this.getPeopleURL = function() {
+      return peopleURL;
+    };
+
+    this.getAuthenticationURL = function() {
+      return authenURL;
+    };
+
+    this.getSearchURL = function() {
+      return searchURL;
+    };
+
+    this.getFileServiceURL = function() {
+      return serviceURL;
     };
   });

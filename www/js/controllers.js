@@ -1,10 +1,3 @@
-//TODO: Put into network service maybe?
-var baseServerURL = '192.168.33.15'; // Can't be set outside of program yet :(
-var authenURL = 'http://' + baseServerURL + '/api/v1/person/';
-var peopleURL = 'http://' + baseServerURL + '/api/v1/person/';
-var searchURL = 'http://' + baseServerURL + '/api/v1/person/?custom_query=';
-var serviceURL = 'http://' + baseServerURL + '/api/v1/fileservice/';
-
 angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
 
@@ -56,7 +49,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   };
 })
 
-.controller('PersonSearchCtrl', function($scope, $location, $http, peopleService,
+.controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
                                          $cordovaBarcodeScanner, $cordovaCamera, $document) {
     $scope.searchText = '';
     $scope.searchRequestCounter = 0;
@@ -77,7 +70,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     };
 
     $scope.searchPerson = function(query) {
-      var URL = searchURL + query;
+      var URL = networkService.getSearchURL() + query;
 
       $scope.searchRequestCounter++;
       peopleService.getPerson(URL, query,
@@ -137,7 +130,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 })
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet,
-                                         $cordovaBarcodeScanner, peopleService, uploadService){
+                                         $cordovaBarcodeScanner, peopleService, uploadService, networkService){
     $scope.person = {};
     $scope.person.barcode = {};
 
@@ -223,7 +216,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     };
 
     $scope.uploadPhoto = function(newPerson) {
-      uploadService.uploadPhotoToUrl(newPerson.photo, serviceURL, function (data) {
+      uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
         // Success
         alert('Photo for ' + newPerson.given_name + ' uploaded!');
         newPerson.pic_filename = data.name;
@@ -234,7 +227,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     $scope.uploadPerson = function(newPerson) {
       // Upload person to fileService
-      uploadService.uploadPersonToUrl(newPerson, authenURL, function () {
+      uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
         // Successful entirely
         alert(newPerson.given_name + ' has been uploaded!\nUpdating local list of people..');
 
@@ -246,7 +239,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     };
 
     $scope.getPeopleList = function() {
-      peopleService.updateAllPeople(peopleURL);
+      peopleService.updateAllPeople(networkService.getPeopleURL());
     };
 
     $scope.showCameraModal = function() {
@@ -292,10 +285,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   console.log('---------------------------------- ShelterSearchCtrl');
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService){
+.controller('SettingsCtrl', function($scope, $location, peopleService, networkService){
   console.log('---------------------------------- SettingsCtrl');
 
-    $scope.baseServerURL = baseServerURL;
+    $scope.networkAddr = networkService.getServerAddress();
 
     // Functions
     $scope.logout = function(url) {
@@ -306,21 +299,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     };
 
     $scope.saveServerIP = function(IP) {
-      baseServerURL = IP;
-      $scope.baseServerURL = IP;
-      $scope.searchRequestCounter = 0;
-
-      authenURL = 'http://' + IP + '/api/v1/person/';
-      searchURL = 'http://' + IP + '/api/v1/person/?custom_query=';
-      serviceURL = 'http://' + IP + '/api/v1/fileservice/';
+      networkService.setServerAddress(IP);
     };
 
     $scope.getPeopleList = function() {
-      peopleService.updateAllPeople(peopleURL);
+      peopleService.updateAllPeople(networkService.getPeopleURL());
     };
 })
 
-.controller('loginCtrl', function($scope, $location, $http){
+.controller('loginCtrl', function($scope, $location, $http, networkService){
   console.log('---------------------------------- loginCtrl');
 
   $scope.loginRequest = 0;
@@ -339,10 +326,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         config.headers.Authorization = '';
       }
 
-      var authenURL = 'http://' + baseServerURL + '/api/v1/person/';
-      $http.get(authenURL, config).then(function(xhr) {
+      $http.get(networkService.getAuthenticationURL(), config).then(function(xhr) {
         if (xhr.status === 200){
           // Success!
+          networkService.setCredentials(authentication);
+
           // Can go directly to '/tabs' instead of url
           $location.path(url);
         } else {
