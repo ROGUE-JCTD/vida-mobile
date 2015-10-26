@@ -6,7 +6,7 @@
 // 'vida.services' is found in services.js
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
-angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services'])
+angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive'])
 
 .run(function($ionicPlatform, $window) {
   $ionicPlatform.ready(function() {
@@ -72,6 +72,17 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
   // Each tab has its own nav history stack:
 
+
+  .state('vida.person-create', {
+    url: '/person-create',
+    views: {
+      'view-person-create': {
+        templateUrl: 'views/person-create.html',
+        controller: 'PersonCreateCtrl'
+      }
+    }
+  })
+
   .state('vida.person-search', {
     url: '/person-search',
     views: {
@@ -92,22 +103,22 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     }
   })
 
-  .state('vida.person-create', {
-    url: '/person-create',
-    views: {
-      'view-person-create': {
-        templateUrl: 'views/person-create.html',
-        controller: 'PersonCreateCtrl'
-      }
-    }
-  })
-
   .state('vida.shelter-search', {
     url: '/shelter-search',
     views: {
       'view-shelter-search': {
         templateUrl: 'views/shelter-search.html',
         controller: 'ShelterSearchCtrl'
+      }
+    }
+  })
+
+  .state('vida.shelter-search.shelter-detail', {
+    url: '/shelter-detail/:shelterId',
+    views: {
+      'view-shelter-search@vida': {
+        templateUrl: 'views/shelter-detail.html',
+        controller: 'ShelterDetailCtrl'
       }
     }
   })
@@ -120,44 +131,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         controller: 'SettingsCtrl'
       }
     }
-  })
-
-  .state('geofence', {
-    url: '/geofence/:geofenceId',
-    templateUrl: 'views/geofence.html',
-    controller: 'GeofenceCtrl',
-    resolve: {
-      geofence: function ($stateParams, geofenceService, $q) {
-        var geofence = geofenceService.findById($stateParams.geofenceId);
-        if (geofence) {
-          return $q.when(geofence);
-        }
-        return $q.reject('Cannot find geofence with id: ' + $stateParams.geofenceId);
-      }
-    }
   });
 
-  /*
-  .state('page1', {
-    url: '/tabs',
-    templateUrl: 'page1.html',
-    controller: 'createCtrl'
-  })
-  .state('page2', {
-    url: '/login',
-    templateUrl: 'page2.html',
-    controller: 'loginCtrl'
-  })
-
-  .state('person_detail', {
-    url: '/tabs/person',
-    templateUrl: 'page3.html',
-    controller: 'createCtrl'
-  })
-  */
-
-
   // if none of the above states are matched, use this as the fallback
-
   $urlRouterProvider.otherwise('/vida/person-search');
 });

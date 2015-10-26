@@ -1,35 +1,7 @@
 <ion-view title="Shelters">
-  <ion-pane>
-    <ion-content padding="true" class="has-header">
-      <form>
-        <ion-list></ion-list>
-      </form>
-      <div class="list card">
-        <div class="item item-divider">Shelter Tegu4</div>
-        <div class="item item-body">
-          <div>
-            <p>
-              Registered
-              <b>38</b> new persons
-            </p>
-            <p>
-              <b>14</b> people as injured
-            </p>
-            <p>
-              <b>2</b> people deceased
-            </p>
-            <p>
-              <b>1</b> person was found
-            </p>
-          </div>
-        </div>
-      </div>
-      <form>
-        <label class="item item-input">
-          <i class="icon ion-search placeholder-icon"></i>
-          <input type="search" placeholder="Find Shelter">
-        </label>
-      </form>
-    </ion-content>
-  </ion-pane>
+  <ion-content scroll="false">
+    <div style="width: 100%; position: absolute; top: 0px; bottom: 0px;" data-tap-disabled="true">
+      <leaflet resizeable markers="markers" paths="paths" center="center" width="100%" height="100%" event-broadcast="events"></leaflet>
+    </div>
+  </ion-content>
 </ion-view>
