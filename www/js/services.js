@@ -297,9 +297,22 @@ angular.module('vida.services', [])
       $http.get(searchURL, networkService.getAuthentication()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
-            if (xhr.data.objects.length > 0)
-              personByID = xhr.data.objects[0];
-            success();
+            if (xhr.data.objects.length > 0) {
+              if (xhr.data.objects.length > 1) {
+                // Multiple objects returned, search for ID specifically
+                for (var i = 0; i < xhr.data.objects.length; i++){
+                  if (parseInt(id) === xhr.data.objects[i].id){
+                    personByID = xhr.data.objects[i];
+                    break;
+                  }
+                }
+              } else
+                personByID = xhr.data.objects[0]; // Only 1 object returned
+
+              success();
+            } else {
+              error(); // No objects returned
+            }
           } else {
             error();
           }
