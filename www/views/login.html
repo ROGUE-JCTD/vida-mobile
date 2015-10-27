@@ -18,8 +18,8 @@
           <input type="password" placeholder="" ng-model="credentials.password">
         </label>
       </ion-list>
-      <div ng-if="loginRequest > 0">
-        <ion-spinner style="text-align: center;" icon="ripple"></ion-spinner>
+      <div class="text-center" ng-if="loginRequest > 0">
+        <ion-spinner icon="ripple"></ion-spinner>
       </div>
       <div ng-if="loginRequest <= 0">
         <div class="spacer" style="height: 30px;"></div> <!--Test-->
