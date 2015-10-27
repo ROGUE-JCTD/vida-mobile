@@ -1,9 +1,47 @@
 <ion-view title="Details">
   <ion-content padding="true" class="has-header">
-    <div>
-      <p>
-        Hey man. This is {{person.personId}}'s page.
-      </p>
+    <div ng-if="personService.getPersonByID() !== undefined">
+      <div>
+        <!-- Somehow store personService.getPersonByID() into one object? -->
+        <p>
+          Given Name: {{personService.getPersonByID().given_name || "Undefined"}}
+        </p>
+        <p>
+          ID: {{personService.getPersonByID().id || "Undefined"}}
+        </p>
+        <p>
+          Family Name: {{personService.getPersonByID().family_name || "Undefined"}}
+        </p>
+        <p>
+          Fathers Given Name: {{personService.getPersonByID().fathers_given_name || "Undefined"}}
+        </p>
+        <p>
+          Mothers Given Name: {{personService.getPersonByID().mothers_given_name || "Undefined"}}
+        </p>
+        <p>
+          Age: {{personService.getPersonByID().age || "Undefined"}}
+        </p>
+        <p>
+          Date of Birth: {{personService.getPersonByID().date_of_birth || "Undefined"}}
+        </p>
+        <p>
+          Address: {{personService.getPersonByID().street_and_number || "Undefined"}}
+        </p>
+        <p>
+          City: {{personService.getPersonByID().city || "Undefined"}}
+        </p>
+        <p>
+          Gender: {{personService.getPersonByID().gender || "Undefined"}}
+        </p>
+        <p>
+          Barcode: {{personService.getPersonByID().barcode || "Undefined"}}
+        </p>
+      </div>
+    </div>
+    <div ng-if="personService.getPersonByID() === undefined">
+      <div class="text-center">
+        <ion-spinner icon="ripple"></ion-spinner>
+      </div>
     </div>
   </ion-content>
 </ion-view>

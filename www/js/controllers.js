@@ -116,9 +116,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     console.log('---------------------------------- PersonSearchCtrl');
 })
 
-.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $rootScope){
+.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, peopleService, $rootScope){
   console.log('---------------------------------- PersonDetailCtrl');
-  $scope.person = $stateParams;
+  peopleService.searchPersonByID($stateParams.personId); // Initiate
+  $scope.personService = peopleService;
 
   $rootScope.buttonPersonEdit = function() {
     console.log('PersonDetailCtrl - buttonPersonEdit()');

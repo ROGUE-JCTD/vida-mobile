@@ -257,6 +257,7 @@ angular.module('vida.services', [])
 
 .service('peopleService', function($http, networkService) {
     var peopleInShelter = [];
+    var personByID = {};
 
     this.getPerson = function(URL, query, success, error) {
       var authentication = networkService.getCredentials();
@@ -296,6 +297,43 @@ angular.module('vida.services', [])
       }, function(e) {
         error();
       });
+    };
+
+    this.searchPersonByID = function(id) {
+      var authentication = networkService.getCredentials();
+      var config = {};
+      config.headers = {};
+      if (authentication !== null) {
+        config.headers.Authorization = 'Basic ' + authentication;
+      } else {
+        config.headers.Authorization = '';
+      }
+
+      personByID = undefined; // Reset
+      var searchURL = networkService.getSearchURL();
+      searchURL += id;
+
+      $http.get(searchURL, config).then(function(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data !== null) {
+            if (xhr.data.objects.length > 0)
+              personByID = xhr.data.objects[0];
+            else
+              personByID = undefined;
+            //success();
+          } else {
+            //error();
+          }
+        } else {
+          //error();
+        }
+      }, function(e) {
+        //error();
+      });
+    };
+
+    this.getPersonByID = function (){
+      return personByID;
     };
 
     this.updateAllPeople = function(URL) {
