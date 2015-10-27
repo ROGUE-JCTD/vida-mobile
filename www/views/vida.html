@@ -4,13 +4,22 @@ Each tab's child <ion-nav-view> directive will have its own
 navigation history that also transitions its views in and out.
 -->
 <ion-tabs class="tabs-icon-top tabs-color-active-positive">
-  <a id="button-person-edit" class="tab-item" style="display: none;" ng-click="buttonPersonEdit()">
+  <a id="button-person-edit" class="tab-item button-person-edit" style="display: none;" ng-click="buttonPersonEdit()">
     <i class="icon ion-ios-upload-outline"></i>
     Edit
   </a>
-  <a id="button-person-delete" class="tab-item" style="display: none;" ng-click="buttonPersonDelete()">
+  <a id="button-person-delete" class="tab-item button-person-edit" style="display: none;" ng-click="buttonPersonDelete()">
     <i class="icon ion-ios-trash-outline"></i>
     Delete
+  </a>
+
+  <a id="button-person-save" class="tab-item button-person-post-edit" style="display: none;" ng-click="buttonPersonSave()">
+    <i class="icon ion-ios-checkmark-outline"></i>
+    Save
+  </a>
+  <a id="button-person-cancel" class="tab-item button-person-post-edit" style="display: none;" ng-click="buttonPersonCancel()">
+    <i class="icon ion-ios-close-outline"></i>
+    Cancel
   </a>
 
 

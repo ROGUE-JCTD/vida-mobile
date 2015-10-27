@@ -120,12 +120,72 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     console.log('---------------------------------- PersonSearchCtrl');
 })
 
-.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, peopleService, $rootScope){
+.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams,
+                                         $cordovaActionSheet, peopleService, $rootScope){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.personService = peopleService;
 
-  peopleService.searchPersonByID($stateParams.personId, // Initiate search
+  $scope.setupEditDeleteButtons = function() {
+    // Setup tab-specific buttons
+    var tabs = document.getElementsByClassName("tab-item");
+    for (var i=0; i < tabs.length; i++) {
+      tabs[i].setAttribute('style', 'display: none;');
+    }
+
+    var buttons = document.getElementsByClassName("button-person-edit");
+    for (var i=0; i < buttons.length; i++) {
+      buttons[i].setAttribute('style', 'display: block;');    // Enables buttons
+    }
+
+    var buttons2 = document.getElementsByClassName("button-person-post-edit");
+
+    $scope.$on("$destroy", function(){
+      for (var i=0; i < tabs.length; i++) {
+        tabs[i].setAttribute('style', 'display: block;');
+      }
+
+      for (var i=0; i < buttons.length; i++) {
+        buttons[i].setAttribute('style', 'display: none;');   // Removes buttons
+      }
+
+      for (var i=0; i < buttons2.length; i++) {
+        buttons2[i].setAttribute('style', 'display: none;');   // Removes buttons
+      }
+    });
+  };
+
+  $scope.setupSaveCancelButtons = function() {
+    // Setup tab-specific buttons
+    var tabs = document.getElementsByClassName("tab-item");
+    for (var i=0; i < tabs.length; i++) {
+      tabs[i].setAttribute('style', 'display: none;');
+    }
+
+    var buttons2 = document.getElementsByClassName("button-person-edit");
+    var buttons = document.getElementsByClassName("button-person-post-edit");
+    for (var i=0; i < buttons.length; i++) {
+      buttons[i].setAttribute('style', 'display: block;');  // Enables buttons
+    }
+
+    $scope.$on("$destroy", function(){
+      for (var i=0; i < tabs.length; i++) {
+        tabs[i].setAttribute('style', 'display: block;');
+      }
+
+      for (var i=0; i < buttons.length; i++) {
+        buttons[i].setAttribute('style', 'display: none;');   // Removes buttons
+      }
+
+      for (var i=0; i < buttons2.length; i++) {
+        buttons2[i].setAttribute('style', 'display: none;');  // Removes buttons
+      }
+    });
+  };
+
+  // Initial Commands
+  $scope.setupEditDeleteButtons();
+  peopleService.searchPersonByID($stateParams.personId, // Will initiate search
     function() {
       // Success
       $scope.searchPersonRequest--;
@@ -135,12 +195,29 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     });
   $scope.searchPersonRequest++;
 
+  // Functions
   $rootScope.buttonPersonEdit = function() {
     console.log('PersonDetailCtrl - buttonPersonEdit()');
+
+    $scope.setupSaveCancelButtons();
   };
 
   $rootScope.buttonPersonDelete = function() {
     console.log('PersonDetailCtrl - buttonPersonDelete()');
+  };
+
+  $rootScope.buttonPersonSave = function() {
+    console.log('PersonDetailCtrl - buttonPersonSave()');
+
+    $scope.setupEditDeleteButtons();
+  };
+
+  $rootScope.buttonPersonCancel = function() {
+    console.log('PersonDetailCtrl - buttonPersonCancel()');
+
+    if (confirm("Are you sure you want to cancel?")) {
+      $scope.setupEditDeleteButtons();
+    }
   };
 })
 
