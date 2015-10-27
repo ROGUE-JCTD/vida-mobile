@@ -55,19 +55,19 @@
           <span class="input-label">Phone Number</span>
           <input type="text" placeholder="" ng-model="person.phone_number">
         </label>
-        <ion-list>
-          <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
-            <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
-            <div class="row-center col-center">
-              <h2>Take Picture</h2>
-            </div>
-          </ion-item>
-        </ion-list>
-        <label class="item item-input">
-          <span class="input-label">Barcode</span>
-          <input type="text" placeholder="" ng-model="person.barcode.code">
+        <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
+          <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
+          <div class="row-center col-center">
+            <h2>Take Picture</h2>
+          </div>
+        </ion-item>
+        <div class="item item-input-inset">
+          <label class="item-input-wrapper margin-right-8px">
+            <span class="input-label">Barcode</span>
+            <input type="text" placeholder="" ng-model="person.barcode.code">
+          </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
-        </label>
+        </div>
         <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
       </form>
     </ion-content>
