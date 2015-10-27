@@ -78,9 +78,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
           // Success
           $scope.searchRequestCounter--;
         },
-        function() {
+        function(error) {
           // Error
-          // TODO: Show Error
+          if (error){
+            alert(error);
+          } else {
+            alert("Error: Network timed out. Please check your internet connection.");
+          }
           $scope.searchRequestCounter--;
       });
     };
@@ -118,8 +122,18 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, peopleService, $rootScope){
   console.log('---------------------------------- PersonDetailCtrl');
-  peopleService.searchPersonByID($stateParams.personId); // Initiate
+  $scope.searchPersonRequest = 0;
   $scope.personService = peopleService;
+
+  peopleService.searchPersonByID($stateParams.personId, // Initiate search
+    function() {
+      // Success
+      $scope.searchPersonRequest--;
+    }, function(error){
+      // Error
+      $scope.searchPersonRequest--;
+    });
+  $scope.searchPersonRequest++;
 
   $rootScope.buttonPersonEdit = function() {
     console.log('PersonDetailCtrl - buttonPersonEdit()');
@@ -318,37 +332,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     // Request authorization
     if (($scope.credentials.username) && ($scope.credentials.password)) {
       $scope.loginRequest++;
-      var authentication = btoa($scope.credentials.username + ":" + $scope.credentials.password);
-      var config = {};
-      config.headers = {};
-      if (authentication !== null){
-        config.headers.Authorization = 'Basic ' + authentication;
-      } else {
-        config.headers.Authorization = '';
-      }
 
-      $http.get(networkService.getAuthenticationURL(), config).then(function(xhr) {
-        if (xhr.status === 200){
-          // Success!
-          networkService.setCredentials(authentication);
+      networkService.doLogin($scope.credentials,
+      function() {
+        // Success!
+        $location.path(url);
 
-          // Can go directly to '/tabs' instead of url
-          $location.path(url);
-        } else {
-          alert(xhr.status);
-        }
         $scope.loginRequest--;
-      }, function(error) {
-        if (error) {
-          if (error.status === 401) {
-            alert("Incorrect Username or Password!");
-          } else {
-            alert(error.status + ": " + error.description)
-          }
-        }
-        $scope.loginRequest--;
+      },
+      function(error) {
+        // Error!
 
+        $scope.loginRequest--;
       });
+
     } else {
       if (!($scope.credentials.username) && !($scope.credentials.password)) {
         alert("Please enter a Username and Password!");
@@ -358,7 +355,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         alert("Please enter a Password!");
       }
     }
-    //$location.path(url); // debug so don't need to login
   };
 })
 

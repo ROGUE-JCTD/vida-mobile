@@ -1,7 +1,7 @@
 <ion-view title="Details">
   <ion-content padding="true" class="has-header">
     <div ng-if="personService.getPersonByID() !== undefined">
-      <div>
+      <div class="text-center">
         <!-- Somehow store personService.getPersonByID() into one object? -->
         <p>
           Given Name: {{personService.getPersonByID().given_name || "Undefined"}}
@@ -34,13 +34,25 @@
           Gender: {{personService.getPersonByID().gender || "Undefined"}}
         </p>
         <p>
+          Description: {{personService.getPersonByID().description || "Undefined"}}
+        </p>
+        <p>
           Barcode: {{personService.getPersonByID().barcode || "Undefined"}}
         </p>
       </div>
     </div>
-    <div ng-if="personService.getPersonByID() === undefined">
+    <div ng-if="searchPersonRequest > 0">
       <div class="text-center">
         <ion-spinner icon="ripple"></ion-spinner>
+      </div>
+    </div>
+    <div ng-if="searchPersonRequest <= 0">
+      <div ng-if="personService.getPersonByID() === undefined">
+        <div class="text-center">
+          <p>
+            Information could not be retrieved.
+          </p>
+        </div>
       </div>
     </div>
   </ion-content>

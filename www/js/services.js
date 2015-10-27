@@ -260,16 +260,7 @@ angular.module('vida.services', [])
     var personByID = {};
 
     this.getPerson = function(URL, query, success, error) {
-      var authentication = networkService.getCredentials();
-      var config = {};
-      config.headers = {};
-      if (authentication !== null) {
-        config.headers.Authorization = 'Basic ' + authentication;
-      } else {
-        config.headers.Authorization = '';
-      }
-
-      $http.get(URL, config).then(function(xhr) {
+      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];    // Reset list, is safe
@@ -289,47 +280,44 @@ angular.module('vida.services', [])
 
             success();
           } else {
+            error(undefined);
+          }
+        } else {
+          error(xhr.status);
+        }
+      }, function(e) {
+        error(e.statusText);
+      });
+    };
+
+    this.searchPersonByID = function(id, success, error) {
+      var searchURL = networkService.getSearchURL();
+      searchURL += id;
+
+      $http.get(searchURL, networkService.getAuthentication()).then(function(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data !== null) {
+            if (xhr.data.objects.length > 0)
+              personByID = xhr.data.objects[0];
+            success();
+          } else {
             error();
           }
         } else {
           error();
         }
       }, function(e) {
+        if (e) {
+          if (e.status === 401) {
+            alert("Something went wrong with credentials.."); // Should never get in here
+          } else {
+            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
+          }
+        }
         error();
       });
-    };
 
-    this.searchPersonByID = function(id) {
-      var authentication = networkService.getCredentials();
-      var config = {};
-      config.headers = {};
-      if (authentication !== null) {
-        config.headers.Authorization = 'Basic ' + authentication;
-      } else {
-        config.headers.Authorization = '';
-      }
-
-      personByID = undefined; // Reset
-      var searchURL = networkService.getSearchURL();
-      searchURL += id;
-
-      $http.get(searchURL, config).then(function(xhr) {
-        if (xhr.status === 200) {
-          if (xhr.data !== null) {
-            if (xhr.data.objects.length > 0)
-              personByID = xhr.data.objects[0];
-            else
-              personByID = undefined;
-            //success();
-          } else {
-            //error();
-          }
-        } else {
-          //error();
-        }
-      }, function(e) {
-        //error();
-      });
+      personByID = undefined; // Set by default
     };
 
     this.getPersonByID = function (){
@@ -337,16 +325,7 @@ angular.module('vida.services', [])
     };
 
     this.updateAllPeople = function(URL) {
-      var authentication = networkService.getCredentials();
-      var config = {};
-      config.headers = {};
-      if (authentication !== null) {
-        config.headers.Authorization = 'Basic ' + authentication;
-      } else {
-        config.headers.Authorization = '';
-      }
-
-      $http.get(URL, config).then(function(xhr) {
+      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];
@@ -391,7 +370,7 @@ angular.module('vida.services', [])
   })
 
 .service('networkService', function($http) {
-    var networkIP = '192.168.1.55'; // Needs to be set by something else
+    var networkIP = '192.168.10.55'; // Needs to be set by something else
 
     var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
     var authenURL = 'http://' + networkIP + '/api/v1/person/';
@@ -405,18 +384,59 @@ angular.module('vida.services', [])
 
     this.setServerAddress = function(Addr) {
       networkIP = Addr;
+
+      // Need to reset variables
       authenURL = 'http://' + networkIP + '/api/v1/person/';
       peopleURL = 'http://' + networkIP + '/api/v1/person/';
       searchURL = 'http://' + networkIP + '/api/v1/person/?custom_query=';
       serviceURL = 'http://' + networkIP + '/api/v1/fileservice/';
     };
 
+    this.doLogin = function(credentials, success, error){
+      var _authentication = btoa(credentials.username + ":" + credentials.password);
+      var config = {};
+      config.headers = {};
+      if (_authentication !== null){
+        config.headers.Authorization = 'Basic ' + _authentication;
+      } else {
+        config.headers.Authorization = '';
+      }
+
+      $http.get(authenURL, config).then(function(xhr) {
+        if (xhr.status === 200){
+          authentication = _authentication;
+          success();
+        } else {
+          error(xhr.status);
+          alert(xhr.status);
+        }
+      }, function(e) {
+        if (e) {
+          if (e.status === 401) {
+            alert("Incorrect Username or Password!");
+          } else {
+            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
+          }
+        }
+
+        error(e);
+      });
+    };
+
     this.setCredentials = function(authen){
       authentication = authen;
     };
 
-    this.getCredentials = function(){
-      return authentication;
+    this.getAuthentication = function() {
+      var authen = {};
+      authen.headers = {};
+      if (authentication !== null) {
+        authen.headers.Authorization = 'Basic ' + authentication;
+      } else {
+        authen.headers.Authorization = '';
+      }
+
+      return authen;
     };
 
     this.getPeopleURL = function() {
