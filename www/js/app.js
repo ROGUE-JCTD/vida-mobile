@@ -103,6 +103,16 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     }
   })
 
+  .state('vida.person-search.person-detail.person-edit', {
+    url: "/person-edit",
+    views: {
+      'view-person-search@vida': {
+        templateUrl: "views/person-create.html",
+        controller: 'PersonDetailEditCtrl'
+      }
+    }
+  })
+
   .state('vida.shelter-search', {
     url: '/shelter-search',
     views: {

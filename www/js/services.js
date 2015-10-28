@@ -258,6 +258,7 @@ angular.module('vida.services', [])
 .service('peopleService', function($http, networkService) {
     var peopleInShelter = [];
     var personByID = {};
+    var testPhoto = {};
 
     this.getPerson = function(URL, query, success, error) {
       $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
@@ -333,7 +334,7 @@ angular.module('vida.services', [])
       personByID = undefined; // Set by default
     };
 
-    this.getPersonByID = function (){
+    this.getRetrievedPersonByID = function (){
       return personByID;
     };
 
@@ -380,10 +381,44 @@ angular.module('vida.services', [])
     this.getPeopleInShelter = function() {
       return peopleInShelter;
     };
+
+    this.getPhoto = function() {
+      return testPhoto;
+    };
+
+    this.getPlaceholderImage = function() {
+      return "https://www.passpack.com/wp-content/uploads/2014/01/profile-photo-placeholder.jpg";
+    };
+
+    this.downloadPhotos = function() {
+      var array = peopleInShelter;
+      for (var i = 0; i < array.length; i++) {
+        if (array[i].pic_filename && array[i].pic_filename !== "undefined") {
+          var thisURL = networkService.getFileServiceURL() + array[i].pic_filename + '/download/';
+          $http.get(thisURL).then(function (xhr) {
+            if (xhr.status === 200) {
+              if (xhr.data.status !== "file not found") {
+                testPhoto = xhr.data;
+                if (false) {
+                  var reader = new window.FileReader();
+                  reader.readAsDataURL(new Blob([xhr.data]));
+                  reader.onloadend = function () {
+                    var start = reader.result.split(',');
+                    testPhoto = "data:image/jpeg;base64," + start[1];
+                  };
+                }
+              }
+            }
+          }, function (error) {
+            // Error
+          });
+        }
+      }
+    };
   })
 
 .service('networkService', function($http) {
-    var networkIP = '192.168.10.55'; // Needs to be set by something else
+    var networkIP = '192.168.1.55'; // Needs to be set by something else
 
     var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
     var authenURL = 'http://' + networkIP + '/api/v1/person/';

@@ -1,53 +1,53 @@
 <ion-view title="Details">
   <ion-content padding="true" class="has-header">
-    <div ng-if="personService.getPersonByID() !== undefined">
+    <div ng-if="peopleService.getRetrievedPersonByID() !== undefined">
       <div class="text-center">
-        <!-- Somehow store personService.getPersonByID() into one object? -->
+        <!-- Somehow store peopleService.getRetrievedPersonByID() into one object? -->
+        <img style="max-width: 400px; max-height: 500px;" ng-src="{{networkService.getFileServiceURL()}}{{peopleService.getRetrievedPersonByID().pic_filename}}/download/"
+            err-src="{{peopleService.getPlaceholderImage()}}" width="100%" height="100%">
+        <h2>{{peopleService.getRetrievedPersonByID().given_name || "Undefined"}}</h2>
         <p>
-          Given Name: {{personService.getPersonByID().given_name || "Undefined"}}
+          ID: {{peopleService.getRetrievedPersonByID().id || "Undefined"}}
         </p>
         <p>
-          ID: {{personService.getPersonByID().id || "Undefined"}}
+          Family Name: {{peopleService.getRetrievedPersonByID().family_name || "Undefined"}}
         </p>
         <p>
-          Family Name: {{personService.getPersonByID().family_name || "Undefined"}}
+          Fathers Given Name: {{peopleService.getRetrievedPersonByID().fathers_given_name || "Undefined"}}
         </p>
         <p>
-          Fathers Given Name: {{personService.getPersonByID().fathers_given_name || "Undefined"}}
+          Mothers Given Name: {{peopleService.getRetrievedPersonByID().mothers_given_name || "Undefined"}}
         </p>
         <p>
-          Mothers Given Name: {{personService.getPersonByID().mothers_given_name || "Undefined"}}
+          Age: {{peopleService.getRetrievedPersonByID().age || "Undefined"}}
         </p>
         <p>
-          Age: {{personService.getPersonByID().age || "Undefined"}}
+          Date of Birth: {{peopleService.getRetrievedPersonByID().date_of_birth || "Undefined"}}
         </p>
         <p>
-          Date of Birth: {{personService.getPersonByID().date_of_birth || "Undefined"}}
+          Address: {{peopleService.getRetrievedPersonByID().street_and_number || "Undefined"}}
         </p>
         <p>
-          Address: {{personService.getPersonByID().street_and_number || "Undefined"}}
+          City: {{peopleService.getRetrievedPersonByID().city || "Undefined"}}
         </p>
         <p>
-          City: {{personService.getPersonByID().city || "Undefined"}}
+          Gender: {{peopleService.getRetrievedPersonByID().gender || "Undefined"}}
         </p>
         <p>
-          Gender: {{personService.getPersonByID().gender || "Undefined"}}
+          Description: {{peopleService.getRetrievedPersonByID().description || "Undefined"}}
         </p>
         <p>
-          Description: {{personService.getPersonByID().description || "Undefined"}}
+          Barcode: {{peopleService.getRetrievedPersonByID().barcode || "Undefined"}}
         </p>
-        <p>
-          Barcode: {{personService.getPersonByID().barcode || "Undefined"}}
-        </p>
+        </div>
       </div>
-    </div>
     <div ng-if="searchPersonRequest > 0">
       <div class="text-center">
         <ion-spinner icon="ripple"></ion-spinner>
       </div>
     </div>
     <div ng-if="searchPersonRequest <= 0">
-      <div ng-if="personService.getPersonByID() === undefined">
+      <div ng-if="peopleService.getRetrievedPersonByID() === undefined">
         <div class="text-center">
           <p>
             Information could not be retrieved.

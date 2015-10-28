@@ -1,50 +1,50 @@
-<ion-view title="Create Person">
+<ion-view title="{{createTabTitle}}">
   <ion-pane>
     <ion-content padding="true" class="has-header">
       <form>
         <label class="item item-input">
           <span class="input-label">Given Name</span>
-          <input type="text" placeholder="" ng-model="person.given_name">
+          <input id="given_name" type="text" placeholder="" ng-model="person.given_name">
         </label>
         <label class="item item-input">
           <span class="input-label">Family Name</span>
-          <input type="text" placeholder="" ng-model="person.family_name">
+          <input id="family_name" type="text" placeholder="" ng-model="person.family_name">
         </label>
         <label class="item item-input">
           <span class="input-label">Fathers Given Name</span>
-          <input type="text" placeholder="" ng-model="person.fathers_given_name">
+          <input id="fathers_given_name" type="text" placeholder="" ng-model="person.fathers_given_name">
         </label>
         <label class="item item-input">
           <span class="input-label">Mothers Given Name</span>
-          <input type="text" placeholder="" ng-model="person.mothers_given_name">
+          <input id="mothers_given_name" type="text" placeholder="" ng-model="person.mothers_given_name">
         </label>
         <label class="item item-input">
           <span class="input-label">Age</span>
-          <input type="text" placeholder="" ng-model="person.age">
+          <input id="age" type="text" placeholder="" ng-model="person.age">
         </label>
         <label class="item item-input">
           <span class="input-label">Date of Birth</span>
-          <input type="text" placeholder="" ng-model="person.date_of_birth">
+          <input id="date_of_birth" type="text" placeholder="" ng-model="person.date_of_birth">
         </label>
         <label class="item item-input">
           <span class="input-label">Address</span>
-          <input type="text" placeholder="" ng-model="person.street_and_number">
+          <input id="street_and_number" type="text" placeholder="" ng-model="person.street_and_number">
         </label>
         <label class="item item-input">
           <span class="input-label">City</span>
-          <input type="text" placeholder="" ng-model="person.city">
+          <input id="city" type="text" placeholder="" ng-model="person.city">
         </label>
         <label class="item item-input">
           <span class="input-label">Neighborhood</span>
-          <input type="text" placeholder="" ng-model="person.neighborhood">
+          <input id="neighborhood" type="text" placeholder="" ng-model="person.neighborhood">
         </label>
         <label class="item item-input">
           <span class="input-label">Description</span>
-          <input type="text" placeholder="" ng-model="person.description">
+          <input id="description" type="text" placeholder="" ng-model="person.description">
         </label>
         <label class="item item-input item-select">
           <span class="input-label">Gender</span>
-          <select ng-model="person.gender">
+          <select id="gender" ng-model="person.gender">
             <option>Not Specified</option>
             <option>Male</option>
             <option>Female</option>
@@ -53,10 +53,10 @@
         </label>
         <label class="item item-input">
           <span class="input-label">Phone Number</span>
-          <input type="text" placeholder="" ng-model="person.phone_number">
+          <input id="phone_number" type="text" placeholder="" ng-model="person.phone_number">
         </label>
         <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
-          <img ng-src="{{srcImage || 'img/placeholder.jpg'}}" id="srcImage" ng-model="person.photo">
+          <img id="personal_photo" ng-src="{{person.photo || peopleService.getPlaceholderImage()}}" ng-model="person.photo">
           <div class="row-center col-center">
             <h2>Take Picture</h2>
           </div>
@@ -64,7 +64,7 @@
         <div class="item item-input-inset">
           <label class="item-input-wrapper margin-right-8px">
             <span class="input-label">Barcode</span>
-            <input type="text" placeholder="" ng-model="person.barcode.code">
+            <input id="barcode" type="text" placeholder="" ng-model="person.barcode.code">
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
