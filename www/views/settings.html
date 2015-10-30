@@ -1,18 +1,22 @@
-<ion-view title="Settings">
+<ion-view title="{{'title_settings' | translate}}">
   <ion-pane>
     <ion-content padding="true" class="has-header">
       <form>
-        <button class="button button-positive button-block" ng-click="logout('/login')">Logout</button>
-        <ion-toggle toggle-class="toggle-positive">Cache Photos</ion-toggle>
-        <ion-toggle toggle-class="toggle-positive">Toggle</ion-toggle>
+        <ion-toggle toggle-class="toggle-positive">{{'settings_cache_photos' | translate}}</ion-toggle>
+        <label class="item item-input item-select">
+          <span class="input-label">{{'settings_language' | translate}}</span>
+          <select ng-init="current_language == current_language || language_options[0]" ng-change="switchLanguage()"
+                  ng-model="current_language"
+                  ng-options="option.name | translate for option in language_options">
+          </select>
+        </label>
         <div>
           <label class="item item-input">
-            <span class="input-label">Server IP:</span>
-            <input type="text" placeholder="" ng-model="networkAddr">
+            <span class="input-label">{{'settings_server_ip' | translate}}:</span>
+            <input type="text" placeholder="" ng-model-options='{debounce: 200}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
           </label>
-          <button class="button button-positive button-block" ng-click="saveServerIP(networkAddr)">Save IP</button>
         </div>
-        <button class="button button-positive button-block" ng-click="getPeopleList()">Get All People</button>
+        <button class="button button-positive button-block" ng-click="logout('/login')">{{'button_logout' | translate}}</button>
       </form>
     </ion-content>
   </ion-pane>

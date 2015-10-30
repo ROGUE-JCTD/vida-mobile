@@ -1,43 +1,40 @@
-<ion-view title="Details">
+<ion-view title="{{'title_details' | translate}}">
   <ion-content padding="true" class="has-header">
     <div ng-if="peopleService.getRetrievedPersonByID() !== undefined">
       <div class="text-center">
         <!-- Somehow store peopleService.getRetrievedPersonByID() into one object? -->
         <img style="max-width: 400px; max-height: 500px;" ng-src="{{networkService.getFileServiceURL()}}{{peopleService.getRetrievedPersonByID().pic_filename}}/download/"
             err-src="{{peopleService.getPlaceholderImage()}}" width="100%" height="100%">
-        <h2>{{peopleService.getRetrievedPersonByID().given_name || "Undefined"}}</h2>
+        <h2>{{peopleService.getRetrievedPersonByID().given_name || ""}}</h2>
         <p>
-          ID: {{peopleService.getRetrievedPersonByID().id || "Undefined"}}
+          {{'person_family_name' | translate}}: {{peopleService.getRetrievedPersonByID().family_name || ""}}
         </p>
         <p>
-          Family Name: {{peopleService.getRetrievedPersonByID().family_name || "Undefined"}}
+          {{'person_fathers_given_name' | translate}}: {{peopleService.getRetrievedPersonByID().fathers_given_name || ""}}
         </p>
         <p>
-          Fathers Given Name: {{peopleService.getRetrievedPersonByID().fathers_given_name || "Undefined"}}
+          {{'person_mothers_given_name' | translate}}: {{peopleService.getRetrievedPersonByID().mothers_given_name || ""}}
         </p>
         <p>
-          Mothers Given Name: {{peopleService.getRetrievedPersonByID().mothers_given_name || "Undefined"}}
+          {{'person_age' | translate}}: {{peopleService.getRetrievedPersonByID().age || ""}}
         </p>
         <p>
-          Age: {{peopleService.getRetrievedPersonByID().age || "Undefined"}}
+          {{'person_date_of_birth' | translate}}: {{peopleService.getRetrievedPersonByID().date_of_birth || ""}}
         </p>
         <p>
-          Date of Birth: {{peopleService.getRetrievedPersonByID().date_of_birth || "Undefined"}}
+          {{'person_street_and_number' | translate}}: {{peopleService.getRetrievedPersonByID().street_and_number || ""}}
         </p>
         <p>
-          Address: {{peopleService.getRetrievedPersonByID().street_and_number || "Undefined"}}
+          {{'person_city' | translate}}: {{peopleService.getRetrievedPersonByID().city || ""}}
         </p>
         <p>
-          City: {{peopleService.getRetrievedPersonByID().city || "Undefined"}}
+          {{'person_gender' | translate}}: {{peopleService.getRetrievedPersonByID().gender || ""}}
         </p>
         <p>
-          Gender: {{peopleService.getRetrievedPersonByID().gender || "Undefined"}}
+          {{'person_description' | translate}}: {{peopleService.getRetrievedPersonByID().description || ""}}
         </p>
         <p>
-          Description: {{peopleService.getRetrievedPersonByID().description || "Undefined"}}
-        </p>
-        <p>
-          Barcode: {{peopleService.getRetrievedPersonByID().barcode || "Undefined"}}
+          {{'person_barcode' | translate}}: {{peopleService.getRetrievedPersonByID().barcode || ""}}
         </p>
         </div>
       </div>
@@ -50,7 +47,7 @@
       <div ng-if="peopleService.getRetrievedPersonByID() === undefined">
         <div class="text-center">
           <p>
-            Information could not be retrieved.
+            {{'error_retrieving_info' | translate}}
           </p>
         </div>
       </div>

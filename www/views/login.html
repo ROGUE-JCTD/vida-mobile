@@ -1,20 +1,19 @@
-<ion-view title="VIDA Login">
+<ion-view title="{{'title_login' | translate}}">
   <ion-content padding="true" class="has-header">
-    <div>
+    <div class="text-center">
       <p>
-        Log in with your
-        <b>VIDA</b> account
+        {{'login_message' | translate}}
       </p>
     </div>
     <form>
       <div class="spacer" style="width: 300px; height: 18px;"></div>
       <ion-list>
         <label class="item item-input">
-          <span class="input-label">Username</span>
+          <span class="input-label">{{'login_username' | translate}}</span>
           <input type="text" placeholder="" ng-model="credentials.username">
         </label>
         <label class="item item-input">
-          <span class="input-label">Password</span>
+          <span class="input-label">{{'login_password' | translate}}</span>
           <input type="password" placeholder="" ng-model="credentials.password">
         </label>
       </ion-list>
@@ -24,8 +23,8 @@
       <div ng-if="loginRequest <= 0">
         <div class="spacer" style="height: 30px;"></div> <!--Test-->
       </div>
-      <button class="button button-positive button-block" ng-click="login('/tabs')">Log in</button>
-      <a href="#/signup" class="button button-positive button-clear button-block ">Or request an account</a>
+      <button class="button button-positive button-block" ng-click="login('/tabs')">{{'button_login' | translate}}</button>
+      <a href="#/signup" class="button button-positive button-clear button-block ">{{'button_request_account' | translate}}</a>
     </form>
   </ion-content>
 </ion-view>

@@ -6,7 +6,8 @@
 // 'vida.services' is found in services.js
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
-angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive'])
+angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
+    'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es'])
 
 .run(function($ionicPlatform, $window) {
   $ionicPlatform.ready(function() {
@@ -145,4 +146,10 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
   // if none of the above states are matched, use this as the fallback
   $urlRouterProvider.otherwise('/vida/person-search');
-});
+})
+
+.config(['$translateProvider', function ($translateProvider) {
+  $translateProvider.preferredLanguage('en');
+  $translateProvider.fallbackLanguage('en');
+  $translateProvider.useSanitizeValueStrategy('sanitize');
+}]);

@@ -5,41 +5,41 @@ navigation history that also transitions its views in and out.
 -->
 <ion-tabs class="tabs-icon-top tabs-color-active-positive">
   <a id="button-person-edit" class="tab-item button-person-edit" style="display: none;" ng-click="buttonPersonEdit()">
-    <i class="icon ion-ios-upload-outline"></i>
-    Edit
+    <i class="icon ion-ios-compose-outline"></i>
+    {{'tab_edit' | translate}}
   </a>
   <a id="button-person-delete" class="tab-item button-person-edit" style="display: none;" ng-click="buttonPersonDelete()">
     <i class="icon ion-ios-trash-outline"></i>
-    Delete
+    {{'tab_delete' | translate}}
   </a>
 
   <a id="button-person-save" class="tab-item button-person-post-edit" style="display: none;" ng-click="buttonPersonSave()">
     <i class="icon ion-ios-checkmark-outline"></i>
-    Save
+    {{'tab_save' | translate}}
   </a>
   <a id="button-person-cancel" class="tab-item button-person-post-edit" style="display: none;" ng-click="buttonPersonCancel()">
     <i class="icon ion-ios-close-outline"></i>
-    Cancel
+    {{'tab_cancel' | translate}}
   </a>
 
 
   <!-- Person Search -->
-  <ion-tab title="Search" icon-off="ion-ios-people-outline" icon-on="ion-ios-people" href="#/vida/person-search">
+  <ion-tab title="{{'tab_search' | translate}}" icon-off="ion-ios-people-outline" icon-on="ion-ios-people" href="#/vida/person-search">
     <ion-nav-view name="view-person-search"></ion-nav-view>
   </ion-tab>
 
   <!-- Person Create -->
-  <ion-tab title="Create" icon-off="ion-ios-personadd-outline" icon-on="ion-ios-personadd" href="#/vida/person-create">
+  <ion-tab title="{{'tab_create' | translate}}" icon-off="ion-ios-personadd-outline" icon-on="ion-ios-personadd" href="#/vida/person-create">
     <ion-nav-view name="view-person-create"></ion-nav-view>
   </ion-tab>
 
   <!-- Shelter Tab -->
-  <ion-tab title="Shelter" icon-off="ion-ios-home-outline" icon-on="ion-ios-home" href="#/vida/shelter-search">
+  <ion-tab title="{{'tab_shelter' | translate}}" icon-off="ion-ios-home-outline" icon-on="ion-ios-home" href="#/vida/shelter-search">
     <ion-nav-view name="view-shelter-search"></ion-nav-view>
   </ion-tab>
 
   <!-- Settings Tab -->
-  <ion-tab title="Settings" icon-off="ion-ios-gear-outline" icon-on="ion-ios-gear" href="#/vida/settings">
+  <ion-tab title="{{'tab_settings' | translate}}" icon-off="ion-ios-gear-outline" icon-on="ion-ios-gear" href="#/vida/settings">
     <ion-nav-view name="view-settings"></ion-nav-view>
   </ion-tab>
 

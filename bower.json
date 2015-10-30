@@ -8,6 +8,7 @@
   "dependencies": {
     "angularjs-toaster": "~0.4.14",
     "leaflet": "~0.7.3",
-    "ngCordova": "~0.1.20-alpha"
+    "ngCordova": "~0.1.20-alpha",
+    "angular-translate": "2.8.1"
   }
 }

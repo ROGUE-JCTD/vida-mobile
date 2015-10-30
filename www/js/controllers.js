@@ -1,4 +1,4 @@
-angular.module('vida.controllers', ['ngCordova.plugins.camera'])
+angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.translate'])
 
 
 .controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout) {
@@ -191,7 +191,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
   $scope.peopleService = peopleService;
   $scope.isEditing = true;
-  $scope.createTabTitle = "Edit Person";
+  $scope.createTabTitle = 'title_edit';
 
   $scope.setupFields = function() {
     var person = peopleService.getRetrievedPersonByID();
@@ -232,6 +232,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     if (checkForError(person.pic_filename))
       document.getElementById('personal_photo').src = networkService.getFileServiceURL() + person.pic_filename + '/download/';
+    else
+      document.getElementById('personal_photo').src = undefined;
 
     if (checkForError(person.gender))
       document.getElementById('gender').value = person.gender;
@@ -304,7 +306,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     $scope.person.barcode = {};
     $scope.peopleService = peopleService;
     $scope.isEditing = false;
-    $scope.createTabTitle = "Create Person";
+    $scope.createTabTitle = 'title_create';
 
     $scope.savePerson = function() {
       if ($scope.person.given_name !== undefined) {
@@ -415,6 +417,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
     };
 
     $scope.showCameraModal = function() {
+      var prevPicture = false;
       var options = {
         title: 'Picture',
         buttonLabels: ['Take Photo', 'Choose From Library'],
@@ -423,9 +426,22 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
         winphoneEnableCancelButton : true
       };
 
+      if ($scope.person.photo) {
+        options.buttonLabels = ['Take Photo', 'Choose From Library', 'Remove Picture'];
+        prevPicture = true;
+      }
+
       $cordovaActionSheet.show(options)
         .then(function(btnIndex) {
-          $scope.takeCameraPhoto_Personal(btnIndex);
+          if (prevPicture) {
+            if (btnIndex != 3) {
+              $scope.takeCameraPhoto_Personal(btnIndex);
+            } else {
+              $scope.person.photo = undefined;
+            }
+          } else {
+            $scope.takeCameraPhoto_Personal(btnIndex);
+          }
         });
     };
 
@@ -455,7 +471,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
   console.log('---------------------------------- ShelterSearchCtrl');
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService, networkService){
+.controller('SettingsCtrl', function($scope, $location, peopleService,
+                                     networkService, $translate){
   console.log('---------------------------------- SettingsCtrl');
 
     $scope.networkAddr = networkService.getServerAddress();
@@ -474,6 +491,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera'])
 
     $scope.getPeopleList = function() {
       peopleService.updateAllPeople(networkService.getPeopleURL());
+    };
+
+    $scope.language_options = [
+      {
+        "name": 'settings_language_english',
+        "value": "English"
+      },
+      {
+        "name": 'settings_language_spanish',
+        "value": "Spanish"
+      }
+    ];
+
+    $scope.current_language = $scope.language_options[0];
+
+    $scope.switchLanguage = function() {
+      if (this.current_language.value === "English")
+        $translate.use('en');
+      else if (this.current_language.value === "Spanish")
+        $translate.use('es');
+      else
+        $translate.use('en');
     };
 })
 

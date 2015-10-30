@@ -1,74 +1,76 @@
-<ion-view title="{{createTabTitle}}">
+<ion-view title="{{createTabTitle | translate}}">
   <ion-pane>
     <ion-content padding="true" class="has-header">
       <form>
+          <div class="text-center">
+            <img id="personal_photo" style="position: relative; max-height: 250px; max-width: 250px"
+               ng-src="{{person.photo || peopleService.getPlaceholderImage()}}"
+                 err-src="{{peopleService.getPlaceholderImage()}}" ng-model="person.photo">
+
+          </div>
+          <button ng-click="showCameraModal()" style="position: absolute; top: 0px;"
+                  class="button icon ion-camera"></button>
         <label class="item item-input">
-          <span class="input-label">Given Name</span>
+          <span class="input-label">{{'person_given_name' | translate}}</span>
           <input id="given_name" type="text" placeholder="" ng-model="person.given_name">
         </label>
         <label class="item item-input">
-          <span class="input-label">Family Name</span>
+          <span class="input-label">{{'person_family_name' | translate}}</span>
           <input id="family_name" type="text" placeholder="" ng-model="person.family_name">
         </label>
         <label class="item item-input">
-          <span class="input-label">Fathers Given Name</span>
+          <span class="input-label">{{'person_fathers_given_name' | translate}}</span>
           <input id="fathers_given_name" type="text" placeholder="" ng-model="person.fathers_given_name">
         </label>
         <label class="item item-input">
-          <span class="input-label">Mothers Given Name</span>
+          <span class="input-label">{{'person_mothers_given_name' | translate}}</span>
           <input id="mothers_given_name" type="text" placeholder="" ng-model="person.mothers_given_name">
         </label>
         <label class="item item-input">
-          <span class="input-label">Age</span>
+          <span class="input-label">{{'person_age' | translate}}</span>
           <input id="age" type="text" placeholder="" ng-model="person.age">
         </label>
         <label class="item item-input">
-          <span class="input-label">Date of Birth</span>
+          <span class="input-label">{{'person_date_of_birth' | translate}}</span>
           <input id="date_of_birth" type="text" placeholder="" ng-model="person.date_of_birth">
         </label>
         <label class="item item-input">
-          <span class="input-label">Address</span>
+          <span class="input-label">{{'person_street_and_number' | translate}}</span>
           <input id="street_and_number" type="text" placeholder="" ng-model="person.street_and_number">
         </label>
         <label class="item item-input">
-          <span class="input-label">City</span>
+          <span class="input-label">{{'person_city' | translate}}</span>
           <input id="city" type="text" placeholder="" ng-model="person.city">
         </label>
         <label class="item item-input">
-          <span class="input-label">Neighborhood</span>
+          <span class="input-label">{{'person_neighborhood' | translate}}</span>
           <input id="neighborhood" type="text" placeholder="" ng-model="person.neighborhood">
         </label>
         <label class="item item-input">
-          <span class="input-label">Description</span>
+          <span class="input-label">{{'person_description' | translate}}</span>
           <input id="description" type="text" placeholder="" ng-model="person.description">
         </label>
         <label class="item item-input item-select">
-          <span class="input-label">Gender</span>
+          <span class="input-label">{{'person_gender' | translate}}</span>
           <select id="gender" ng-model="person.gender">
-            <option>Not Specified</option>
-            <option>Male</option>
-            <option>Female</option>
-            <option>Other</option>
+            <option>{{'person_gender_not_specified' | translate}}</option>
+            <option>{{'person_gender_male' | translate}}</option>
+            <option>{{'person_gender_female' | translate}}</option>
+            <option>{{'person_gender_other' | translate}}</option>
           </select>
         </label>
         <label class="item item-input">
-          <span class="input-label">Phone Number</span>
+          <span class="input-label">{{'person_phone_number' | translate}}</span>
           <input id="phone_number" type="text" placeholder="" ng-model="person.phone_number">
         </label>
-        <ion-item class="item-thumbnail-left" ng-click="showCameraModal()">
-          <img id="personal_photo" ng-src="{{person.photo || peopleService.getPlaceholderImage()}}" ng-model="person.photo">
-          <div class="row-center col-center">
-            <h2>Take Picture</h2>
-          </div>
-        </ion-item>
         <div class="item item-input-inset">
           <label class="item-input-wrapper margin-right-8px">
-            <span class="input-label">Barcode</span>
+            <span class="input-label">{{'person_barcode' | translate}}</span>
             <input id="barcode" type="text" placeholder="" ng-model="person.barcode.code">
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
-        <button class="button button-stable button-block" ng-click="savePerson()">Save</button>
+        <button class="button button-stable button-block" ng-click="savePerson()">{{'button_save' | translate}}</button>
       </form>
     </ion-content>
   </ion-pane>

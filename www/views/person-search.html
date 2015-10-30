@@ -1,4 +1,4 @@
-<ion-view title="Search">
+<ion-view title="{{'title_search' | translate}}">
   <ion-pane>
     <ion-content padding="false" class="has-header">
       <div class="item item-input-inset">
@@ -9,7 +9,8 @@
           <div ng-if="searchRequestCounter > 0">
             <ion-spinner icon="ripple"></ion-spinner>
           </div>
-          <input type="search" id="searchText" ng-model="searchText" ng-model-options='{debounce: 700}' ng-change='searchPerson(searchText)' placeholder="">
+          <input type="search" id="searchText" ng-model="searchText" ng-model-options='{debounce: 700}' ng-change='searchPerson(searchText)'
+                 style="" placeholder="{{'search_searchfield' | translate}}">
         </label>
         <div>
           <button class="button button-small button-stable button-block icon ion-camera" ng-click="takeCameraPhoto_Search(1)"></button>
@@ -25,8 +26,7 @@
                  err-src="{{peopleService.getPlaceholderImage()}}"
                  id="this_person.photo" ng-model="this_person.photo">
             <h2>{{this_person.given_name || Name}}</h2>
-            <p>Status: {{this_person.status || Status}}</p>
-            <h4>ID: {{this_person.id || Number}}</h4>
+            <p>{{'search_age' | translate}}: {{this_person.age || Age}}</p>
           </ion-item>
         </div>
       </ion-list>
