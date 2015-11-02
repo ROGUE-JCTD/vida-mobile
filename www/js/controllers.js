@@ -50,7 +50,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
-                                         $cordovaBarcodeScanner, $cordovaCamera, $document) {
+                                         $cordovaToast, $cordovaBarcodeScanner, $cordovaCamera, $document) {
     $scope.searchText = '';
     $scope.searchRequestCounter = 0;
     $scope.totalDisplayed = 20;
@@ -84,7 +84,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           if (error){
             alert(error);
           } else {
-            alert("Error: Network timed out. Please check your internet connection.");
+            $cordovaToast.showShortBottom("Error: Network timed out. Please check your internet connection.");
           }
           $scope.searchRequestCounter--;
       });
@@ -107,7 +107,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       $cordovaCamera.getPicture(options).then(function(imageData) {
         var webViewImg = "data:image/jpeg;base64," + imageData;
-        alert("Picture Received: " + imageData);
+        alert("Picture Received Successfully");
       }, function(err) {
         // error
       });
@@ -122,12 +122,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     console.log('---------------------------------- PersonSearchCtrl');
 })
 
-.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state,
+.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter,
                                          $cordovaActionSheet, peopleService, networkService, $rootScope){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
   $scope.networkService = networkService;
+  $scope.personPhoto = null;
 
   $scope.setupEditDeleteButtons = function() {
     // Setup tab-specific buttons
@@ -180,18 +181,42 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $rootScope.buttonPersonDelete = function() {
     console.log('PersonDetailCtrl - buttonPersonDelete()');
 
-    //TODO: Delete from server
+    if (confirm($filter('translate')('dialog_confirm_delete'))) {
+      // TODO: Delete from Server
 
+      window.history.back();
+    }
   };
 })
 
-.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams,
-                                             peopleService, networkService) {
+.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService,
+                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
   $scope.peopleService = peopleService;
   $scope.isEditing = true;
   $scope.createTabTitle = 'title_edit';
+  $scope.pictureTestSpinner = 0;
+  $scope.hasPlaceholderImage = false;
+
+  $scope.gender_options = [
+    {
+      "name": 'person_gender_not_specified',
+      "value": "Not Specified"
+    },
+    {
+      "name": 'person_gender_male',
+      "value": "Male"
+    },
+    {
+      "name": 'person_gender_female',
+      "value": "Female"
+    },
+    {
+      "name": 'person_gender_other',
+      "value": "Other"
+    }
+  ];
 
   $scope.setupFields = function() {
     var person = peopleService.getRetrievedPersonByID();
@@ -230,13 +255,52 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     if (checkForError(person.barcode))
       document.getElementById('barcode').value = person.barcode;
 
-    if (checkForError(person.pic_filename))
-      document.getElementById('personal_photo').src = networkService.getFileServiceURL() + person.pic_filename + '/download/';
-    else
-      document.getElementById('personal_photo').src = undefined;
+    if (checkForError(person.pic_filename)) {
+      // Test Image
+      var URL = networkService.getFileServiceURL() + person.pic_filename + '/download/';
+      $scope.pictureTestSpinner++;
 
-    if (checkForError(person.gender))
-      document.getElementById('gender').value = person.gender;
+      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data.status !== "file not found") {
+            document.getElementById('personal_photo').src = URL;
+            $scope.hasPlaceholderImage = false;
+          }
+          else {
+            document.getElementById('personal_photo').src = peopleService.getPlaceholderImage();
+            $scope.hasPlaceholderImage = true;
+          }
+        }
+        $scope.pictureTestSpinner--;
+      }, function(error) {
+        // Error
+        console.log(error);
+        $scope.pictureTestSpinner--;
+      });
+    }
+    else {
+      document.getElementById('personal_photo').src = peopleService.getPlaceholderImage();
+      $scope.hasPlaceholderImage = true;
+    }
+
+    if (checkForError(person.gender)) {
+      var hasError = true;
+      for (var i = 0; i < 4; i++) {
+        if (person.gender === $scope.gender_options[i].value) {
+          $scope.current_gender = $scope.gender_options[i];
+          hasError = false;
+          break;
+        }
+      }
+
+      // Edge case
+      if (hasError) {
+        $scope.current_gender = $scope.gender_options[0];
+      }
+    }
+    else {
+      $scope.current_gender = $scope.gender_options[0];
+    }
   };
 
   if (peopleService.getRetrievedPersonByID()) {
@@ -253,6 +317,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   } else {
     $scope.setupFields();
   }
+
+  $scope.changeGender = function() {
+    $scope.current_gender = this.current_gender;
+  };
 
   $scope.setupSaveCancelButtons = function() {
     // Setup tab-specific buttons
@@ -285,28 +353,104 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $rootScope.buttonPersonSave = function() {
     console.log('PersonDetailCtrl - buttonPersonSave()');
 
+    // TODO: Versioning/Saving goes here
+
     window.history.back();
   };
 
   $rootScope.buttonPersonCancel = function() {
     console.log('PersonDetailCtrl - buttonPersonCancel()');
 
-    if (confirm("Are you sure you want to cancel?")) {
+    if (confirm($filter('translate')('dialog_confirm_cancel'))) {
       window.history.back();
     }
+  };
+
+  $scope.showCameraModal = function() {
+    var prevPicture = false;
+    var options = {
+      title: $filter('translate')('title_picture_dialog'),
+      buttonLabels: [$filter('translate')('modal_picture_take_picture'), $filter('translate')('modal_picture_choose_from_library')],
+      addCancelButtonWithLabel: $filter('translate')('modal_cancel'),
+      androidEnableCancelButton : true,
+      winphoneEnableCancelButton : true
+    };
+
+    if ($scope.hasPlaceholderImage) {
+      options.buttonLabels = [$filter('translate')('modal_picture_take_picture'),
+        $filter('translate')('modal_picture_choose_from_library'),
+        $filter('translate')('modal_picture_remove_picture')];
+      prevPicture = true;
+    }
+
+    $cordovaActionSheet.show(options)
+      .then(function(btnIndex) {
+        if (prevPicture) {
+          if (btnIndex != 3) {
+            $scope.takeCameraPhoto_Personal(btnIndex);
+          } else {
+            document.getElementById('personal_photo').src = peopleService.getPlaceholderImage();
+            $scope.hasPlaceholderImage = true;
+          }
+        } else {
+          $scope.takeCameraPhoto_Personal(btnIndex);
+        }
+      });
+  };
+
+  $scope.takeCameraPhoto_Personal = function(source) {
+
+    var options = {
+      quality: 90,
+      destinationType: Camera.DestinationType.DATA_URL,
+      sourceType: source,
+      allowEdit: true,
+      encodingType: Camera.EncodingType.JPEG,
+      popoverOptions: CameraPopoverOptions,
+      saveToPhotoAlbum: false
+    };
+
+    $cordovaCamera.getPicture(options).then(function(imageData) {
+      document.getElementById('personal_photo').src = "data:image/jpeg;base64," + imageData;
+      $scope.hasPlaceholderImage = false;
+    }, function(err) {
+      // error
+    });
   };
 
   // Startup
   $scope.setupSaveCancelButtons();
 })
 
-.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet,
-                                         $cordovaBarcodeScanner, peopleService, uploadService, networkService){
+.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter,
+                                         $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService){
     $scope.person = {};
+    $scope.person.photo = undefined;
     $scope.person.barcode = {};
     $scope.peopleService = peopleService;
     $scope.isEditing = false;
     $scope.createTabTitle = 'title_create';
+
+    $scope.gender_options = [
+      {
+        "name": 'person_gender_not_specified',
+        "value": "Not Specified"
+      },
+      {
+        "name": 'person_gender_male',
+        "value": "Male"
+      },
+      {
+        "name": 'person_gender_female',
+        "value": "Female"
+      },
+      {
+        "name": 'person_gender_other',
+        "value": "Other"
+      }
+    ];
+
+    $scope.current_gender = $scope.gender_options[0];
 
     $scope.savePerson = function() {
       if ($scope.person.given_name !== undefined) {
@@ -314,8 +458,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var Status = "Made Locally";
 
         var Gender = undefined;
-        if ($scope.person.gender !== undefined) {
-          Gender = $scope.person.gender;
+        if ($scope.current_gender !== undefined) {
+          Gender = $scope.current_gender.value;
         }
 
         var Photo = undefined;
@@ -340,7 +484,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.mothers_given_name = $scope.person.mothers_given_name;
         newPerson.neighborhood = $scope.person.neighborhood;
         newPerson.notes = '';
-        newPerson.pic_filename = 'undefined';
+        newPerson.pic_filename = 'undefined'; // will be set on upload
         newPerson.province_or_state = '';
         newPerson.shelter = '';
         newPerson.street_and_number = $scope.person.street_and_number;
@@ -352,7 +496,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.photo = Photo;
 
 
-        // TODO: Only checks for duplicates based on Name
+        // TODO: Only checks for duplicates based on Name, change based on unique ID, multiple fields, or ID number?
         var duplicate = false;
         var peopleInShelter = peopleService.getPeopleInShelter();
         for (var i = 0; i < peopleInShelter.length; i++) {
@@ -364,16 +508,21 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         if (!duplicate) {
           if (newPerson.photo) {
-            $scope.uploadPhoto(newPerson);
-            $scope.uploadPerson(newPerson);
+            // TODO: Discuss. If the photo can't be uploaded for some reason, is it worth it getting the person up there?
+            // TODO: Then if the photo gets uploaded, but the person cannot be, the picture needs to be deleted.
+
+            $scope.uploadPhoto(newPerson, function(){
+              // On successful upload of Photo, this assigns the photo to the person successfully
+              $scope.uploadPerson(newPerson);
+            });
           } else {
             $scope.uploadPerson(newPerson);
           }
         } else {
-          alert("Person already exists!");
+          $cordovaToast.showShortBottom($filter('translate')('dialog_person_exists'));
         }
       } else {
-        alert("Please enter at least a name to upload a new person.")
+        $cordovaToast.showShortBottom($filter('translate')('dialog_error_person_no_name'))
       }
     };
 
@@ -389,11 +538,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       });
     };
 
-    $scope.uploadPhoto = function(newPerson) {
+    $scope.uploadPhoto = function(newPerson, success) {
       uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
         // Success
-        alert('Photo for ' + newPerson.given_name + ' uploaded!');
+        $cordovaToast.showShortBottom($filter('translate')('dialog_photo_uploaded') + newPerson.given_name + '!');
         newPerson.pic_filename = data.name;
+        success();
       }, function () {
         // Error uploading photo
       });
@@ -403,31 +553,37 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Upload person to fileService
       uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
         // Successful entirely
-        alert(newPerson.given_name + ' has been uploaded!\nUpdating local list of people..');
+        $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
 
         // Re-get all people in array
-        $scope.getPeopleList();
+        $cordovaToast.showShortBottom($filter('translate')('dialog_retrieving_list'));
+        $scope.getPeopleList(function() {
+          // On success
+          $cordovaToast.showShortBottom($filter('translate')('dialog_retrieving_list_complete'));
+        });
       }, function () {
         // Error uploading person
       });
     };
 
-    $scope.getPeopleList = function() {
-      peopleService.updateAllPeople(networkService.getPeopleURL());
+    $scope.getPeopleList = function(success) {
+      peopleService.updateAllPeople(networkService.getPeopleURL(), success);
     };
 
     $scope.showCameraModal = function() {
       var prevPicture = false;
       var options = {
-        title: 'Picture',
-        buttonLabels: ['Take Photo', 'Choose From Library'],
-        addCancelButtonWithLabel: 'Cancel',
+        title: $filter('translate')('title_picture_dialog'),
+        buttonLabels: [$filter('translate')('modal_picture_take_picture'), $filter('translate')('modal_picture_choose_from_library')],
+        addCancelButtonWithLabel: $filter('translate')('modal_cancel'),
         androidEnableCancelButton : true,
         winphoneEnableCancelButton : true
       };
 
       if ($scope.person.photo) {
-        options.buttonLabels = ['Take Photo', 'Choose From Library', 'Remove Picture'];
+        options.buttonLabels = [$filter('translate')('modal_picture_take_picture'),
+          $filter('translate')('modal_picture_choose_from_library'),
+          $filter('translate')('modal_picture_remove_picture')];
         prevPicture = true;
       }
 
@@ -464,6 +620,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       });
     };
 
+    $scope.changeGender = function() {
+      $scope.current_gender = this.current_gender;
+    };
+
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
@@ -489,10 +649,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       networkService.setServerAddress(IP);
     };
 
-    $scope.getPeopleList = function() {
-      peopleService.updateAllPeople(networkService.getPeopleURL());
-    };
-
     $scope.language_options = [
       {
         "name": 'settings_language_english',
@@ -516,13 +672,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 })
 
-.controller('loginCtrl', function($scope, $location, $http, networkService){
+.controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast){
   console.log('---------------------------------- loginCtrl');
 
   $scope.loginRequest = 0;
   $scope.credentials = {};
 
-    //TODO: Change alerts to Toasts
   $scope.login = function(url) {
     // Request authorization
     if (($scope.credentials.username) && ($scope.credentials.password)) {
@@ -543,11 +698,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     } else {
       if (!($scope.credentials.username) && !($scope.credentials.password)) {
-        alert("Please enter a Username and Password!");
+        $cordovaToast.showShortBottom($filter('translate')('dialog_error_username_password'));
       } else if (!($scope.credentials.username)) {
-        alert("Please enter a Username!");
+        $cordovaToast.showShortBottom($filter('translate')('dialog_error_username'));
       } else if (!($scope.credentials.password)) {
-        alert("Please enter a Password!");
+        $cordovaToast.showShortBottom($filter('translate')('dialog_error_password'));
       }
     }
   };

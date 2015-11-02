@@ -42,3 +42,4 @@ ionic plugin add https://github.com/wildabeast/BarcodeScanner.git
 ionic plugin add cordova-plugin-geofence
 ionic plugin add cordova-plugin-dialogs
 ionic plugin add https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git
+ionic plugin add https://github.com/EddyVerbruggen/Toast-PhoneGap-Plugin.git

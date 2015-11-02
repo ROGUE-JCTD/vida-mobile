@@ -3,8 +3,13 @@
     <div ng-if="peopleService.getRetrievedPersonByID() !== undefined">
       <div class="text-center">
         <!-- Somehow store peopleService.getRetrievedPersonByID() into one object? -->
-        <img style="max-width: 400px; max-height: 500px;" ng-src="{{networkService.getFileServiceURL()}}{{peopleService.getRetrievedPersonByID().pic_filename}}/download/"
+        <!-- If they have a picture name, retrieve it -->
+        <img ng-if="peopleService.getRetrievedPersonByID().pic_filename !== 'undefined'" style="max-width: 400px; max-height: 500px;"
+             ng-src="{{networkService.getFileServiceURL()}}{{peopleService.getRetrievedPersonByID().pic_filename}}/download/"
             err-src="{{peopleService.getPlaceholderImage()}}" width="100%" height="100%">
+        <!-- If they don't have a picture name,  don't bother retrieving it -->
+        <img ng-if="peopleService.getRetrievedPersonByID().pic_filename === 'undefined'" style="max-width: 400px; max-height: 500px;"
+             ng-src="{{peopleService.getPlaceholderImage()}}">
         <h2>{{peopleService.getRetrievedPersonByID().given_name || ""}}</h2>
         <p>
           {{'person_family_name' | translate}}: {{peopleService.getRetrievedPersonByID().family_name || ""}}

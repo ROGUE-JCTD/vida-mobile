@@ -338,7 +338,7 @@ angular.module('vida.services', [])
       return personByID;
     };
 
-    this.updateAllPeople = function(URL) {
+    this.updateAllPeople = function(URL, success) {
       $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
@@ -366,7 +366,7 @@ angular.module('vida.services', [])
               }
             }
 
-            alert("Person list retrieval completed!");
+            success();
           }
         }
       });
@@ -387,7 +387,8 @@ angular.module('vida.services', [])
     };
 
     this.getPlaceholderImage = function() {
-      return "https://www.passpack.com/wp-content/uploads/2014/01/profile-photo-placeholder.jpg";
+      // Uploaded myself
+      return networkService.getFileServiceURL() + '4bf68b63d8bd22d1d2d5e0de8203f1be5286f577.jpg' + '/download/';
     };
 
     this.downloadPhotos = function() {
@@ -418,7 +419,7 @@ angular.module('vida.services', [])
   })
 
 .service('networkService', function($http) {
-    var networkIP = '192.168.1.55'; // Needs to be set by something else
+    var networkIP = '192.168.10.55'; // Needs to be set by something else
 
     var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
     var authenURL = 'http://' + networkIP + '/api/v1/person/';

@@ -6,7 +6,9 @@
             <img id="personal_photo" style="position: relative; max-height: 250px; max-width: 250px"
                ng-src="{{person.photo || peopleService.getPlaceholderImage()}}"
                  err-src="{{peopleService.getPlaceholderImage()}}" ng-model="person.photo">
-
+          </div>
+          <div ng-if="pictureTestSpinner > 0">
+            <ion-spinner icon="ripple"></ion-spinner>
           </div>
           <button ng-click="showCameraModal()" style="position: absolute; top: 0px;"
                   class="button icon ion-camera"></button>
@@ -52,11 +54,9 @@
         </label>
         <label class="item item-input item-select">
           <span class="input-label">{{'person_gender' | translate}}</span>
-          <select id="gender" ng-model="person.gender">
-            <option>{{'person_gender_not_specified' | translate}}</option>
-            <option>{{'person_gender_male' | translate}}</option>
-            <option>{{'person_gender_female' | translate}}</option>
-            <option>{{'person_gender_other' | translate}}</option>
+          <select ng-init="current_gender == current_gender || gender_options[0]"
+                  ng-model="current_gender" ng-change="changeGender()"
+                  ng-options="option.name | translate for option in gender_options">
           </select>
         </label>
         <label class="item item-input">
