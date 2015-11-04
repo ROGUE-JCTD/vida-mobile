@@ -38,6 +38,7 @@ ionic plugin add cordova-plugin-device
 ionic plugin add cordova-plugin-console
 ionic plugin add cordova-plugin-network-information
 ionic plugin add cordova-plugin-camera
+ionic plugin add cordova-plugin-file
 ionic plugin add https://github.com/wildabeast/BarcodeScanner.git
 ionic plugin add cordova-plugin-geofence
 ionic plugin add cordova-plugin-dialogs

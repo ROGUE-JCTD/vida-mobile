@@ -8,7 +8,7 @@ function dataURLtoBlob(dataURI) {
   return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
 }
 
-angular.module('vida.services', [])
+angular.module('vida.services', ['ngCordova'])
 
 .factory('Camera', ['$q', function($q){
   return {
@@ -255,7 +255,7 @@ angular.module('vida.services', [])
     };
   })
 
-.service('peopleService', function($http, networkService) {
+.service('peopleService', function($http, networkService, $cordovaFile) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
@@ -387,8 +387,7 @@ angular.module('vida.services', [])
     };
 
     this.getPlaceholderImage = function() {
-      // Uploaded myself
-      return networkService.getFileServiceURL() + '4bf68b63d8bd22d1d2d5e0de8203f1be5286f577.jpg' + '/download/';
+      return cordova.file.applicationDirectory + 'www/img/profile-photo-placeholder.jpg';
     };
 
     this.downloadPhotos = function() {

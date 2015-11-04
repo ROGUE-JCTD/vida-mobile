@@ -452,6 +452,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.current_gender = $scope.gender_options[0];
 
+    $scope.fixUndefined = function(str){
+      return str === undefined ? "" : str;
+    };
+
     $scope.savePerson = function() {
       if ($scope.person.given_name !== undefined) {
 
@@ -473,27 +477,27 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         }
 
         var newPerson = [];
-        newPerson.age = $scope.person.age;
-        newPerson.barcode = Barcode;
-        newPerson.city = $scope.person.city;
-        newPerson.description = $scope.person.description;
-        newPerson.family_name = $scope.person.family_name;
-        newPerson.fathers_given_name = $scope.person.fathers_given_name;
-        newPerson.given_name = $scope.person.given_name;
-        newPerson.gender = Gender;
-        newPerson.mothers_given_name = $scope.person.mothers_given_name;
-        newPerson.neighborhood = $scope.person.neighborhood;
-        newPerson.notes = '';
-        newPerson.pic_filename = 'undefined'; // will be set on upload
-        newPerson.province_or_state = '';
-        newPerson.shelter = '';
-        newPerson.street_and_number = $scope.person.street_and_number;
+        newPerson.age                 = $scope.fixUndefined($scope.person.age);
+        newPerson.barcode             = $scope.fixUndefined(Barcode);
+        newPerson.city                = $scope.fixUndefined($scope.person.city);
+        newPerson.description         = $scope.fixUndefined($scope.person.description);
+        newPerson.family_name         = $scope.fixUndefined($scope.person.family_name);
+        newPerson.fathers_given_name  = $scope.fixUndefined($scope.person.fathers_given_name);
+        newPerson.given_name          = $scope.fixUndefined($scope.person.given_name);
+        newPerson.gender              = Gender; // will always be defined
+        newPerson.mothers_given_name  = $scope.fixUndefined($scope.person.mothers_given_name);
+        newPerson.neighborhood        = $scope.fixUndefined($scope.person.neighborhood);
+        newPerson.notes               = $scope.fixUndefined('');
+        newPerson.pic_filename        = '';     // will be set on upload
+        newPerson.province_or_state   = $scope.fixUndefined('');
+        newPerson.shelter             = $scope.fixUndefined('');
+        newPerson.street_and_number   = $scope.fixUndefined($scope.person.street_and_number);
 
         // Not in /api/v1/person/
-        newPerson.date_of_birth = $scope.person.date_of_birth;
-        newPerson.status = Status;
-        newPerson.phone_number = $scope.person.phone_number;
-        newPerson.photo = Photo;
+        newPerson.date_of_birth       = $scope.fixUndefined($scope.person.date_of_birth);
+        newPerson.status              = $scope.fixUndefined(Status);
+        newPerson.phone_number        = $scope.fixUndefined($scope.person.phone_number);
+        newPerson.photo               = Photo;  // photo being undefined is checked
 
 
         // TODO: Only checks for duplicates based on Name, change based on unique ID, multiple fields, or ID number?
