@@ -7,7 +7,7 @@
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
-    'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es'])
+    'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
 .run(function($ionicPlatform, $window) {
   $ionicPlatform.ready(function() {

@@ -1,10 +1,14 @@
 angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.translate'])
 
 
-.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout) {
+.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout, shelterService, $translate) {
   console.log('---------------------------------- AppCtrl');
+  $translate.instant("title_search");
+  console.log('---------------------------------- translate: ', $translate.instant("title_search"));
 
-  $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
+
+
+    $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeStart to '+toState.to+'- fired when the transition begins. toState,toParams : \n',toState, toParams);
   });
 
@@ -47,6 +51,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.okayModal = function() {
     console.log('Doing login', $scope.loginData);
   };
+
+  $rootScope.center = {
+    lat: 0,
+    lng: 0,
+    zoom: 0
+  };
+
+  // initialize once. we will only work with this created object from now on
+  $rootScope.markers = {};
 })
 
 .controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
@@ -733,11 +746,38 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('ShelterSearchCtrl', function ($scope, $state) {
-    console.log("---- ShelterSearchCtrl");
+.controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService) {
+  console.log("---- ShelterSearchCtrl");
+  shelterService.getAll().then(function(shelters) {
+    // clear the markers object without recreating it
+    for (var variableKey in $rootScope.markers){
+      if ($rootScope.markers.hasOwnProperty(variableKey)){
+        delete $rootScope.markers[variableKey];
+      }
+    }
+
+    console.log("---- got all shelters: ", shelters);
+    for (var i = 0; i < shelters.length; i++) {
+      var shelter = shelters[i];
+
+      // look for 'point' in wkt and get the pair of numbers in the string after it
+      var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+      var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+      var tokens = coordinateString.split(' ');
+      var lng = parseFloat(tokens[0]);
+      var lat = parseFloat(tokens[1]);
+
+      $rootScope.markers["shelter_" + shelter.id] = {
+        draggable: false,
+        message: '<div><div style="">' + shelter.name + '</div><a class="icon trigger"> details </a></div>',
+        lat: lat,
+        lng: lng,
+        icon: {}
+      };
+    }
+  });
 })
 
 .controller('ShelterDetailCtrl', function ($scope, $state) {
   console.log("---- ShelterDetailCtrl");
-
 });

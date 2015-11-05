@@ -1,5 +1,5 @@
 {
-  "name": "vida-moile",
+  "name": "vida-mobile",
   "private": "true",
   "devDependencies": {
     "ionic": "driftyco/ionic-bower#1.1.0",
@@ -9,6 +9,7 @@
     "angularjs-toaster": "~0.4.14",
     "leaflet": "~0.7.3",
     "ngCordova": "~0.1.20-alpha",
-    "angular-translate": "2.8.1"
+    "angular-translate": "2.8.1",
+    "angular-resource": "1.4.3"
   }
 }
