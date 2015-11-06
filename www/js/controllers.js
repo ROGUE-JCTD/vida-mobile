@@ -766,18 +766,22 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var tokens = coordinateString.split(' ');
       var lng = parseFloat(tokens[0]);
       var lat = parseFloat(tokens[1]);
+      var coord = shelterService.getLatLng(shelter.id);
+      var detailUrl = '#/vida/shelter-search/shelter-detail/' + shelter.id;
 
       $rootScope.markers["shelter_" + shelter.id] = {
         draggable: false,
-        message: '<div><div style="">' + shelter.name + '</div><a class="icon trigger"> details </a></div>',
-        lat: lat,
-        lng: lng,
+        message: '<div><span style="padding-right: 5px;">' + shelter.name + '</span><a class="icon ion-chevron-right trigger" href=' + detailUrl + '></a></div>',
+        lat: coord.lat,
+        lng: coord.lng,
         icon: {}
       };
     }
   });
 })
 
-.controller('ShelterDetailCtrl', function ($scope, $state) {
-  console.log("---- ShelterDetailCtrl");
+.controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService) {
+  console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getById($stateParams.shelterId));
+    $scope.shelter = shelterService.getById($stateParams.shelterId);
+    $scope.latlng = shelterService.getLatLng($stateParams.shelterId);
 });

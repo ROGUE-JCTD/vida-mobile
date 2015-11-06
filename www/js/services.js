@@ -22,8 +22,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 })
 
 .config(function($interpolateProvider, $httpProvider, $resourceProvider) {
-  $interpolateProvider.startSymbol('{[');
-  $interpolateProvider.endSymbol(']}');
+//  $interpolateProvider.startSymbol('{[');
+//  $interpolateProvider.endSymbol(']}');
 
   $httpProvider.defaults.xsrfCookieName = 'csrftoken';
   $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken';
@@ -305,6 +305,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         isArray: true,
         transformResponse: $http.defaults.transformResponse.concat([
           function (data, headersGetter) {
+            shelters = data.objects;
             console.log('----[ transformResponse data: ', data);
             return data.objects;
           }
@@ -315,48 +316,23 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     return shelter.query().$promise;
   };
 
-  this.updateAllPeople = function(URL) {
-    var authentication = btoa("admin:admin"); //Temporary, will need to use previous credentials
-    var config = {};
-    config.headers = {};
-    if (authentication !== null) {
-      config.headers.Authorization = 'Basic ' + authentication;
-    } else {
-      config.headers.Authorization = '';
+  this.getById = function(id) {
+    for(var i = 0; i < shelters.length; i++) {
+      if (shelters[i].id == id)
+        return shelters[i];
     }
-
-    $http.get(URL, config).then(function(xhr) {
-      if (xhr.status === 200) {
-        if (xhr.data !== null) {
-          peopleInShelter = [];
-
-          for (var i = 0; i < xhr.data.objects.length; i++) {
-            var personOnServer = xhr.data.objects[i];
-
-            // Check for duplicates (only names - then ID so far)
-            var duplicate = false;
-            for (var j = 0; j < peopleInShelter.length; j++) {
-              if (peopleInShelter[j].given_name === personOnServer.given_name){
-                if (peopleInShelter[j].id === personOnServer.id){
-                  duplicate = true;
-                  break;
-                }
-              }
-            }
-
-            if (!duplicate) {
-              personOnServer.status = "On Server";  //TEMPORARY
-              personOnServer.photo = {};
-
-              peopleInShelter.push(personOnServer);
-            }
-          }
-
-          alert("Person list retrieval completed!");
-        }
-      }
-    });
   };
+
+  this.getLatLng = function(id) {
+    var shelter = service.getById(id);
+    // look for 'point' in wkt and get the pair of numbers in the string after it
+    var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+    var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+    var tokens = coordinateString.split(' ');
+    var lng = parseFloat(tokens[0]);
+    var lat = parseFloat(tokens[1]);
+    return {lat: lat, lng: lng};
+  }
 
   this.printToConsole = function() {
     for (var i = 0; i < peopleInShelter.length; i++) {
