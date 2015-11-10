@@ -294,12 +294,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('shelterService', function($http, $resource, $q) {
+.service('shelterService', function($http, networkService, $resource, $q) {
   var service = this;
   var shelters = [];
 
   this.getAll = function() {
-    var shelter = $resource('http://192.168.33.15/api/v1/shelter/:id', {}, {
+    var shelter = $resource('http://' + networkService.getServerAddress() + '/api/v1/shelter/:id', {}, {
       query: {
         method: 'GET',
         isArray: true,
@@ -508,7 +508,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   })
 
 .service('networkService', function($http) {
-    var networkIP = '192.168.10.55'; // Needs to be set by something else
+    var networkIP = '192.168.1.55'; // Needs to be set by something else
 
     var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
     var authenURL = 'http://' + networkIP + '/api/v1/person/';
