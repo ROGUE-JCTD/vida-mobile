@@ -12,6 +12,9 @@
           </div>
           <button ng-click="showCameraModal()" style="position: absolute; top: 0px;"
                   class="button icon ion-camera"></button>
+        <div ng-if="saveChangesRequest > 0" class="text-center">
+          <ion-spinner icon="ripple"></ion-spinner>
+        </div>
         <label class="item item-input">
           <span class="input-label">{{'person_given_name' | translate}}</span>
           <input id="given_name" type="text" placeholder="" ng-model="person.given_name">
@@ -54,7 +57,7 @@
         </label>
         <label class="item item-input item-select">
           <span class="input-label">{{'person_gender' | translate}}</span>
-          <select ng-init="current_gender == current_gender || gender_options[0]"
+          <select id="gender" ng-init="current_gender == current_gender || gender_options[0]"
                   ng-model="current_gender" ng-change="changeGender()"
                   ng-options="option.name | translate for option in gender_options">
           </select>
@@ -70,7 +73,9 @@
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
-        <button class="button button-stable button-block" ng-click="savePerson()">{{'button_save' | translate}}</button>
+        <div ng-if="isEditing === false">
+          <button class="button button-stable button-block" ng-click="savePerson()">{{'button_save' | translate}}</button>
+        </div>
       </form>
     </ion-content>
   </ion-pane>

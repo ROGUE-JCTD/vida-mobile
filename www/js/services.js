@@ -345,10 +345,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('peopleService', function($http, networkService, $cordovaFile) {
+.service('peopleService', function($http, networkService, uploadService, $cordovaFile) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
+    var storedSearchQuery = "";
 
     this.getPerson = function(URL, query, success, error) {
       $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
@@ -428,6 +429,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return personByID;
     };
 
+    this.setStoredSearchQuery = function (query) {
+      storedSearchQuery = query;
+    };
+
+    this.getStoredSearchQuery = function (){
+      return storedSearchQuery;
+    };
+
     this.updateAllPeople = function(URL, success) {
       $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
         if (xhr.status === 200) {
@@ -460,6 +469,148 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           }
         }
       });
+    };
+
+    this.editPerson_saveChanges = function(newPerson, success, error){
+      var putJSON = '{';
+      var hasItem = false;
+
+      // THIS METHOD LOOKS AND FEELS UGLY
+      if (newPerson.given_name !== undefined) {
+        putJSON += '"given_name":"' + newPerson.given_name + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.family_name !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "family_name":"' + newPerson.family_name + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.fathers_given_name !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "fathers_given_name":"' + newPerson.fathers_given_name + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.mothers_given_name !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "mothers_given_name":"' + newPerson.mothers_given_name + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.age !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "age":"' + newPerson.age + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.date_of_birth !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "date_of_birth":"' + newPerson.date_of_birth + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.street_and_number !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "street_and_number":"' + newPerson.street_and_number + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.city !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "city":"' + newPerson.city + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.neighborhood !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "neighborhood":"' + newPerson.neighborhood + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.description !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "description":"' + newPerson.description + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.phone_number !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "phone_number":"' + newPerson.phone_number + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.barcode !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "barcode":"' + newPerson.barcode + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.gender !== undefined) {
+        if (hasItem)
+          putJSON += ', ';
+
+        putJSON += ' "gender":"' + newPerson.gender + '"';
+        hasItem = true;
+      }
+
+      if (newPerson.photo !== undefined) {
+        // Photo has changed, upload it
+        uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function(data) {
+          // Successful
+          if (hasItem)
+            putJSON += ', ';
+
+          putJSON += ' "pic_filename":"' + data.name + '"';
+          hasItem = true;
+
+          finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+        }, function() {
+          // Error
+          finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+        });
+      } else {
+        finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+      }
+    };
+
+    var finishHttpPut = function(hasItem, id, putJSON, success, error) {
+      putJSON += '}';
+
+      if (hasItem === true) {
+        $http.put(networkService.getPeopleURL() + id, putJSON, networkService.getAuthentication()).then(function (xhr) {
+          if (xhr.status === 204) {
+            success();
+          } else {
+            error();
+          }
+        });
+      } else {
+        success();
+      }
     };
 
     this.printToConsole = function() {

@@ -85,6 +85,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.searchPerson = function(query) {
       var URL = networkService.getSearchURL() + query;
+      peopleService.setStoredSearchQuery(query);
 
       $scope.searchRequestCounter++;
       peopleService.getPerson(URL, query,
@@ -210,6 +211,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.isEditing = true;
   $scope.createTabTitle = 'title_edit';
   $scope.pictureTestSpinner = 0;
+  $scope.saveChangesRequest = 0;
   $scope.hasPlaceholderImage = false;
 
   $scope.gender_options = [
@@ -363,12 +365,66 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     });
   };
 
+  $scope.setupDocumentValues = function(doc) {
+    doc.given_name          = document.getElementById('given_name').value;
+    doc.family_name         = document.getElementById('family_name').value;
+    doc.fathers_given_name  = document.getElementById('fathers_given_name').value;
+    doc.mothers_given_name  = document.getElementById('mothers_given_name').value;
+    doc.age                 = document.getElementById('age').value;
+    doc.date_of_birth       = document.getElementById('date_of_birth').value;
+    doc.street_and_number   = document.getElementById('street_and_number').value;
+    doc.city                = document.getElementById('city').value;
+    doc.neighborhood        = document.getElementById('neighborhood').value;
+    doc.description         = document.getElementById('description').value;
+    doc.phone_number        = document.getElementById('phone_number').value;
+    doc.barcode             = document.getElementById('barcode').value;
+
+    var genderElement       = document.getElementById('gender');
+    doc.gender              = genderElement.options[genderElement.selectedIndex].label;
+    doc.photo               = document.getElementById('personal_photo').src;
+  };
+
   $rootScope.buttonPersonSave = function() {
-    console.log('PersonDetailCtrl - buttonPersonSave()');
+    var person = peopleService.getRetrievedPersonByID();
 
-    // TODO: Versioning/Saving goes here
+    var documentValues = {}; // Used to only retrieve once
+    $scope.setupDocumentValues(documentValues);
 
-    window.history.back();
+    var changedPerson = {};
+
+    changedPerson.given_name = (person.given_name !== documentValues.given_name) ? documentValues.given_name : undefined;
+    changedPerson.family_name = (person.family_name !== documentValues.family_name) ? documentValues.family_name : undefined;
+    changedPerson.fathers_given_name = (person.fathers_given_name !== documentValues.fathers_given_name) ? documentValues.fathers_given_name : undefined;
+    changedPerson.mothers_given_name = (person.mothers_given_name !== documentValues.mothers_given_name) ? documentValues.mothers_given_name : undefined;
+    changedPerson.age = (person.age !== documentValues.age) ? documentValues.age : undefined;
+    changedPerson.date_of_birth = ((person.date_of_birth !== documentValues.date_of_birth) && (documentValues.date_of_birth !== "")) ? documentValues.date_of_birth : undefined;
+    changedPerson.street_and_number = (person.street_and_number !== documentValues.street_and_number) ? documentValues.street_and_number : undefined;
+    changedPerson.city = (person.city !== documentValues.city) ? documentValues.city : undefined;
+    changedPerson.neighborhood = (person.neighborhood !== documentValues.neighborhood) ? documentValues.neighborhood : undefined;
+    changedPerson.description = (person.description !== documentValues.description) ? documentValues.description : undefined;
+    changedPerson.phone_number = ((person.phone_number !== documentValues.phone_number) && (documentValues.phone_number !== "")) ? documentValues.phone_number : undefined;
+    changedPerson.barcode = (person.barcode !== documentValues.barcode) ? documentValues.barcode : undefined;
+    changedPerson.gender = (person.gender !== documentValues.gender) ? documentValues.gender : undefined;
+    changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
+    changedPerson.id = person.id;
+
+    $scope.saveChangesRequest++;
+    peopleService.editPerson_saveChanges(changedPerson, function(success) {
+      // Success
+      $scope.saveChangesRequest--;
+      peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function() {  // This will reload the person in details
+        var prevSearchQuery = peopleService.getStoredSearchQuery();
+        peopleService.getPerson(networkService.getSearchURL() + prevSearchQuery, prevSearchQuery, function() {}, function() {}); // This will reload search query
+        $state.go('vida.person-search.person-detail');
+      }, function() {
+
+      });
+    }, function(error) {
+      // Error
+      //TODO: SHOW ERROR
+      $scope.saveChangesRequest--;
+      $state.go('vida.person-search.person-detail');
+    });
   };
 
   $rootScope.buttonPersonCancel = function() {
@@ -443,6 +499,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.peopleService = peopleService;
     $scope.isEditing = false;
     $scope.createTabTitle = 'title_create';
+    $scope.saveChangesRequest = 0;
 
     $scope.gender_options = [
       {
@@ -525,9 +582,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         if (!duplicate) {
           if (newPerson.photo) {
-            // TODO: Discuss. If the photo can't be uploaded for some reason, is it worth it getting the person up there?
-            // TODO: Then if the photo gets uploaded, but the person cannot be, the picture needs to be deleted.
-
             $scope.uploadPhoto(newPerson, function(){
               // On successful upload of Photo, this assigns the photo to the person successfully
               $scope.uploadPerson(newPerson);
