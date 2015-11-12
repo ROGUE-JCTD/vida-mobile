@@ -89,6 +89,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
 
+    // TODO: Add fields from /api/v1/person/
     var JSONPerson = '{' +
       '"age":"' + person.age + '", ' +
       '"barcode":"' + person.barcode + '", ' +
@@ -475,108 +476,24 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var putJSON = '{';
       var hasItem = false;
 
-      // THIS METHOD LOOKS AND FEELS UGLY
-      if (newPerson.given_name !== undefined) {
-        putJSON += '"given_name":"' + newPerson.given_name + '"';
-        hasItem = true;
+      var changeList = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
+      'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode',
+      'gender', 'injury'];
+
+      for (var i = 0; i < changeList.length; i++) {
+        if (newPerson[changeList[i]] !== undefined) {
+          // Add ,
+          if (i !== 0) {
+            if (hasItem)
+              putJSON += ', ';
+          }
+
+          putJSON += '"' + changeList[i] + '":"' + newPerson[changeList[i]] + '"';
+          hasItem = true;
+        }
       }
 
-      if (newPerson.family_name !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "family_name":"' + newPerson.family_name + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.fathers_given_name !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "fathers_given_name":"' + newPerson.fathers_given_name + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.mothers_given_name !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "mothers_given_name":"' + newPerson.mothers_given_name + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.age !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "age":"' + newPerson.age + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.date_of_birth !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "date_of_birth":"' + newPerson.date_of_birth + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.street_and_number !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "street_and_number":"' + newPerson.street_and_number + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.city !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "city":"' + newPerson.city + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.neighborhood !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "neighborhood":"' + newPerson.neighborhood + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.description !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "description":"' + newPerson.description + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.phone_number !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "phone_number":"' + newPerson.phone_number + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.barcode !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "barcode":"' + newPerson.barcode + '"';
-        hasItem = true;
-      }
-
-      if (newPerson.gender !== undefined) {
-        if (hasItem)
-          putJSON += ', ';
-
-        putJSON += ' "gender":"' + newPerson.gender + '"';
-        hasItem = true;
-      }
-
+      // Separate photo check (has different method)
       if (newPerson.photo !== undefined) {
         // Photo has changed, upload it
         uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function(data) {
@@ -598,6 +515,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     var finishHttpPut = function(hasItem, id, putJSON, success, error) {
+      // Put into it's own function to not have gross copy+paste everywhere
       putJSON += '}';
 
       if (hasItem === true) {

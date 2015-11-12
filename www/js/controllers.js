@@ -233,6 +233,21 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     }
   ];
 
+  $scope.injury_options = [
+    {
+      "name": 'person_injury_not_injured',
+      "value": "Not Injured"
+    },
+    {
+      "name": 'person_injury_moderate',
+      "value": "Moderate"
+    },
+    {
+      "name": 'person_injury_severe',
+      "value": "Severe"
+    }
+  ];
+
   $scope.setupFields = function() {
     var person = peopleService.getRetrievedPersonByID();
 
@@ -300,7 +315,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     if (checkForError(person.gender)) {
       var hasError = true;
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < $scope.gender_options.length; i++) {
         if (person.gender === $scope.gender_options[i].value) {
           $scope.current_gender = $scope.gender_options[i];
           hasError = false;
@@ -315,6 +330,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     }
     else {
       $scope.current_gender = $scope.gender_options[0];
+    }
+
+    if (checkForError(person.injury)) {
+      hasError = true;
+      for (i = 0; i < $scope.injury_options.length; i++) {
+        if (person.injury === $scope.injury_options[i].value) {
+          $scope.current_injury = $scope.injury_options[i];
+          hasError = false;
+          break;
+        }
+      }
+
+      // Edge case
+      if (hasError) {
+        $scope.current_injury = $scope.injury_options[0];
+      }
+    }
+    else {
+      $scope.current_injury = $scope.injury_options[0];
     }
   };
 
@@ -335,6 +369,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.changeGender = function() {
     $scope.current_gender = this.current_gender;
+  };
+
+  $scope.changeInjury = function() {
+    $scope.current_injury = this.current_injury;
   };
 
   $scope.setupSaveCancelButtons = function() {
@@ -381,6 +419,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     var genderElement       = document.getElementById('gender');
     doc.gender              = genderElement.options[genderElement.selectedIndex].label;
+    var injuryElement       = document.getElementById('injury');
+    doc.injury              = injuryElement.options[injuryElement.selectedIndex].label;
     doc.photo               = document.getElementById('personal_photo').src;
   };
 
@@ -405,6 +445,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     changedPerson.phone_number = ((person.phone_number !== documentValues.phone_number) && (documentValues.phone_number !== "")) ? documentValues.phone_number : undefined;
     changedPerson.barcode = (person.barcode !== documentValues.barcode) ? documentValues.barcode : undefined;
     changedPerson.gender = (person.gender !== documentValues.gender) ? documentValues.gender : undefined;
+    changedPerson.injury = (person.injury !== documentValues.injury) ? documentValues.injury : undefined;
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
     changedPerson.id = person.id;
 
@@ -520,7 +561,23 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }
     ];
 
+    $scope.injury_options = [
+      {
+        "name": 'person_injury_not_injured',
+        "value": "Not Injured"
+      },
+      {
+        "name": 'person_injury_moderate',
+        "value": "Moderate"
+      },
+      {
+        "name": 'person_injury_severe',
+        "value": "Severe"
+      }
+    ];
+
     $scope.current_gender = $scope.gender_options[0];
+    $scope.current_injury = $scope.injury_options[0];
 
     $scope.fixUndefined = function(str){
       return str === undefined ? "" : str;
@@ -534,6 +591,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var Gender = undefined;
         if ($scope.current_gender !== undefined) {
           Gender = $scope.current_gender.value;
+        }
+
+        var Injury = undefined;
+        if ($scope.current_injury !== undefined) {
+          Injury = $scope.current_injury.value;
         }
 
         var Photo = undefined;
@@ -563,10 +625,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.shelter             = $scope.fixUndefined('');
         newPerson.street_and_number   = $scope.fixUndefined($scope.person.street_and_number);
 
-        // Not in /api/v1/person/
+        // TODO: Not in /api/v1/person/, put these fields in
         newPerson.date_of_birth       = $scope.fixUndefined($scope.person.date_of_birth);
         newPerson.status              = $scope.fixUndefined(Status);
         newPerson.phone_number        = $scope.fixUndefined($scope.person.phone_number);
+        newPerson.injury              = Injury; // will always be defined
         newPerson.photo               = Photo;  // photo being undefined is checked
 
 
