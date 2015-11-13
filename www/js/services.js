@@ -478,7 +478,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       var changeList = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
       'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode',
-      'gender', 'injury'];
+      'gender', 'injury', 'nationality'];
 
       for (var i = 0; i < changeList.length; i++) {
         if (newPerson[changeList[i]] !== undefined) {
@@ -519,7 +519,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       putJSON += '}';
 
       if (hasItem === true) {
-        $http.put(networkService.getPeopleURL() + id, putJSON, networkService.getAuthentication()).then(function (xhr) {
+        $http.put(networkService.getPeopleURL() + id + '/', putJSON, networkService.getAuthentication()).then(function (xhr) {
           if (xhr.status === 204) {
             success();
           } else {
@@ -573,6 +573,84 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           });
         }
       }
+    };
+  })
+
+.service('optionService', function() {
+    var gender_options = [
+      {
+        "name": 'person_gender_not_specified',
+        "value": "Not Specified"
+      },
+      {
+        "name": 'person_gender_male',
+        "value": "Male"
+      },
+      {
+        "name": 'person_gender_female',
+        "value": "Female"
+      },
+      {
+        "name": 'person_gender_other',
+        "value": "Other"
+      }
+    ];
+
+    var injury_options = [
+      {
+        "name": 'person_injury_not_injured',
+        "value": "Not Injured"
+      },
+      {
+        "name": 'person_injury_moderate',
+        "value": "Moderate"
+      },
+      {
+        "name": 'person_injury_severe',
+        "value": "Severe"
+      }
+    ];
+
+    var language_options = [
+      {
+        "name": 'settings_language_english',
+        "value": "English"
+      },
+      {
+        "name": 'settings_language_spanish',
+        "value": "Spanish"
+      }
+    ];
+
+    var nationality_options = [
+      {
+        "name": 'person_nationality_english',
+        "value": "English"
+      },
+      {
+        "name": 'person_nationality_african',
+        "value": "African"
+      },
+      {
+        "name": 'person_nationality_asian',
+        "value": "Asian"
+      }
+    ];
+
+    this.getGenderOptions = function() {
+      return gender_options;
+    };
+
+    this.getInjuryOptions = function() {
+      return injury_options;
+    };
+
+    this.getLanguageOptions = function() {
+      return language_options;
+    };
+
+    this.getNationalityOptions = function() {
+      return nationality_options;
     };
   })
 

@@ -204,7 +204,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService,
-                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera) {
+                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
   $scope.peopleService = peopleService;
@@ -214,39 +214,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.saveChangesRequest = 0;
   $scope.hasPlaceholderImage = false;
 
-  $scope.gender_options = [
-    {
-      "name": 'person_gender_not_specified',
-      "value": "Not Specified"
-    },
-    {
-      "name": 'person_gender_male',
-      "value": "Male"
-    },
-    {
-      "name": 'person_gender_female',
-      "value": "Female"
-    },
-    {
-      "name": 'person_gender_other',
-      "value": "Other"
-    }
-  ];
+  $scope.gender_options = optionService.getGenderOptions();
+  $scope.injury_options = optionService.getInjuryOptions();
+  $scope.nationality_options = optionService.getNationalityOptions();
 
-  $scope.injury_options = [
-    {
-      "name": 'person_injury_not_injured',
-      "value": "Not Injured"
-    },
-    {
-      "name": 'person_injury_moderate',
-      "value": "Moderate"
-    },
-    {
-      "name": 'person_injury_severe',
-      "value": "Severe"
-    }
-  ];
+  var checkFields = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
+    'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode'];
 
   $scope.setupFields = function() {
     var person = peopleService.getRetrievedPersonByID();
@@ -255,35 +228,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       return value && (value !== 'undefined' && value !== 'null');
     };
 
-    if (checkForError(person.given_name))
-      document.getElementById('given_name').value = person.given_name;
-    if (checkForError(person.family_name))
-      document.getElementById('family_name').value = person.family_name;
-
-    if (checkForError(person.fathers_given_name))
-      document.getElementById('fathers_given_name').value = person.fathers_given_name;
-    if (checkForError(person.mothers_given_name))
-      document.getElementById('mothers_given_name').value = person.mothers_given_name;
-
-    if (checkForError(person.age))
-      document.getElementById('age').value = person.age;
-    if (checkForError(person.date_of_birth))
-      document.getElementById('date_of_birth').value = person.date_of_birth;
-
-    if (checkForError(person.street_and_number))
-      document.getElementById('street_and_number').value = person.street_and_number;
-    if (checkForError(person.city))
-      document.getElementById('city').value = person.city;
-
-    if (checkForError(person.neighborhood))
-      document.getElementById('neighborhood').value = person.neighborhood;
-    if (checkForError(person.description))
-      document.getElementById('description').value = person.description;
-
-    if (checkForError(person.phone_number))
-      document.getElementById('phone_number').value = person.phone_number;
-    if (checkForError(person.barcode))
-      document.getElementById('barcode').value = person.barcode;
+    for (var i = 0; i < checkFields.length; i++) {
+      if (checkForError(person[checkFields[i]]))
+        document.getElementById(checkFields[i]).value = person[checkFields[i]];
+    }
 
     if (checkForError(person.pic_filename)) {
       // Test Image
@@ -313,43 +261,30 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.hasPlaceholderImage = true;
     }
 
-    if (checkForError(person.gender)) {
-      var hasError = true;
-      for (var i = 0; i < $scope.gender_options.length; i++) {
-        if (person.gender === $scope.gender_options[i].value) {
-          $scope.current_gender = $scope.gender_options[i];
-          hasError = false;
-          break;
+    var setupDropdown = function(dropType) {
+      if (checkForError(person[dropType])) {
+        var hasError = true;
+        for (var i = 0; i < $scope[dropType + '_options'].length; i++) {
+          if (person[dropType] === $scope[dropType + '_options'][i].value) {
+            $scope['current_' + dropType] = $scope[dropType + '_options'][i];
+            hasError = false;
+            break;
+          }
+        }
+
+        // Edge case
+        if (hasError) {
+          $scope['current_' + dropType] = $scope[dropType + '_options'][0];
         }
       }
-
-      // Edge case
-      if (hasError) {
-        $scope.current_gender = $scope.gender_options[0];
+      else {
+        $scope['current_' + dropType] = $scope[dropType + '_options'][0];
       }
-    }
-    else {
-      $scope.current_gender = $scope.gender_options[0];
-    }
+    };
 
-    if (checkForError(person.injury)) {
-      hasError = true;
-      for (i = 0; i < $scope.injury_options.length; i++) {
-        if (person.injury === $scope.injury_options[i].value) {
-          $scope.current_injury = $scope.injury_options[i];
-          hasError = false;
-          break;
-        }
-      }
-
-      // Edge case
-      if (hasError) {
-        $scope.current_injury = $scope.injury_options[0];
-      }
-    }
-    else {
-      $scope.current_injury = $scope.injury_options[0];
-    }
+    setupDropdown('gender');
+    setupDropdown('injury');
+    setupDropdown('nationality');
   };
 
   if (peopleService.getRetrievedPersonByID()) {
@@ -373,6 +308,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.changeInjury = function() {
     $scope.current_injury = this.current_injury;
+  };
+
+  $scope.changeNationality = function() {
+    $scope.current_nationality = this.current_nationality;
   };
 
   $scope.setupSaveCancelButtons = function() {
@@ -404,23 +343,16 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 
   $scope.setupDocumentValues = function(doc) {
-    doc.given_name          = document.getElementById('given_name').value;
-    doc.family_name         = document.getElementById('family_name').value;
-    doc.fathers_given_name  = document.getElementById('fathers_given_name').value;
-    doc.mothers_given_name  = document.getElementById('mothers_given_name').value;
-    doc.age                 = document.getElementById('age').value;
-    doc.date_of_birth       = document.getElementById('date_of_birth').value;
-    doc.street_and_number   = document.getElementById('street_and_number').value;
-    doc.city                = document.getElementById('city').value;
-    doc.neighborhood        = document.getElementById('neighborhood').value;
-    doc.description         = document.getElementById('description').value;
-    doc.phone_number        = document.getElementById('phone_number').value;
-    doc.barcode             = document.getElementById('barcode').value;
+    for (var i = 0; i < checkFields.length; i++){
+      doc[checkFields[i]] = document.getElementById(checkFields[i]).value;
+    }
 
     var genderElement       = document.getElementById('gender');
     doc.gender              = genderElement.options[genderElement.selectedIndex].label;
     var injuryElement       = document.getElementById('injury');
     doc.injury              = injuryElement.options[injuryElement.selectedIndex].label;
+    var nationalityElement  = document.getElementById('nationality');
+    doc.nationality         = nationalityElement.options[nationalityElement.selectedIndex].label;
     doc.photo               = document.getElementById('personal_photo').src;
   };
 
@@ -432,20 +364,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     var changedPerson = {};
 
-    changedPerson.given_name = (person.given_name !== documentValues.given_name) ? documentValues.given_name : undefined;
-    changedPerson.family_name = (person.family_name !== documentValues.family_name) ? documentValues.family_name : undefined;
-    changedPerson.fathers_given_name = (person.fathers_given_name !== documentValues.fathers_given_name) ? documentValues.fathers_given_name : undefined;
-    changedPerson.mothers_given_name = (person.mothers_given_name !== documentValues.mothers_given_name) ? documentValues.mothers_given_name : undefined;
-    changedPerson.age = (person.age !== documentValues.age) ? documentValues.age : undefined;
+    for (var i = 0; i < checkFields.length; i++) {
+      changedPerson[checkFields[i]] = ((person[checkFields[i]] !== documentValues[checkFields[i]]) && (documentValues[checkFields[i]] !== "")) ? documentValues[checkFields[i]] : undefined;
+    }
     changedPerson.date_of_birth = ((person.date_of_birth !== documentValues.date_of_birth) && (documentValues.date_of_birth !== "")) ? documentValues.date_of_birth : undefined;
-    changedPerson.street_and_number = (person.street_and_number !== documentValues.street_and_number) ? documentValues.street_and_number : undefined;
-    changedPerson.city = (person.city !== documentValues.city) ? documentValues.city : undefined;
-    changedPerson.neighborhood = (person.neighborhood !== documentValues.neighborhood) ? documentValues.neighborhood : undefined;
-    changedPerson.description = (person.description !== documentValues.description) ? documentValues.description : undefined;
     changedPerson.phone_number = ((person.phone_number !== documentValues.phone_number) && (documentValues.phone_number !== "")) ? documentValues.phone_number : undefined;
-    changedPerson.barcode = (person.barcode !== documentValues.barcode) ? documentValues.barcode : undefined;
     changedPerson.gender = (person.gender !== documentValues.gender) ? documentValues.gender : undefined;
     changedPerson.injury = (person.injury !== documentValues.injury) ? documentValues.injury : undefined;
+    changedPerson.nationality = (person.nationality !== documentValues.nationality) ? documentValues.nationality : undefined;
+
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
     changedPerson.id = person.id;
 
@@ -532,8 +459,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.setupSaveCancelButtons();
 })
 
-.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter,
-                                         $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService){
+.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
+                                         $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService,
+                                          optionService){
     $scope.person = {};
     $scope.person.photo = undefined;
     $scope.person.barcode = {};
@@ -542,44 +470,16 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.createTabTitle = 'title_create';
     $scope.saveChangesRequest = 0;
 
-    $scope.gender_options = [
-      {
-        "name": 'person_gender_not_specified',
-        "value": "Not Specified"
-      },
-      {
-        "name": 'person_gender_male',
-        "value": "Male"
-      },
-      {
-        "name": 'person_gender_female',
-        "value": "Female"
-      },
-      {
-        "name": 'person_gender_other',
-        "value": "Other"
-      }
-    ];
-
-    $scope.injury_options = [
-      {
-        "name": 'person_injury_not_injured',
-        "value": "Not Injured"
-      },
-      {
-        "name": 'person_injury_moderate',
-        "value": "Moderate"
-      },
-      {
-        "name": 'person_injury_severe',
-        "value": "Severe"
-      }
-    ];
+    $scope.gender_options = optionService.getGenderOptions();
+    $scope.injury_options = optionService.getInjuryOptions();
+    $scope.nationality_options = optionService.getNationalityOptions();
 
     $scope.current_gender = $scope.gender_options[0];
     $scope.current_injury = $scope.injury_options[0];
+    $scope.current_nationality = $scope.nationality_options[0];
 
-    $scope.fixUndefined = function(str){
+    // Helper function
+    var fixUndefined = function(str){
       return str === undefined ? "" : str;
     };
 
@@ -598,6 +498,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           Injury = $scope.current_injury.value;
         }
 
+        var Nationality = undefined;
+        if ($scope.current_nationality !== undefined) {
+          Nationality = $scope.current_nationality.value;
+        }
+
         var Photo = undefined;
         if ($scope.person.photo !== undefined) {
           Photo = $scope.person.photo;
@@ -609,27 +514,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         }
 
         var newPerson = [];
-        newPerson.age                 = $scope.fixUndefined($scope.person.age);
-        newPerson.barcode             = $scope.fixUndefined(Barcode);
-        newPerson.city                = $scope.fixUndefined($scope.person.city);
-        newPerson.description         = $scope.fixUndefined($scope.person.description);
-        newPerson.family_name         = $scope.fixUndefined($scope.person.family_name);
-        newPerson.fathers_given_name  = $scope.fixUndefined($scope.person.fathers_given_name);
-        newPerson.given_name          = $scope.fixUndefined($scope.person.given_name);
+        newPerson.age                 = fixUndefined($scope.person.age);
+        newPerson.barcode             = fixUndefined(Barcode);
+        newPerson.city                = fixUndefined($scope.person.city);
+        newPerson.description         = fixUndefined($scope.person.description);
+        newPerson.family_name         = fixUndefined($scope.person.family_name);
+        newPerson.fathers_given_name  = fixUndefined($scope.person.fathers_given_name);
+        newPerson.given_name          = fixUndefined($scope.person.given_name);
         newPerson.gender              = Gender; // will always be defined
-        newPerson.mothers_given_name  = $scope.fixUndefined($scope.person.mothers_given_name);
-        newPerson.neighborhood        = $scope.fixUndefined($scope.person.neighborhood);
-        newPerson.notes               = $scope.fixUndefined('');
+        newPerson.mothers_given_name  = fixUndefined($scope.person.mothers_given_name);
+        newPerson.neighborhood        = fixUndefined($scope.person.neighborhood);
+        newPerson.notes               = fixUndefined('');
         newPerson.pic_filename        = '';     // will be set on upload
-        newPerson.province_or_state   = $scope.fixUndefined('');
-        newPerson.shelter             = $scope.fixUndefined('');
-        newPerson.street_and_number   = $scope.fixUndefined($scope.person.street_and_number);
+        newPerson.province_or_state   = fixUndefined('');
+        newPerson.shelter             = fixUndefined('');
+        newPerson.street_and_number   = fixUndefined($scope.person.street_and_number);
 
         // TODO: Not in /api/v1/person/, put these fields in
-        newPerson.date_of_birth       = $scope.fixUndefined($scope.person.date_of_birth);
-        newPerson.status              = $scope.fixUndefined(Status);
-        newPerson.phone_number        = $scope.fixUndefined($scope.person.phone_number);
+        newPerson.date_of_birth       = fixUndefined($scope.person.date_of_birth);
+        newPerson.status              = fixUndefined(Status);
+        newPerson.phone_number        = fixUndefined($scope.person.phone_number);
         newPerson.injury              = Injury; // will always be defined
+        newPerson.nationality         = Nationality; // will always be defined
         newPerson.photo               = Photo;  // photo being undefined is checked
 
 
@@ -758,6 +664,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_gender = this.current_gender;
     };
 
+    $scope.changeInjury = function() {
+      $scope.current_injury = this.current_injury;
+    };
+
+    $scope.changeNationality = function() {
+      $scope.current_nationality = this.current_nationality;
+    };
+
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
@@ -765,7 +679,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log('---------------------------------- ShelterSearchCtrl');
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService,
+.controller('SettingsCtrl', function($scope, $location, peopleService, optionService,
                                      networkService, $translate){
   console.log('---------------------------------- SettingsCtrl');
 
@@ -783,16 +697,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       networkService.setServerAddress(IP);
     };
 
-    $scope.language_options = [
-      {
-        "name": 'settings_language_english',
-        "value": "English"
-      },
-      {
-        "name": 'settings_language_spanish',
-        "value": "Spanish"
-      }
-    ];
+    $scope.language_options = optionService.getLanguageOptions();
 
     $scope.current_language = $scope.language_options[0];
 
