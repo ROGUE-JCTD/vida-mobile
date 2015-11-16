@@ -63,7 +63,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
-                                         $cordovaToast, $cordovaBarcodeScanner, $cordovaCamera, $document) {
+                                         $cordovaToast, $cordovaBarcodeScanner, $cordovaCamera) {
     $scope.searchText = '';
     $scope.searchRequestCounter = 0;
     $scope.totalDisplayed = 20;
@@ -76,7 +76,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           // Success!
           $scope.searchText = barcodeData.text;
           $scope.searchPerson(barcodeData.text);
-          $document.getElementById("searchText").value = barcodeData.text; // Just in case
+          document.getElementById("searchText").value = barcodeData.text; // Just in case
         }
       }, function(error){
         // Error!
@@ -367,6 +367,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     for (var i = 0; i < checkFields.length; i++) {
       changedPerson[checkFields[i]] = ((person[checkFields[i]] !== documentValues[checkFields[i]]) && (documentValues[checkFields[i]] !== "")) ? documentValues[checkFields[i]] : undefined;
     }
+    // specific cases
     changedPerson.date_of_birth = ((person.date_of_birth !== documentValues.date_of_birth) && (documentValues.date_of_birth !== "")) ? documentValues.date_of_birth : undefined;
     changedPerson.phone_number = ((person.phone_number !== documentValues.phone_number) && (documentValues.phone_number !== "")) ? documentValues.phone_number : undefined;
     changedPerson.gender = (person.gender !== documentValues.gender) ? documentValues.gender : undefined;
