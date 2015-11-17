@@ -10,30 +10,29 @@ function dataURLtoBlob(dataURI) {
 
 angular.module('vida.services', ['ngCordova', 'ngResource'])
 
-.factory('httpRequestInterceptor', function($location) {
-  return {
-    request: function(config) {
-      config.headers['Authorization'] = '';
-      //TODO: do retrieve username pass
-      config.headers['Authorization'] = 'Basic ' + btoa('admin:admin');
-      return config;
-    }
-  };
+.factory('httpRequestInterceptor', function(networkService) {
+   return {
+      request: function (config) {
+        config.headers['Authorization'] = networkService.getBasicAuthentication();
+        return config;
+      }
+    };
 })
 
 .config(function($interpolateProvider, $httpProvider, $resourceProvider) {
 //  $interpolateProvider.startSymbol('{[');
 //  $interpolateProvider.endSymbol(']}');
 
-  $httpProvider.defaults.xsrfCookieName = 'csrftoken';
-  $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken';
-  $httpProvider.interceptors.push('httpRequestInterceptor');
-  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  //$httpProvider.defaults.xsrfCookieName = 'csrftoken';
+  //$httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken';
+  //$httpProvider.interceptors.push('httpRequestInterceptor');
+  //$httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  //$httpProvider.defaults.headers.common['X-Auth-Token'] = undefined;
 
   $resourceProvider.defaults.stripTrailingSlashes = false;
 })
 
-.provider('configService', function() {
+/*.provider('configService', function() {
   var service_ = null;
   this.configuration = {};
   this.$get = function($window, $http, $location, $translate) {
@@ -48,7 +47,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   this.isAuthenticated = function() {
     return service_.authStatus == 200;
   };
-})
+})*/
 
 .factory('Camera', ['$q', function($q){
   return {
@@ -300,7 +299,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   var shelters = [];
 
   this.getAll = function() {
-    var shelter = $resource('http://' + networkService.getServerAddress() + '/api/v1/shelter/:id', {}, {
+    var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
       query: {
         method: 'GET',
         isArray: true,
@@ -353,7 +352,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var storedSearchQuery = "";
 
     this.getPerson = function(URL, query, success, error) {
-      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
+      $http.get(URL, networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];    // Reset list, is safe
@@ -387,7 +386,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var searchURL = networkService.getSearchURL();
       searchURL += id;
 
-      $http.get(searchURL, networkService.getAuthentication()).then(function(xhr) {
+      $http.get(searchURL, networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             if (xhr.data.objects.length > 0) {
@@ -439,7 +438,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.updateAllPeople = function(URL, success) {
-      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
+      $http.get(URL, networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];
@@ -519,7 +518,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       putJSON += '}';
 
       if (hasItem === true) {
-        $http.put(networkService.getPeopleURL() + id + '/', putJSON, networkService.getAuthentication()).then(function (xhr) {
+        $http.put(networkService.getPeopleURL() + id + '/', putJSON, networkService.getAuthenticationHeader()).then(function (xhr) {
           if (xhr.status === 204) {
             success();
           } else {
@@ -654,65 +653,48 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
   })
 
-.service('networkService', function($http) {
-    var networkIP = '192.168.1.55'; // Needs to be set by something else
+  // TODO: Rename to configService
+.service('networkService', function() {
 
-    var authentication = btoa("admin:admin"); // Should be set through login, will use admin:admin by default for now
-    var authenURL = 'http://' + networkIP + '/api/v1/person/';
-    var peopleURL = 'http://' + networkIP + '/api/v1/person/';
-    var searchURL = 'http://' + networkIP + '/api/v1/person/?custom_query=';
-    var serviceURL = 'http://' + networkIP + '/api/v1/fileservice/';
+    this.configuration = {};
+    this.configuration.username = 'admin';
+    this.configuration.password = 'admin';
+    this.configuration.serverURL = '192.168.1.55';
+    this.configuration.protocol = 'http';
+    this.configuration.api = {};
+
+    var URL = this.configuration.protocol + '://' + this.configuration.serverURL + '/api/v1';
+    this.configuration.api.personURL = URL + '/person/';
+    this.configuration.api.searchURL = URL + '/person/?custom_query=';
+    this.configuration.api.fileServiceURL = URL + '/fileservice/';
+    this.configuration.api.shelterURL = URL + '/shelter/';
+
+    // Settings
+    this.configuration.language = 'English';
+    this.configuration.workOffline = false;
 
     this.getServerAddress = function() {
-      return networkIP;
+      return this.configuration.serverURL;
     };
 
     this.setServerAddress = function(Addr) {
-      networkIP = Addr;
+      this.configuration.serverURL = Addr;
 
+      var URL = this.configuration.protocol + '://' + Addr + '/api/v1';
       // Need to reset variables
-      authenURL = 'http://' + networkIP + '/api/v1/person/';
-      peopleURL = 'http://' + networkIP + '/api/v1/person/';
-      searchURL = 'http://' + networkIP + '/api/v1/person/?custom_query=';
-      serviceURL = 'http://' + networkIP + '/api/v1/fileservice/';
+      this.configuration.api.personURL = URL + '/person/';
+      this.configuration.api.searchURL = URL + '/person/?custom_query=';
+      this.configuration.api.fileServiceURL = URL + '/fileservice/';
+      this.configuration.api.shelterURL = URL + '/shelter/';
     };
 
-    this.doLogin = function(credentials, success, error){
-      var _authentication = btoa(credentials.username + ":" + credentials.password);
-      var config = {};
-      config.headers = {};
-      if (_authentication !== null){
-        config.headers.Authorization = 'Basic ' + _authentication;
-      } else {
-        config.headers.Authorization = '';
-      }
-
-      $http.get(authenURL, config).then(function(xhr) {
-        if (xhr.status === 200){
-          authentication = _authentication;
-          success();
-        } else {
-          error(xhr.status);
-          alert(xhr.status);
-        }
-      }, function(e) {
-        if (e) {
-          if (e.status === 401) {
-            alert("Incorrect Username or Password!");
-          } else {
-            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
-          }
-        }
-
-        error(e);
-      });
+    this.getBasicAuthentication = function() {
+      var authentication = btoa(this.configuration.username + ':' + this.configuration.username);
+      return 'Basic ' + authentication;
     };
 
-    this.setCredentials = function(authen){
-      authentication = authen;
-    };
-
-    this.getAuthentication = function() {
+    this.getAuthenticationHeader = function() {
+      var authentication = btoa(this.configuration.username + ':' + this.configuration.username);
       var authen = {};
       authen.headers = {};
       if (authentication !== null) {
@@ -724,19 +706,28 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return authen;
     };
 
+    this.setAuthentication = function(username, password){
+      this.configuration.username = username;
+      this.configuration.password = password;
+    };
+
     this.getPeopleURL = function() {
-      return peopleURL;
+      return this.configuration.api.personURL;
     };
 
     this.getAuthenticationURL = function() {
-      return authenURL;
+      return this.configuration.api.personURL;
     };
 
     this.getSearchURL = function() {
-      return searchURL;
+      return this.configuration.api.searchURL;
     };
 
     this.getFileServiceURL = function() {
-      return serviceURL;
+      return this.configuration.api.fileServiceURL;
     };
+
+    this.getShelterURL = function() {
+      return this.configuration.api.shelterURL;
+    }
   });

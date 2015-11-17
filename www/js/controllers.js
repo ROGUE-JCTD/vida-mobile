@@ -238,7 +238,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var URL = networkService.getFileServiceURL() + person.pic_filename + '/download/';
       $scope.pictureTestSpinner++;
 
-      $http.get(URL, networkService.getAuthentication()).then(function(xhr) {
+      $http.get(URL, networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data.status !== "file not found") {
             document.getElementById('personal_photo').src = URL;
@@ -688,8 +688,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     // Functions
     $scope.logout = function(url) {
-      // TODO: logout
-
       // Can go directly to '/login'
       $location.path(url);
     };
@@ -718,12 +716,44 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.loginRequest = 0;
   $scope.credentials = {};
 
+  var doLogin = function(credentials, success, error){
+    var _authentication = btoa(credentials.username + ":" + credentials.password);
+    var config = {};
+    config.headers = {};
+    if (_authentication !== null){
+      config.headers.Authorization = 'Basic ' + _authentication;
+    } else {
+      config.headers.Authorization = '';
+    }
+    networkService.setAuthentication(credentials.username, credentials.password);
+
+    $http.get(networkService.getAuthenticationURL(), config).then(function(xhr) {
+      if (xhr.status === 200){
+        success();
+      } else {
+        error(xhr.status);
+        alert(xhr.status);
+      }
+    }, function(e) {
+      if (e) {
+        if (e.status === 401) {
+          //TODO: Translate
+          alert("Incorrect Username or Password!");
+        } else {
+          alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
+        }
+      }
+
+      error(e);
+    });
+  };
+
   $scope.login = function(url) {
     // Request authorization
     if (($scope.credentials.username) && ($scope.credentials.password)) {
-      $scope.loginRequest++;
 
-      networkService.doLogin($scope.credentials,
+      $scope.loginRequest++;
+      doLogin($scope.credentials,
       function() {
         // Success!
         $location.path(url);
