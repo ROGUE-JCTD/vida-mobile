@@ -25,8 +25,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   //$httpProvider.defaults.xsrfCookieName = 'csrftoken';
   //$httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken';
-  //$httpProvider.interceptors.push('httpRequestInterceptor');
-  //$httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  $httpProvider.interceptors.push('httpRequestInterceptor');
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
   //$httpProvider.defaults.headers.common['X-Auth-Token'] = undefined;
 
   $resourceProvider.defaults.stripTrailingSlashes = false;
@@ -338,10 +338,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     for (var i = 0; i < peopleInShelter.length; i++) {
       console.log(peopleInShelter[i].given_name);
     }
-  };
-
-  this.getPeopleInShelter = function() {
-    return peopleInShelter;
   };
 })
 
@@ -689,12 +685,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.getBasicAuthentication = function() {
-      var authentication = btoa(this.configuration.username + ':' + this.configuration.username);
+      var authentication = btoa(this.configuration.username + ':' + this.configuration.password);
       return 'Basic ' + authentication;
     };
 
     this.getAuthenticationHeader = function() {
-      var authentication = btoa(this.configuration.username + ':' + this.configuration.username);
+      var authentication = btoa(this.configuration.username + ':' + this.configuration.password);
       var authen = {};
       authen.headers = {};
       if (authentication !== null) {
