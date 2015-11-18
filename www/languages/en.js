@@ -22,6 +22,7 @@
     'dialog_error_password': 'Please enter a Password!',
     'dialog_photo_uploaded': 'Photo has been uploaded for ',
     'dialog_person_uploaded': ' has been successfully uploaded!',
+    'dialog_person_exists': 'Person already exists!',
     'modal_picture_take_picture': 'Take Photo',
     'modal_picture_choose_from_library': 'Choose From Library',
     'modal_picture_remove_picture': 'Remove Picture',

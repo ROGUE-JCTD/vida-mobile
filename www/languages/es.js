@@ -22,6 +22,7 @@
     'dialog_error_password': 'Por favor, introduzca un nombre de contrasena!',
     'dialog_photo_uploaded': 'La foto se ha subido para ',
     'dialog_person_uploaded': ' se ha subido correctamente!',
+    'dialog_person_exists': 'Person already exists!',
     'modal_picture_take_picture': 'Tomar foto',
     'modal_picture_choose_from_library': 'Elija de la biblioteca',
     'modal_picture_remove_picture': 'Eliminar foto',
