@@ -87,6 +87,13 @@
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
+        <label class="item item-input item-select">
+          <span class="input-label">{{'person_current_shelter' | translate}}</span>
+          <select id="shelter" ng-init="current_shelter == current_shelter || shelter_array[0]"
+                  ng-model="current_shelter" ng-change="changeShelter()"
+                  ng-options="option.name for option in shelter_array">
+          </select>
+        </label>
         <div ng-if="isEditing === false">
           <button class="button button-stable button-block" ng-click="savePerson()">{{'button_save' | translate}}</button>
         </div>

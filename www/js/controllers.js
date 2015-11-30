@@ -203,7 +203,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService,
+.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array,
                                              networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
@@ -285,6 +285,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('gender');
     setupDropdown('injury');
     setupDropdown('nationality');
+
+    $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
+    if ($scope.shelter_array) {
+      // Look at person and see what shelter they are assigned to
+      var isAssigned = false;
+      for (var j = 0; j < shelter_array.length; j++) {
+        if (person.shelter_id === shelter_array[j].value) {
+          $scope.current_shelter = $scope.shelter_array[j];
+          isAssigned = true;
+          break;
+        }
+      }
+
+      if (!isAssigned) {
+        $scope.current_shelter = $scope.shelter_array[0];
+      }
+    } else {
+      $scope.current_shelter = $scope.shelter_array[0];
+    }
   };
 
   if (peopleService.getRetrievedPersonByID()) {
@@ -312,6 +331,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.changeNationality = function() {
     $scope.current_nationality = this.current_nationality;
+  };
+
+  $scope.changeShelter = function() {
+    $scope.current_shelter = this.current_shelter;
   };
 
   $scope.setupSaveCancelButtons = function() {
@@ -353,6 +376,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     doc.injury              = injuryElement.options[injuryElement.selectedIndex].label;
     var nationalityElement  = document.getElementById('nationality');
     doc.nationality         = nationalityElement.options[nationalityElement.selectedIndex].label;
+    var shelterElement      = document.getElementById('shelter');
+    doc.shelter_id          = shelter_array[shelterElement.selectedIndex].value;
+
     doc.photo               = document.getElementById('personal_photo').src;
   };
 
@@ -373,6 +399,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     changedPerson.gender = (person.gender !== documentValues.gender) ? documentValues.gender : undefined;
     changedPerson.injury = (person.injury !== documentValues.injury) ? documentValues.injury : undefined;
     changedPerson.nationality = (person.nationality !== documentValues.nationality) ? documentValues.nationality : undefined;
+    changedPerson.shelter_id = (person.shelter_id !== documentValues.shelter_id) ? documentValues.shelter_id : undefined;
 
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
     changedPerson.id = person.id;
@@ -462,7 +489,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
                                          $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService,
-                                          optionService){
+                                          optionService, $q, shelter_array){
     $scope.person = {};
     $scope.person.photo = undefined;
     $scope.person.barcode = {};
@@ -479,6 +506,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.current_injury = $scope.injury_options[0];
     $scope.current_nationality = $scope.nationality_options[0];
 
+    $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
+    if ($scope.shelter_array) {
+      $scope.current_shelter = $scope.shelter_array[0];
+    }
+
     // Helper function
     var fixUndefined = function(str){
       return str === undefined ? "" : str;
@@ -487,7 +519,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.savePerson = function() {
       if ($scope.person.given_name !== undefined) {
 
-        var Status = "Made Locally";
+        var Status = "";
 
         var Gender = undefined;
         if ($scope.current_gender !== undefined) {
@@ -502,6 +534,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var Nationality = undefined;
         if ($scope.current_nationality !== undefined) {
           Nationality = $scope.current_nationality.value;
+        }
+
+        var ShelterID = undefined;
+        if ($scope.current_shelter !== undefined) {
+          ShelterID = $scope.current_shelter.value;
         }
 
         var Photo = undefined;
@@ -528,15 +565,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.notes               = fixUndefined('');
         newPerson.pic_filename        = '';     // will be set on upload
         newPerson.province_or_state   = fixUndefined('');
-        newPerson.shelter             = fixUndefined('');
+        newPerson.shelter_id          = ShelterID; // will always be defined
         newPerson.street_and_number   = fixUndefined($scope.person.street_and_number);
-
-        // TODO: Not in /api/v1/person/, put these fields in
         newPerson.date_of_birth       = fixUndefined($scope.person.date_of_birth);
         newPerson.status              = fixUndefined(Status);
         newPerson.phone_number        = fixUndefined($scope.person.phone_number);
         newPerson.injury              = Injury; // will always be defined
         newPerson.nationality         = Nationality; // will always be defined
+
+        // This is here to store photo for upload
         newPerson.photo               = Photo;  // photo being undefined is checked
 
 
@@ -553,10 +590,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         if (!duplicate) {
           if (newPerson.photo) {
             $scope.uploadPhoto(newPerson, function(){
-              // On successful upload of Photo, this assigns the photo to the person successfully
+              // On successful upload of Photo, this assigns the photo to the person
               $scope.uploadPerson(newPerson);
             });
           } else {
+            // On non-successful upload of Photo, the person's info will only be uploaded
             $scope.uploadPerson(newPerson);
           }
         } else {
@@ -673,6 +711,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_nationality = this.current_nationality;
     };
 
+    $scope.changeShelter = function() {
+      $scope.current_shelter = this.current_shelter;
+    };
+
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
@@ -737,10 +779,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     }, function(e) {
       if (e) {
         if (e.status === 401) {
-          //TODO: Translate
-          alert("Incorrect Username or Password!");
+          $cordovaToast.showShortBottom(($filter('translate')('error_wrong_credentials')));
         } else {
-          alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
+          alert($filter('translate')('error_connecting_server') + e.status + ": " + e.description)
         }
       }
 

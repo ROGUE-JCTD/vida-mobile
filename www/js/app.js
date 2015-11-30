@@ -50,6 +50,46 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
 .config(function($stateProvider, $urlRouterProvider) {
 
+    // Used for getting shelter dropdowns before page is loaded
+    var retrieveAllShelters = function(q, netServ) {
+      var shelters = q.defer();
+      var array = [{
+        name: 'None',
+        value: '00000000-0000-0000-0000-000000000000'
+      }];
+      var auth = netServ.getAuthentication();
+
+      $.ajax({
+        type: 'GET',
+        xhrFields: {
+          withCredentials: true
+        },
+        url: netServ.getShelterURL(),
+        success: function (data) {
+          if (data.objects.length > 0) {
+            for (var i = 0; i < data.objects.length; i++) {
+              array.push({
+                name: data.objects[i].name,
+                value: data.objects[i].uuid
+              });
+            }
+            return shelters.resolve(array);
+          } else {
+            console.log('No shelters returned - check url: ' + netServ.getShelterURL() + ' or none are available');
+            return shelters.resolve(array);
+          }
+        },
+        error: function () {
+          console.log('Error - retrieving all shelters failed');
+          return shelters.resolve(array);
+        },
+        username: auth.username,
+        password: auth.password
+      });
+
+      return shelters.promise;
+    };
+
   // Ionic uses AngularUI Router which uses the concept of states
   // Learn more here: https://github.com/angular-ui/ui-router
   // Set up the various states which the app can be in.
@@ -79,6 +119,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     views: {
       'view-person-create': {
         templateUrl: 'views/person-create.html',
+        resolve: {
+          shelter_array : function($q, networkService) {
+            return retrieveAllShelters($q, networkService);
+          }
+        },
         controller: 'PersonCreateCtrl'
       }
     }
@@ -109,6 +154,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     views: {
       'view-person-search@vida': {
         templateUrl: "views/person-create.html",
+        resolve: {
+          shelter_array : function($q, networkService) {
+            return retrieveAllShelters($q, networkService);
+          }
+        },
         controller: 'PersonDetailEditCtrl'
       }
     }

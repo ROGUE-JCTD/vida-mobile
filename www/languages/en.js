@@ -46,7 +46,7 @@
     'person_neighborhood': 'Neighborhood',
     'person_description': 'Description',
     'person_gender': 'Gender',
-    'person_gender_not_specified': 'Not Specified',
+    'person_not_specified': 'Not Specified',
     'person_gender_male': 'Male',
     'person_gender_female': 'Female',
     'person_gender_other': 'Other',
@@ -60,6 +60,7 @@
     'person_nationality_asian': 'Asian',
     'person_phone_number': 'Phone Number',
     'person_barcode': 'Barcode',
+    'person_current_shelter': 'Shelter',
     'button_save': 'Save',
     'button_login': 'Log in',
     'button_logout': 'Log out',
@@ -71,7 +72,9 @@
     'settings_language_english': 'English',
     'settings_language_spanish': 'Spanish',
     'settings_server_ip': 'Server IP',
-    'error_retrieving_info': 'Information could not be retrieved.'
+    'error_retrieving_info': 'Retrieving information..',
+    'error_wrong_credentials': 'Incorrect Username or Password!',
+    'error_connecting_server': 'A problem occurred when connecting to the server. Status: '
   };
 
   var module = angular.module('vida-translations-en', ['pascalprecht.translate']);

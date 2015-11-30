@@ -22,7 +22,7 @@
     'dialog_error_password': 'Por favor, introduzca un nombre de contrasena!',
     'dialog_photo_uploaded': 'La foto se ha subido para ',
     'dialog_person_uploaded': ' se ha subido correctamente!',
-    'dialog_person_exists': 'Person already exists!',
+    'dialog_person_exists': 'Persona ya existe!',
     'modal_picture_take_picture': 'Tomar foto',
     'modal_picture_choose_from_library': 'Elija de la biblioteca',
     'modal_picture_remove_picture': 'Eliminar foto',
@@ -46,7 +46,7 @@
     'person_neighborhood': 'Barrio',
     'person_description': 'Descripcion',
     'person_gender': 'Genero',
-    'person_gender_not_specified': 'No especificado',
+    'person_not_specified': 'No especificado',
     'person_gender_male': 'Masculino',
     'person_gender_female': 'Mujer',
     'person_gender_other': 'Otros',
@@ -59,7 +59,8 @@
     'person_nationality_african': 'African',
     'person_nationality_asian': 'Asian',
     'person_phone_number': 'Numero de telefono',
-    'person_barcode': 'Barcode',
+    'person_barcode': 'Codigo de Barras',
+    'person_current_shelter': 'Refugio',
     'button_save': 'Guardar',
     'button_login': 'Iniciar sesion',
     'button_logout': 'Cerrar sesion',
@@ -71,7 +72,9 @@
     'settings_language_english': 'Ingles',
     'settings_language_spanish': 'Espanol',
     'settings_server_ip': 'Servidor IP',
-    'error_retrieving_info': 'La informacion no pudo ser recuperada.'
+    'error_retrieving_info': 'Recuperacion de informacion..',
+    'error_wrong_credentials': 'Incorrect Username or Password!',
+    'error_connecting_server': 'A problem occurred when connecting to the server. Status: '
   };
 
   var module = angular.module('vida-translations-es', ['pascalprecht.translate']);

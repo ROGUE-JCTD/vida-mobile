@@ -88,22 +88,27 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
 
-    // TODO: Add fields from /api/v1/person/
-    var JSONPerson = '{' +
-      '"age":"' + person.age + '", ' +
-      '"barcode":"' + person.barcode + '", ' +
-      '"city":"' + person.city + '", ' +
-      '"description":"' + person.description + '", ' +
-      '"family_name":"' + person.family_name + '", ' +
-      '"fathers_given_name":"' + person.fathers_given_name + '", ' +
-      '"gender":"' + person.gender + '", ' +
-      '"given_name":"' + person.given_name + '", ' +
-      '"mothers_given_name":"' + person.mothers_given_name + '", ' +
-      '"neighborhood":"' + person.neighborhood + '", ' +
-      '"notes":"' + person.notes + '", ' +
-      '"pic_filename":"' + person.pic_filename + '", ' +
-      '"province_or_state":"' + person.province_or_state + '", ' +
-      '"street_and_number":"' + person.street_and_number + '"' + '}';
+    var JSONPerson = '{';
+    var hasItem = false;
+
+    // TODO: Take all fields and put into service (for each list like this)
+    var uploadFields = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
+      'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'notes', 'description', 'phone_number',
+      'barcode', 'gender', 'injury', 'nationality', 'shelter_id', 'pic_filename', 'province_or_state',
+      'status'];
+
+    for (var i = 0; i < uploadFields.length; i++) {
+      if (i > 0 && i < uploadFields.length) {
+        // Add ,
+        if (hasItem)
+          JSONPerson += ', ';
+      }
+
+      JSONPerson += '"' + uploadFields[i] + '":"' + person[uploadFields[i]] + '"';
+      hasItem = true;
+    }
+
+    JSONPerson += '}';
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
@@ -473,7 +478,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       var changeList = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
       'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode',
-      'gender', 'injury', 'nationality'];
+      'gender', 'injury', 'nationality', 'shelter_id'];
 
       for (var i = 0; i < changeList.length; i++) {
         if (newPerson[changeList[i]] !== undefined) {
@@ -574,7 +579,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 .service('optionService', function() {
     var gender_options = [
       {
-        "name": 'person_gender_not_specified',
+        "name": 'person_not_specified',
         "value": "Not Specified"
       },
       {
@@ -618,6 +623,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     ];
 
     var nationality_options = [
+      {
+        "name": 'person_not_specified',
+        "value": "Not Specified"
+      },
       {
         "name": 'person_nationality_english',
         "value": "English"
@@ -705,6 +714,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.setAuthentication = function(username, password){
       this.configuration.username = username;
       this.configuration.password = password;
+    };
+
+    this.getAuthentication = function(){
+      return this.configuration;
     };
 
     this.getPeopleURL = function() {

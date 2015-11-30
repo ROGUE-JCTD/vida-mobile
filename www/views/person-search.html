@@ -20,7 +20,7 @@
         </div>
       </div>
       <ion-list>
-        <div ng-repeat="this_person in peopleService.getPeopleInShelter() | limitTo:totalDisplayed">
+        <div ng-repeat="this_person in peopleService.getPeopleInShelter()">
           <ion-item class="item-thumbnail-left" ng-click="changeWindow('/vida/person-search/person-detail/{{this_person.id}}')">
             <img ng-if="this_person.pic_filename !== 'undefined'" ng-src="{{networkService.getFileServiceURL()}}{{this_person.pic_filename}}/download/"
                  err-src="{{peopleService.getPlaceholderImage()}}"
