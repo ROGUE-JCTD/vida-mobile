@@ -548,7 +548,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var array = peopleInShelter;
       for (var i = 0; i < array.length; i++) {
         if (array[i].pic_filename && array[i].pic_filename !== "undefined") {
-          var thisURL = networkService.getFileServiceURL() + array[i].pic_filename + '/download/';
+          var thisURL = networkService.getFileServiceURL() + array[i].pic_filename + 'download/';
           $http.get(thisURL).then(function (xhr) {
             if (xhr.status === 200) {
               if (xhr.data.status !== "file not found") {
