@@ -136,13 +136,50 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     console.log('---------------------------------- PersonSearchCtrl');
 })
 
-.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter,
-                                         $cordovaActionSheet, peopleService, networkService, $rootScope){
+.controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
+                                         $cordovaActionSheet, peopleService, networkService, $rootScope, shelterService){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
   $scope.networkService = networkService;
+  $scope.current_shelter = {};
+  $scope.current_shelter.str = 'None';
+  $scope.current_shelter.link = 'None';
   $scope.personPhoto = null;
+
+  $scope.setupShelterButton = function() {
+    var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+    for (var i = 0; i < shelter_array.length; i++) {
+      if (shelter_array[i].value === shelterID){
+        $scope.current_shelter.str = shelter_array[i].name;
+        $scope.current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter_array[i].id;
+        shelterService.getAll();
+        break;
+      }
+    }
+  };
+
+  $scope.goToShelterDetail = function() {
+    var tabs = document.getElementsByClassName("tab-item");
+    for (var i=0; i < tabs.length; i++) {
+      tabs[i].setAttribute('style', 'display: none;');
+    }
+    var editDeleteButtons = document.getElementsByClassName("button-person-edit");
+    for (i=0; i < editDeleteButtons.length; i++) {
+      editDeleteButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
+    }
+    var backButton = document.getElementsByClassName("button-person-back");
+    for (i=0; i < backButton.length; i++) {
+      backButton[i].setAttribute('style', 'display: block;');   // Add button
+    }
+
+    $scope.$on("$destroy", function() {
+      var backButton = document.getElementsByClassName("button-person-back");
+      for (i=0; i < backButton.length; i++) {
+        backButton[i].setAttribute('style', 'display: none;');   // Add button
+      }
+    });
+  };
 
   $scope.setupEditDeleteButtons = function() {
     // Setup tab-specific buttons
@@ -151,10 +188,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       tabs[i].setAttribute('style', 'display: none;');
     }
 
+    var backButton = document.getElementsByClassName("button-person-back");
     var editDeleteButtons = document.getElementsByClassName("button-person-edit");
     var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
     for (i=0; i < editDeleteButtons.length; i++) {
       editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
+    }
+    for (i=0; i < backButton.length; i++) {
+      backButton[i].setAttribute('style', 'display: none;');   // Add button
     }
 
     $scope.$on("$destroy", function(){
@@ -169,6 +210,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       for (i=0; i < saveCancelButtons.length; i++) {
         saveCancelButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
       }
+      for (i=0; i < backButton.length; i++) {
+        backButton[i].setAttribute('style', 'display: none;');   // Add button
+      }
     });
   };
 
@@ -179,6 +223,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     function() {
       // Success
       $scope.searchPersonRequest--;
+      $scope.setupShelterButton();
     }, function(error){
       // Error
       $scope.searchPersonRequest--;
@@ -874,8 +919,46 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   });
 })
 
-.controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService) {
+.controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService, $rootScope) {
   console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getById($stateParams.shelterId));
     $scope.shelter = shelterService.getById($stateParams.shelterId);
     $scope.latlng = shelterService.getLatLng($stateParams.shelterId);
+
+    $rootScope.buttonBack = function() {
+      // Put edit/delete buttons back
+      var tabs = document.getElementsByClassName("tab-item");
+      for (var i=0; i < tabs.length; i++) {
+        tabs[i].setAttribute('style', 'display: none;');
+      }
+
+      var backButton = document.getElementsByClassName("button-person-back");
+      var editDeleteButtons = document.getElementsByClassName("button-person-edit");
+      var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
+      for (i=0; i < editDeleteButtons.length; i++) {
+        editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
+      }
+      for (i=0; i < backButton.length; i++) {
+        backButton[i].setAttribute('style', 'display: none;');   // Remove button
+      }
+
+      $scope.$on("$destroy", function(){
+        for (var i=0; i < tabs.length; i++) {
+          tabs[i].setAttribute('style', 'display: block;');
+        }
+
+        for (i=0; i < backButton.length; i++) {
+          backButton[i].setAttribute('style', 'display: none;');   // Remove button
+        }
+
+        for (i=0; i < editDeleteButtons.length; i++) {
+          editDeleteButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
+        }
+
+        for (i=0; i < saveCancelButtons.length; i++) {
+          saveCancelButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
+        }
+      });
+
+      window.history.back();
+    };
 });

@@ -55,7 +55,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       var shelters = q.defer();
       var array = [{
         name: 'None',
-        value: '00000000-0000-0000-0000-000000000000'
+        value: '',
+        id: 0
       }];
       var auth = netServ.getAuthentication();
 
@@ -70,7 +71,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
             for (var i = 0; i < data.objects.length; i++) {
               array.push({
                 name: data.objects[i].name,
-                value: data.objects[i].uuid
+                value: data.objects[i].uuid,
+                id: data.objects[i].id
               });
             }
             return shelters.resolve(array);
@@ -144,6 +146,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     views: {
       'view-person-search@vida': {
         templateUrl: "views/person-detail.html",
+        resolve: {
+          shelter_array : function($q, networkService) {
+            return retrieveAllShelters($q, networkService);
+          }
+        },
         controller: 'PersonDetailCtrl'
       }
     }

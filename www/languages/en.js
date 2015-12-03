@@ -35,6 +35,7 @@
     'tab_delete': 'Delete',
     'tab_save': 'Save',
     'tab_cancel': 'Cancel',
+    'tab_back': 'Back',
     'person_given_name': 'Given Name',
     'person_family_name': 'Family Name',
     'person_fathers_given_name': 'Fathers Given Name',

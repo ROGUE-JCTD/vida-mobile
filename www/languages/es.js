@@ -35,6 +35,7 @@
     'tab_delete': 'Borrar',
     'tab_save': 'Guardar',
     'tab_cancel': 'Cancelar',
+    'tab_back': 'Regresa',
     'person_given_name': 'Nombre de Pila',
     'person_family_name': 'Apellido',
     'person_fathers_given_name': 'Nombre Padres Dada',
