@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'">
+
   <title></title>
 
   <link href="vendor/ionic/css/ionic.css" rel="stylesheet">
@@ -44,9 +46,9 @@
   <script src="languages/es.js"></script>
 
   <!-- cordova script (this will be a 404 during development) -->
-  <script src="cordova.js"></script>
   <script src="lib/jquery/jquery-2.1.4.js"></script>
   <script src="vendor/ngCordova/dist/ng-cordova.min.js"></script>
+  <script src="cordova.js"></script>
   <script src="vendor/angular-resource/angular-resource.js"></script>
   <script src="vendor/angularjs-toaster/toaster.js"></script>
   <script src="vendor/leaflet/dist/leaflet.js"></script>

@@ -6,10 +6,11 @@
 // 'vida.services' is found in services.js
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
+var db = null;
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -37,6 +38,19 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           if (!(window.cordova.plugins.Keyboard)) {
               alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
           }
+
+        db = $cordovaSQLite.openDB("localDB.db");
+        var query = 'CREATE TABLE IF NOT EXISTS configuration (settings TEXT)';
+        var querySelect = 'SELECT * FROM configuration';
+        var defaultSettings = optionService.getDefaultConfigurationsJSON();
+        var queryIns = 'INSERT INTO configuration VALUES (' + defaultSettings + ')';
+        $cordovaSQLite.execute(db, query);
+        $cordovaSQLite.execute(db, querySelect).then(function(result){
+          if (result.rows.length <= 0){
+            $cordovaSQLite.execute(db, queryIns); // add default configuration row if doesn't exist
+            console.log(queryIns);
+          }
+        });
       }
 
       if (!(navigator.camera)){

@@ -1,7 +1,7 @@
 angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.translate'])
 
 
-.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout, shelterService, $translate) {
+.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout, shelterService, $translate, VIDA_localDB, networkService) {
   console.log('---------------------------------- AppCtrl');
   $translate.instant("title_search");
   console.log('---------------------------------- translate: ', $translate.instant("title_search"));
@@ -10,7 +10,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeStart to '+toState.to+'- fired when the transition begins. toState,toParams : \n',toState, toParams);
-  });
+    });
 
   $rootScope.$on('$stateChangeError',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeError - fired when an error occurs during transition.');
@@ -60,6 +60,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   // initialize once. we will only work with this created object from now on
   $rootScope.markers = {};
+
+  // Set values from DB on startup
+  VIDA_localDB.queryDB_select('configuration', 'settings', function (results) {
+    if (results.length > 0) {
+      var DBSettings = JSON.parse(results[0].settings);
+      networkService.SetConfigurationFromDB(DBSettings);
+    }
+  });
 })
 
 .controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
@@ -566,32 +574,32 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         var Status = "";
 
-        var Gender = undefined;
+        var Gender;
         if ($scope.current_gender !== undefined) {
           Gender = $scope.current_gender.value;
         }
 
-        var Injury = undefined;
+        var Injury;
         if ($scope.current_injury !== undefined) {
           Injury = $scope.current_injury.value;
         }
 
-        var Nationality = undefined;
+        var Nationality;
         if ($scope.current_nationality !== undefined) {
           Nationality = $scope.current_nationality.value;
         }
 
-        var ShelterID = undefined;
+        var ShelterID;
         if ($scope.current_shelter !== undefined) {
           ShelterID = $scope.current_shelter.value;
         }
 
-        var Photo = undefined;
+        var Photo;
         if ($scope.person.photo !== undefined) {
           Photo = $scope.person.photo;
         }
 
-        var Barcode = undefined;
+        var Barcode;
         if ($scope.person.barcode.code) {
           Barcode = $scope.person.barcode.code.toString();
         }
@@ -624,13 +632,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         // TODO: Only checks for duplicates based on Name, change based on unique ID, multiple fields, or ID number?
         var duplicate = false;
-        var peopleInShelter = peopleService.getPeopleInShelter();
+        /*var peopleInShelter = peopleService.getPeopleInShelter();
         for (var i = 0; i < peopleInShelter.length; i++) {
           if (peopleInShelter[i].given_name === newPerson.given_name) {
             duplicate = true;
             break;
           }
-        }
+        }*/
 
         if (!duplicate) {
           if (newPerson.photo) {
@@ -646,7 +654,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           $cordovaToast.showShortBottom($filter('translate')('dialog_person_exists'));
         }
       } else {
-        $cordovaToast.showShortBottom($filter('translate')('dialog_error_person_no_name'))
+        $cordovaToast.showShortBottom($filter('translate')('dialog_error_person_no_name'));
       }
     };
 
@@ -760,6 +768,47 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_shelter = this.current_shelter;
     };
 
+    // Used for getting shelter dropdowns before page is loaded
+    $scope.refreshShelters = function() {
+      var shelters = $q.defer();
+      var array = [{
+        name: 'None',
+        value: '',
+        id: 0
+      }];
+      var auth = networkService.getAuthentication();
+
+      $.ajax({
+        type: 'GET',
+        xhrFields: {
+          withCredentials: true
+        },
+        url: networkService.getShelterURL(),
+        success: function (data) {
+          if (data.objects.length > 0) {
+            for (var i = 0; i < data.objects.length; i++) {
+              array.push({
+                name: data.objects[i].name,
+                value: data.objects[i].uuid,
+                id: data.objects[i].id
+              });
+            }
+            $scope.shelter_array = array;
+          } else {
+            console.log('No shelters returned - check url: ' + networkService.getShelterURL() + ' or none are available');
+            $scope.shelter_array = array;
+          }
+        },
+        error: function () {
+          console.log('Error - retrieving all shelters failed');
+        },
+        username: auth.username,
+        password: auth.password
+      });
+
+      return shelters.promise;
+    };
+
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
@@ -767,7 +816,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log('---------------------------------- ShelterSearchCtrl');
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService, optionService,
+.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB,
                                      networkService, $translate){
   console.log('---------------------------------- SettingsCtrl');
 
@@ -781,11 +830,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.saveServerIP = function(IP) {
       networkService.setServerAddress(IP);
+
+      VIDA_localDB.queryDB_update_settings();
     };
-
-    $scope.language_options = optionService.getLanguageOptions();
-
-    $scope.current_language = $scope.language_options[0];
 
     $scope.switchLanguage = function() {
       if (this.current_language.value === "English")
@@ -794,10 +841,68 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         $translate.use('es');
       else
         $translate.use('en');
+
+      networkService.setLanguage(this.current_language.value);
+      VIDA_localDB.queryDB_update_settings();
+    };
+
+    // Init
+    $scope.language_options = optionService.getLanguageOptions();
+
+    for(var i = 0; i < $scope.language_options.length; i++){
+      if ($scope.language_options[i].value === networkService.getConfiguration().language){
+        $scope.current_language = $scope.language_options[i];
+      }
+    }
+
+    if ($scope.current_language === undefined)
+      $scope.current_language = $scope.language_options[0];
+
+    // Test Show From DB
+    $scope.show_configuration_from_db = function() {
+      VIDA_localDB.queryDB_select('configuration', 'settings', function(results){
+        console.log(results);
+      });
+    };
+
+    // Test Insert To DB
+    $scope.insert_config_to_db = function() {
+      var parameters = [{}, {}, {}];
+      parameters[0].column_name = 'server_ip';
+      parameters[0].value = networkService.getServerAddress();
+      parameters[1].column_name = 'username';
+      parameters[1].value = networkService.getAuthentication().username;
+      parameters[2].column_name = 'password';
+      parameters[2].value = networkService.getAuthentication().password;
+
+      var JSONObject = "'{\"configuration\":{" +
+        "\"" + parameters[0].column_name + "\":\"" + parameters[0].value + "\", " +
+        "\"" + parameters[1].column_name + "\":\"" + parameters[1].value + "\", " +
+        "\"" + parameters[2].column_name + "\":\"" + parameters[2].value + "\" }}'";
+
+      VIDA_localDB.queryDB_insert('configuration', JSONObject);
+    };
+
+    // Test Save/Update To DB
+    $scope.save_configuration_to_db = function() {
+      var parameters = [{}, {}, {}];
+      parameters[0].column_name = 'server_ip';
+      parameters[0].value = networkService.getServerAddress();
+      parameters[1].column_name = 'username';
+      parameters[1].value = networkService.getAuthentication().username;
+      parameters[2].column_name = 'password';
+      parameters[2].value = networkService.getAuthentication().password;
+
+      var JSONObject = "'{\"configuration\":{" +
+        "\"" + parameters[0].column_name + "\":\"" + parameters[0].value + "\", " +
+        "\"" + parameters[1].column_name + "\":\"" + parameters[1].value + "\", " +
+        "\"" + parameters[2].column_name + "\":\"" + parameters[2].value + "\" }}'";
+
+      VIDA_localDB.queryDB_update('configuration', JSONObject);
     };
 })
 
-.controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast){
+.controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast, VIDA_localDB){
   console.log('---------------------------------- loginCtrl');
 
   $scope.loginRequest = 0;
@@ -826,7 +931,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         if (e.status === 401) {
           $cordovaToast.showShortBottom(($filter('translate')('error_wrong_credentials')));
         } else {
-          alert($filter('translate')('error_connecting_server') + e.status + ": " + e.description)
+          alert($filter('translate')('error_connecting_server') + e.status + ": " + e.description);
         }
       }
 
@@ -843,7 +948,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       function() {
         // Success!
         $location.path(url);
-
+        VIDA_localDB.queryDB_update_settings();
         $scope.loginRequest--;
       },
       function(error) {

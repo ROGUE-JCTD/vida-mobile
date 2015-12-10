@@ -2,16 +2,16 @@
   <ion-pane>
     <ion-content padding="true" class="has-header">
       <form>
-          <div class="text-center">
-            <img id="personal_photo" style="position: relative; max-height: 250px; max-width: 250px"
-               ng-src="{{person.photo || peopleService.getPlaceholderImage()}}"
-                 err-src="{{peopleService.getPlaceholderImage()}}" ng-model="person.photo">
-          </div>
-          <div ng-if="pictureTestSpinner > 0">
-            <ion-spinner icon="ripple"></ion-spinner>
-          </div>
-          <button ng-click="showCameraModal()" style="position: absolute; top: 0px;"
-                  class="button icon ion-camera"></button>
+        <div class="text-center">
+          <img id="personal_photo" style="position: relative; max-height: 250px; max-width: 250px"
+             ng-src="{{person.photo || peopleService.getPlaceholderImage()}}"
+               err-src="{{peopleService.getPlaceholderImage()}}" ng-model="person.photo">
+        </div>
+        <div ng-if="pictureTestSpinner > 0">
+          <ion-spinner icon="ripple"></ion-spinner>
+        </div>
+        <button ng-click="showCameraModal()" style="position: absolute; top: 0px;"
+                class="button icon ion-camera"></button>
         <div ng-if="saveChangesRequest > 0" class="text-center">
           <ion-spinner icon="ripple"></ion-spinner>
         </div>

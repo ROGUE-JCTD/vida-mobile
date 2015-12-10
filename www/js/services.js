@@ -13,7 +13,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 .factory('httpRequestInterceptor', function(networkService) {
    return {
       request: function (config) {
-        config.headers['Authorization'] = networkService.getBasicAuthentication();
+        config.headers.Authorization = networkService.getBasicAuthentication();
+        config.timeout = 15000;
         return config;
       }
     };
@@ -337,7 +338,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var lng = parseFloat(tokens[0]);
     var lat = parseFloat(tokens[1]);
     return {lat: lat, lng: lng};
-  }
+  };
 
   this.printToConsole = function() {
     for (var i = 0; i < peopleInShelter.length; i++) {
@@ -417,7 +418,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           if (e.status === 401) {
             alert("Something went wrong with credentials.."); // Should never get in here
           } else {
-            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description)
+            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description);
           }
         }
         error();
@@ -549,7 +550,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return cordova.file.applicationDirectory + 'www/img/profile-photo-placeholder.jpg';
     };
 
-    this.downloadPhotos = function() {
+    /*this.downloadPhotos = function() {
       var array = peopleInShelter;
       for (var i = 0; i < array.length; i++) {
         if (array[i].pic_filename && array[i].pic_filename !== "undefined") {
@@ -573,7 +574,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           });
         }
       }
-    };
+    };*/
   })
 
 .service('optionService', function() {
@@ -641,6 +642,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     ];
 
+    var default_configurations = {};
+    default_configurations.configuration = {};
+    default_configurations.configuration.serverURL = "192.168.33.15";
+    default_configurations.configuration.username = "user";
+    default_configurations.configuration.password = "pass";
+    default_configurations.configuration.protocol = "http";
+    default_configurations.configuration.language = "English";
+    default_configurations.configuration.workOffline = "false";
+
     this.getGenderOptions = function() {
       return gender_options;
     };
@@ -656,27 +666,63 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.getNationalityOptions = function() {
       return nationality_options;
     };
+
+    this.getDefaultConfigurations = function() {
+      return default_configurations;
+    };
+
+    this.getDefaultConfigurationsJSON = function() {
+      var configs = ['serverURL', 'username', 'password', 'protocol',' language', 'workOffline'];
+      var JSONObject = "'{\"configuration\":{";
+      for (var i = 0; i < configs.length; i++){
+        JSONObject += '\"' + configs[i] + '\":\"' + default_configurations.configuration[configs[i]] + '\"';
+        if (i !== configs.length - 1)
+          JSONObject += ", ";
+      }
+      JSONObject += "}}'";
+      return JSONObject;
+    };
   })
 
   // TODO: Rename to configService
-.service('networkService', function() {
+.service('networkService', function(optionService, $translate) {
 
+    var self = this;
     this.configuration = {};
-    this.configuration.username = 'admin';
-    this.configuration.password = 'admin';
-    this.configuration.serverURL = '192.168.1.55';
-    this.configuration.protocol = 'http';
-    this.configuration.api = {};
+
+    var default_config = optionService.getDefaultConfigurations();
+    this.configuration.username = default_config.configuration.username;
+    this.configuration.password = default_config.configuration.password;
+    this.configuration.serverURL = default_config.configuration.serverURL;
+    this.configuration.protocol = default_config.configuration.protocol;
+    this.configuration.language = default_config.configuration.language;
+    this.configuration.workOffline = (default_config.configuration.workOffline === 'true');
 
     var URL = this.configuration.protocol + '://' + this.configuration.serverURL + '/api/v1';
+    this.configuration.api = {};
     this.configuration.api.personURL = URL + '/person/';
     this.configuration.api.searchURL = URL + '/person/?custom_query=';
     this.configuration.api.fileServiceURL = URL + '/fileservice/';
     this.configuration.api.shelterURL = URL + '/shelter/';
+    this.configuration.api.faceSearchURL = URL + '/facesearchservice/';
 
-    // Settings
-    this.configuration.language = 'English';
-    this.configuration.workOffline = false;
+    this.SetConfigurationFromDB = function(DBSettings) {
+      // Set DB settings
+      self.configuration.username = DBSettings.configuration.username;
+      self.configuration.password = DBSettings.configuration.password;
+      self.configuration.serverURL = DBSettings.configuration.serverURL;
+      self.configuration.protocol = DBSettings.configuration.protocol;
+      self.configuration.language = DBSettings.configuration.language;
+      if (self.configuration.language === "English")
+        $translate.use('en');
+      else if (self.configuration.language === "Spanish")
+        $translate.use('es');
+      else
+        $translate.use('en');
+      self.configuration.workOffline = (DBSettings.configuration.workOffline === 'true');
+
+      self.setServerAddress(DBSettings.configuration.serverURL);
+    };
 
     this.getServerAddress = function() {
       return this.configuration.serverURL;
@@ -691,6 +737,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       this.configuration.api.searchURL = URL + '/person/?custom_query=';
       this.configuration.api.fileServiceURL = URL + '/fileservice/';
       this.configuration.api.shelterURL = URL + '/shelter/';
+      this.configuration.api.faceSearchURL = URL + '/facesearchservice/';
     };
 
     this.getBasicAuthentication = function() {
@@ -716,6 +763,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       this.configuration.password = password;
     };
 
+    this.setLanguage = function(current_language){
+      this.configuration.language = current_language;
+    };
+
+    this.getConfiguration = function(){
+      return this.configuration;
+    };
+
+    // todo: get rid of this usage
     this.getAuthentication = function(){
       return this.configuration;
     };
@@ -738,5 +794,96 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getShelterURL = function() {
       return this.configuration.api.shelterURL;
-    }
+    };
+
+    this.getFaceSearchServiceURL = function() {
+      return this.configuration.api.faceSearchURL;
+    };
+  })
+
+.factory('DBHelper', function($cordovaSQLite, $q, $ionicPlatform) {
+    var self = this;
+
+    self.query = function(query, parameters) {
+      parameters = parameters || [];
+      var q = $q.defer();
+
+      $ionicPlatform.ready(function() {
+        $cordovaSQLite.execute(db, query, parameters).then(
+          function(result){
+            q.resolve(result);
+        }, function(error){
+            console.log("Error with DB - " + error.message);
+            q.reject(error);
+          });
+      });
+
+      return q.promise;
+    };
+
+    self.getAll = function(result) {
+      var output = [];
+
+      for (var i = 0; i < result.rows.length; i++){
+        output.push(result.rows.item(i));
+      }
+
+      return output;
+    };
+
+    self.getById = function(result) {
+      var output = null;
+      output = angular.copy(result.rows.item(0));
+      return output;
+    };
+
+    return self;
+  })
+
+.factory('VIDA_localDB', function($cordovaSQLite, DBHelper, networkService){
+    var self = this;
+
+    self.queryDB_select = function(tableName, columnName, afterQuery) {
+      return DBHelper.query("SELECT " + columnName + " FROM " + tableName)
+        .then(function(result){
+          afterQuery(DBHelper.getAll(result));
+        });
+    };
+
+    self.queryDB_update = function(tableName, JSONObject) {
+      var query = "UPDATE " + tableName + " SET settings=" + JSONObject;
+      console.log(query);
+      DBHelper.query(query)
+        .then(function (result) {
+          console.log(result);
+        });
+    };
+
+    self.queryDB_update_settings = function(){
+      var fields = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
+      var currentConfiguration = networkService.getConfiguration();
+      var JSONObject = "'{\"configuration\":{";
+      for (var i = 0; i < fields.length; i++){
+        JSONObject += '\"' + fields[i] + '\":\"' + currentConfiguration[fields[i]] + '\"';
+        if (i !== fields.length - 1)
+          JSONObject += ", ";
+      }
+      JSONObject += "}}'";
+      var query = "UPDATE configuration SET settings=" + JSONObject;
+      console.log(query);
+      DBHelper.query(query).then(function(result){
+        console.log(result);
+      });
+    };
+
+    self.queryDB_insert = function(tableName, JSONObject) {
+      var query = "INSERT INTO " + tableName + " VALUES (" + JSONObject + ")";
+      console.log(query);
+      DBHelper.query(query)
+        .then(function (result) {
+          console.log(result);
+        });
+    };
+
+    return self;
   });
