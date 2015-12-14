@@ -2,15 +2,30 @@
 ---
 ### How to install:
 
-VIDA uses [Ionic Framework](1) which can be downloaded by using this command:
-```sh
-$ npm install -g ionic
+VIDA uses [Ionic Framework](1)  but before you can insatll Ionic, you need to have Node Package Manager ```npm``` and ```bower```. 
+To install npm you can install it from (we've tested with this version):
+```
+https://nodejs.org/dist/v0.12.0/node-v0.12.9.pkg
 ```
 
-VIDA will also require [NodeJS](0) (tested on v0.12.2) to be installed.
+To install bower:
+```sh
+$ sudo npm install -g bower
+```
 
+To install ionic run:
+```sh
+$ sudo npm install -g cordova
+$ sudo npm install -g ionic
+```
 
-Once both are installed, run the following:
+To install the emulators for iOS and Android run:
+```sh
+$ npm install -g ios-sim
+$ npm install -g android-sim
+```
+
+At this point you can build the mobile app:
 ```sh
 git clone https://github.com/ROGUE-JCTD/vida-mobile.git
 cd vida-mobile
