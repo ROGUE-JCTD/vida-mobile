@@ -711,7 +711,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.uploadPhoto = function(newPerson, success) {
       uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
         // Success
-        $cordovaToast.showShortBottom($filter('translate')('dialog_photo_uploaded') + newPerson.given_name + '!');
+        //$cordovaToast.showShortBottom($filter('translate')('dialog_photo_uploaded') + newPerson.given_name + '!');
         newPerson.pic_filename = data.name;
         success();
       }, function () {
@@ -1073,15 +1073,35 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.$on("$destroy", function(){
-      var tabs = document.getElementsByClassName("tab-item");
       var backButton = document.getElementsByClassName("button-person-back");
-
-      for (var i=0; i < tabs.length; i++) {
-        tabs[i].setAttribute('style', 'display: block;');
-      }
 
       for (i=0; i < backButton.length; i++) {
         backButton[i].setAttribute('style', 'display: none;');   // Remove button
       }
     });
+
+    $scope.buttonShelterHome = function() {
+      shelterService.getAll();
+
+      var tabs = document.getElementsByClassName("tab-item");
+      for (var i=0; i < tabs.length; i++) {
+        tabs[i].setAttribute('style', 'display: block;');
+      }
+
+      var backButton = document.getElementsByClassName("button-person-back");
+      var editDeleteButtons = document.getElementsByClassName("button-person-edit");
+      var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
+
+      for (i=0; i < saveCancelButtons.length; i++) {
+        saveCancelButtons[i].setAttribute('style', 'display: none;');  // remove buttons
+      }
+      for (i=0; i < editDeleteButtons.length; i++) {
+        editDeleteButtons[i].setAttribute('style', 'display: none;');    // remove buttons
+      }
+      for (i=0; i < backButton.length; i++) {
+        backButton[i].setAttribute('style', 'display: none;');   // Remove button
+      }
+
+      $state.go('vida.shelter-search');
+    }
 });
