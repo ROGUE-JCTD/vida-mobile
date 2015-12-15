@@ -75,7 +75,10 @@
     'settings_server_ip': 'Server IP',
     'error_retrieving_info': 'Retrieving information..',
     'error_wrong_credentials': 'Incorrect Username or Password!',
-    'error_connecting_server': 'A problem occurred when connecting to the server. Status: '
+    'error_connecting_server': 'A problem occurred when connecting to the server. Status: ',
+    'error_no_results': 'No results found.',
+    'error_couldnt_get_results': 'Could not get results. Please try again.',
+    'loading_face_search': 'Loading Best Possible Matches..'
   };
 
   var module = angular.module('vida-translations-en', ['pascalprecht.translate']);

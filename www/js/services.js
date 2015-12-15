@@ -14,7 +14,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
    return {
       request: function (config) {
         config.headers.Authorization = networkService.getBasicAuthentication();
-        config.timeout = 15000;
+        config.timeout = 30000;
         return config;
       }
     };
@@ -64,7 +64,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 }])
 
-.service('uploadService', ['$http', function($http) {
+.service('uploadService', function($http, networkService) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
 
     var photoBlob = dataURLtoBlob(photo);
@@ -75,15 +75,17 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       transformRequest: angular.identity,
       headers: {
         'Content-Type': undefined,
-        'Authorization': 'Basic ' + btoa('admin:admin')
+        'Authorization': networkService.getAuthenticationHeader().headers.Authorization
       }
     }).success(function(data) {
       callSuccess(data);
     }).error(function(err) {
       // can be moved to callFailure(err)
-      // if err is null, server not found?
-      alert('Photo not uploaded! Error: ' + err.error_message);
-      callFailure();
+      if (err) {
+        // if err is null, server not found?
+        alert('Photo not uploaded! Error: ' + err.error_message);
+      }
+      callFailure(err);
     });
   };
 
@@ -124,7 +126,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       callFailure();
     });
   };
-}])
+})
 
 .factory('geofenceService', function ($rootScope, $window, $q, $log, $ionicLoading, toaster) {
   $window.geofence = $window.geofence || {
@@ -388,7 +390,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var searchURL = networkService.getSearchURL();
       searchURL += id;
 
-      $http.get(searchURL, networkService.getAuthenticationHeader()).then(function(xhr) {
+      $http.get(searchURL + "/?limit=100", networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             if (xhr.data.objects.length > 0) {
@@ -439,8 +441,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return storedSearchQuery;
     };
 
+    this.createSearchResult = function(peopleArr){
+      peopleInShelter = [];    // Reset list, is safe
+
+      for (var i = 0; i < peopleArr.length; i++){
+        peopleInShelter.push(peopleArr[i]);
+      }
+    };
+
     this.updateAllPeople = function(URL, success) {
-      $http.get(URL, networkService.getAuthenticationHeader()).then(function(xhr) {
+      $http.get(URL + "?limit=100", networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];

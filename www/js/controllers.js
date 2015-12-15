@@ -70,8 +70,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   });
 })
 
-.controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService,
-                                         $cordovaToast, $cordovaBarcodeScanner, $cordovaCamera) {
+.controller('PersonSearchCtrl', function($scope, $location, $http, peopleService, networkService, uploadService, $filter,
+                                         $cordovaToast, $cordovaBarcodeScanner, $cordovaCamera, $cordovaProgress) {
     $scope.searchText = '';
     $scope.searchRequestCounter = 0;
     $scope.totalDisplayed = 20;
@@ -127,11 +127,38 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         saveToPhotoAlbum: false
       };
 
+
+
       $cordovaCamera.getPicture(options).then(function(imageData) {
         var webViewImg = "data:image/jpeg;base64," + imageData;
-        alert("Picture Received Successfully");
+
+        // Show loading dialog
+        $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Retrieving best possible results..");
+
+        // Upload to facesearchservice, then get the result back and list people
+        uploadService.uploadPhotoToUrl(webViewImg, networkService.getFaceSearchServiceURL(), function(data){
+          // On success
+          if (data.objects.length > 0) {
+            peopleService.createSearchResult(data.objects);
+          } else {
+            $cordovaToast.showLongBottom($filter('translate')('error_no_results'));
+          }
+
+          // Hide loading dialog
+          $cordovaProgress.hide();
+
+          console.log(data);
+        }, function(error){
+          // Hide loading dialog
+          $cordovaProgress.hide();
+          $cordovaToast.showLongBottom($filter('translate')('error_couldnt_get_results'));
+          console.log(error);
+        });
       }, function(err) {
         // error
+        console.log(err);
+        // Hide loading dialog
+        $cordovaProgress.hide();
       });
 
       //peopleService.downloadPhotos(); //testing
@@ -145,7 +172,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
-                                         $cordovaActionSheet, peopleService, networkService, $rootScope, shelterService){
+                                         peopleService, networkService, $rootScope, shelterService){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
@@ -971,20 +998,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location, $http,
                                    $cordovaCamera, $cordovaActionSheet, $ionicModal){
-
-    // Deprecated (see bottom of index.html)
-  /*$ionicModal.fromTemplateUrl('Camera_Modal.html', {
-    scope: $scope,
-    animation: 'slide-in-up'
-  }).then(function(modal) {
-    $scope.CameraChooseModal = modal;
-    $scope.CameraChooseModal.hide();
-  });
-
-   $scope.closeCameraModel = function() {
-   $cordovaActionSheet.hide();
-   };*/
-
   $scope.changeWindow = function(url) {
     $location.path(url);
   };
