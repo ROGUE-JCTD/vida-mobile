@@ -182,13 +182,18 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.setupShelterButton = function() {
     var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+    var wasSet = false;
     for (var i = 0; i < shelter_array.length; i++) {
       if (shelter_array[i].value === shelterID){
         shelterService.setCurrentShelter(shelter_array[i]);
         shelterService.getAll();
+        wasSet = true;
         break;
       }
     }
+
+    if (!wasSet)
+      shelterService.setCurrentShelter('None');
   };
 
   $scope.goToShelterDetail = function() {
@@ -488,13 +493,17 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function() {  // This will reload the person in details
         var prevSearchQuery = peopleService.getStoredSearchQuery();
         var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+        var wasSet = false;
         for (var i = 0; i < shelter_array.length; i++) {
           if (shelter_array[i].value === shelterID){
             shelterService.setCurrentShelter(shelter_array[i]);
             shelterService.getAll();
+            wasSet = true;
             break;
           }
         }
+        if (!wasSet)
+          shelterService.setCurrentShelter('None');
         peopleService.getPerson(networkService.getSearchURL() + prevSearchQuery, prevSearchQuery, function() {
           // will successfully reload
           $state.go('vida.person-search.person-detail');

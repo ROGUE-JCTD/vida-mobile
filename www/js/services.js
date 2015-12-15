@@ -14,7 +14,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
    return {
       request: function (config) {
         config.headers.Authorization = networkService.getBasicAuthentication();
-        config.timeout = 30000;
+        config.timeout = 45000;
         return config;
       }
     };
@@ -339,8 +339,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 
   this.setCurrentShelter = function(shelter){
-    current_shelter.str = shelter.name;
-    current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter.id;
+    if (shelter !== 'None') {
+      current_shelter.str = shelter.name;
+      current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter.id;
+    } else {
+      current_shelter.str = 'None';
+      current_shelter.link = 'None';
+    }
   };
 
   this.getLatLng = function(id) {
