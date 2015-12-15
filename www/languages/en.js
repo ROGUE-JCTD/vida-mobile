@@ -5,6 +5,7 @@
     'title_edit': 'Edit Person',
     'title_details': 'Details',
     'title_shelters': 'Shelters',
+    'title_shelter_details': 'Shelter Details',
     'title_settings': 'Settings',
     'title_login': 'VIDA Login',
     'title_picture_dialog': 'Picture',

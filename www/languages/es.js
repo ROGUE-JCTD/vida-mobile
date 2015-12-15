@@ -5,6 +5,7 @@
     'title_edit': 'Editar Persona',
     'title_details': 'Detalles',
     'title_shelters': 'Refugios',
+    'title_shelter_details': 'Shelter Details',
     'title_settings': 'Ajustes',
     'title_login': 'VIDA Iniciar sesion',
     'title_picture_dialog': 'Cuadro',

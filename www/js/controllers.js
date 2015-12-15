@@ -177,17 +177,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
   $scope.networkService = networkService;
-  $scope.current_shelter = {};
-  $scope.current_shelter.str = 'None';
-  $scope.current_shelter.link = 'None';
+  $scope.shelterService = shelterService;
   $scope.personPhoto = null;
 
   $scope.setupShelterButton = function() {
     var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
     for (var i = 0; i < shelter_array.length; i++) {
       if (shelter_array[i].value === shelterID){
-        $scope.current_shelter.str = shelter_array[i].name;
-        $scope.current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter_array[i].id;
+        shelterService.setCurrentShelter(shelter_array[i]);
         shelterService.getAll();
         break;
       }
@@ -211,7 +208,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.$on("$destroy", function() {
       var backButton = document.getElementsByClassName("button-person-back");
       for (i=0; i < backButton.length; i++) {
-        backButton[i].setAttribute('style', 'display: none;');   // Add button
+        backButton[i].setAttribute('style', 'display: none;');   // Remove button
       }
     });
   };
@@ -230,7 +227,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
     }
     for (i=0; i < backButton.length; i++) {
-      backButton[i].setAttribute('style', 'display: none;');   // Add button
+      backButton[i].setAttribute('style', 'display: none;');   // Remove button
     }
 
     $scope.$on("$destroy", function(){
@@ -246,7 +243,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         saveCancelButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
       }
       for (i=0; i < backButton.length; i++) {
-        backButton[i].setAttribute('style', 'display: none;');   // Add button
+        backButton[i].setAttribute('style', 'display: none;');   // Remove button
       }
     });
   };
@@ -283,8 +280,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array,
-                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService) {
+.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array, $cordovaToast,
+                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
   $scope.peopleService = peopleService;
@@ -440,7 +437,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }
 
       for (i=0; i < editDeleteButtons.length; i++) {
-        editDeleteButtons[i].setAttribute('style', 'display: block;');   // Removes buttons
+        editDeleteButtons[i].setAttribute('style', 'display: block;');   // Enables buttons
       }
     });
   };
@@ -490,8 +487,22 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.saveChangesRequest--;
       peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function() {  // This will reload the person in details
         var prevSearchQuery = peopleService.getStoredSearchQuery();
-        peopleService.getPerson(networkService.getSearchURL() + prevSearchQuery, prevSearchQuery, function() {}, function() {}); // This will reload search query
-        $state.go('vida.person-search.person-detail');
+        var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+        for (var i = 0; i < shelter_array.length; i++) {
+          if (shelter_array[i].value === shelterID){
+            shelterService.setCurrentShelter(shelter_array[i]);
+            shelterService.getAll();
+            break;
+          }
+        }
+        peopleService.getPerson(networkService.getSearchURL() + prevSearchQuery, prevSearchQuery, function() {
+          // will successfully reload
+          $state.go('vida.person-search.person-detail');
+        }, function() {
+          // will not successfully reload
+          $state.go('vida.person-search.person-detail');
+          $cordovaToast.showShortBottom('Something went wrong. Please check your connection.');
+        }); // This will reload search query
       }, function() {
 
       });
@@ -1051,7 +1062,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       var backButton = document.getElementsByClassName("button-person-back");
       var editDeleteButtons = document.getElementsByClassName("button-person-edit");
-      var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
       for (i=0; i < editDeleteButtons.length; i++) {
         editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
       }
@@ -1059,24 +1069,19 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         backButton[i].setAttribute('style', 'display: none;');   // Remove button
       }
 
-      $scope.$on("$destroy", function(){
-        for (var i=0; i < tabs.length; i++) {
-          tabs[i].setAttribute('style', 'display: block;');
-        }
-
-        for (i=0; i < backButton.length; i++) {
-          backButton[i].setAttribute('style', 'display: none;');   // Remove button
-        }
-
-        for (i=0; i < editDeleteButtons.length; i++) {
-          editDeleteButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
-        }
-
-        for (i=0; i < saveCancelButtons.length; i++) {
-          saveCancelButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
-        }
-      });
-
       window.history.back();
     };
+
+    $scope.$on("$destroy", function(){
+      var tabs = document.getElementsByClassName("tab-item");
+      var backButton = document.getElementsByClassName("button-person-back");
+
+      for (var i=0; i < tabs.length; i++) {
+        tabs[i].setAttribute('style', 'display: block;');
+      }
+
+      for (i=0; i < backButton.length; i++) {
+        backButton[i].setAttribute('style', 'display: none;');   // Remove button
+      }
+    });
 });

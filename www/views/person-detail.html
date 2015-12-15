@@ -45,7 +45,7 @@
           {{'person_barcode' | translate}}: {{peopleService.getRetrievedPersonByID().barcode || ""}}
         </p>
         <div id="shelterID" ng-if="peopleService.getRetrievedPersonByID().shelter_id !== null">
-          <p>{{'person_current_shelter' | translate}}: {{current_shelter.str}} &nbsp;<a ng-if="current_shelter.link !== 'None'" class="icon ion-chevron-right trigger" ng-click="goToShelterDetail()" href="{{current_shelter.link}}"></a></p>
+          <p>{{'person_current_shelter' | translate}}: {{shelterService.getCurrentShelter().str}} &nbsp;<a ng-if="shelterService.getCurrentShelter().link !== 'None'" class="icon ion-chevron-right trigger" ng-click="goToShelterDetail()" href="{{shelterService.getCurrentShelter().link}}"></a></p>
         </div>
         </div>
       </div>

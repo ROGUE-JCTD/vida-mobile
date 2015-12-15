@@ -305,6 +305,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 .service('shelterService', function($http, networkService, $resource, $q) {
   var service = this;
   var shelters = [];
+  var current_shelter = {};
+  current_shelter.str = 'None';
+  current_shelter.link = 'None';
 
   this.getAll = function() {
     var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
@@ -329,6 +332,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       if (shelters[i].id == id)
         return shelters[i];
     }
+  };
+
+  this.getCurrentShelter = function() {
+    return current_shelter;
+  };
+
+  this.setCurrentShelter = function(shelter){
+    current_shelter.str = shelter.name;
+    current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter.id;
   };
 
   this.getLatLng = function(id) {
@@ -356,7 +368,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var storedSearchQuery = "";
 
     this.getPerson = function(URL, query, success, error) {
-      $http.get(URL, networkService.getAuthenticationHeader()).then(function(xhr) {
+      $http.get(URL + '&limit=100', networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];    // Reset list, is safe
@@ -391,7 +403,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var searchURL = networkService.getSearchURL();
       searchURL += id;
 
-      $http.get(searchURL + "/?limit=100", networkService.getAuthenticationHeader()).then(function(xhr) {
+      $http.get(searchURL, networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             if (xhr.data.objects.length > 0) {
@@ -658,8 +670,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var default_configurations = {};
     default_configurations.configuration = {};
     default_configurations.configuration.serverURL = "192.168.33.15";
-    default_configurations.configuration.username = "user";
-    default_configurations.configuration.password = "pass";
+    default_configurations.configuration.username = "admin";
+    default_configurations.configuration.password = "admin";
     default_configurations.configuration.protocol = "http";
     default_configurations.configuration.language = "English";
     default_configurations.configuration.workOffline = "false";
