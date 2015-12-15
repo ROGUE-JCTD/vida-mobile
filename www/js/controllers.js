@@ -139,7 +139,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         uploadService.uploadPhotoToUrl(webViewImg, networkService.getFaceSearchServiceURL(), function(data){
           // On success
           if (data.objects.length > 0) {
-            peopleService.createSearchResult(data.objects);
+            peopleService.createSearchResult(data.objects, data.scores);
           } else {
             $cordovaToast.showLongBottom($filter('translate')('error_no_results'));
           }

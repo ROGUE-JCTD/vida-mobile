@@ -369,6 +369,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
                 newPerson.given_name = personOnServer.given_name;
                 newPerson.status = 'On Server';
                 newPerson.id = personOnServer.id;
+                newPerson.score = undefined;
 
                 peopleInShelter.push(xhr.data.objects[i]);
               }
@@ -441,10 +442,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return storedSearchQuery;
     };
 
-    this.createSearchResult = function(peopleArr){
+    this.createSearchResult = function(peopleArr, scoreArr){
       peopleInShelter = [];    // Reset list, is safe
 
       for (var i = 0; i < peopleArr.length; i++){
+        var newPerson = peopleArr[i];
+        newPerson.score = scoreArr[i][1].toFixed(5);
         peopleInShelter.push(peopleArr[i]);
       }
     };
