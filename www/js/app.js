@@ -65,7 +65,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 .config(function($stateProvider, $urlRouterProvider) {
 
     // Used for getting shelter dropdowns before page is loaded
-    var retrieveAllShelters = function(q, netServ) {
+    var retrieveAllShelters = function(q, netServ, $cordovaProgress) {
+
+      if ($cordovaProgress)
+        $cordovaProgress.showSimpleWithLabelDetail(true, 'Loading Page Information', 'Retrieving list of all available shelters..');
+
       var shelters = q.defer();
       var array = [{
         name: 'None',
@@ -89,14 +93,18 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
                 id: data.objects[i].id
               });
             }
-            return shelters.resolve(array);
           } else {
             console.log('No shelters returned - check url: ' + netServ.getShelterURL() + ' or none are available');
-            return shelters.resolve(array);
           }
+
+          if ($cordovaProgress)
+            $cordovaProgress.hide();
+          return shelters.resolve(array);
         },
         error: function () {
           console.log('Error - retrieving all shelters failed');
+          if ($cordovaProgress)
+            $cordovaProgress.hide();
           return shelters.resolve(array);
         },
         username: auth.username,
@@ -136,8 +144,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       'view-person-create': {
         templateUrl: 'views/person-create.html',
         resolve: {
-          shelter_array : function($q, networkService) {
-            return retrieveAllShelters($q, networkService);
+          shelter_array : function($q, networkService, $cordovaProgress) {
+            return retrieveAllShelters($q, networkService, $cordovaProgress);
           }
         },
         controller: 'PersonCreateCtrl'
@@ -162,7 +170,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         templateUrl: "views/person-detail.html",
         resolve: {
           shelter_array : function($q, networkService) {
-            return retrieveAllShelters($q, networkService);
+            return retrieveAllShelters($q, networkService, false);
           }
         },
         controller: 'PersonDetailCtrl'
@@ -177,7 +185,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         templateUrl: "views/person-create.html",
         resolve: {
           shelter_array : function($q, networkService) {
-            return retrieveAllShelters($q, networkService);
+            return retrieveAllShelters($q, networkService, false);
           }
         },
         controller: 'PersonDetailEditCtrl'

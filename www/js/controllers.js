@@ -172,7 +172,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
-                                         peopleService, networkService, $rootScope, shelterService){
+                                         peopleService, networkService, $rootScope, shelterService, $cordovaProgress){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
@@ -271,6 +271,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $rootScope.buttonPersonEdit = function() {
     console.log('PersonDetailCtrl - buttonPersonEdit()');
 
+    $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Loading details of " + peopleService.getRetrievedPersonByID().given_name);
     $state.go('vida.person-search.person-detail.person-edit');
   };
 
@@ -286,7 +287,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array, $cordovaToast,
-                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService) {
+                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService, $cordovaProgress) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
   $scope.peopleService = peopleService;
@@ -486,10 +487,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
     changedPerson.id = person.id;
 
+    // Show loading dialog
+    $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving changes to " + person.given_name);
     $scope.saveChangesRequest++;
     peopleService.editPerson_saveChanges(changedPerson, function(success) {
       // Success
       $scope.saveChangesRequest--;
+      $cordovaProgress.hide();
+      $cordovaProgress.showSimpleWithLabelDetail(true, "Complete", "Changes saved! Returning to details..");
       peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function() {  // This will reload the person in details
         var prevSearchQuery = peopleService.getStoredSearchQuery();
         var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
@@ -507,9 +512,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         peopleService.getPerson(networkService.getSearchURL() + prevSearchQuery, prevSearchQuery, function() {
           // will successfully reload
           $state.go('vida.person-search.person-detail');
+          $cordovaProgress.hide();
         }, function() {
           // will not successfully reload
           $state.go('vida.person-search.person-detail');
+          $cordovaProgress.hide();
           $cordovaToast.showShortBottom('Something went wrong. Please check your connection.');
         }); // This will reload search query
       }, function() {
@@ -520,6 +527,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       //TODO: SHOW ERROR
       $scope.saveChangesRequest--;
       $state.go('vida.person-search.person-detail');
+      $cordovaProgress.hide();
     });
   };
 
@@ -585,11 +593,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   // Startup
   $scope.setupSaveCancelButtons();
+  $cordovaProgress.hide();
 })
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
                                          $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService,
-                                          optionService, $q, shelter_array){
+                                          optionService, $q, shelter_array, $cordovaProgress){
     $scope.person = {};
     $scope.person.photo = undefined;
     $scope.person.barcode = {};
@@ -605,6 +614,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.current_gender = $scope.gender_options[0];
     $scope.current_injury = $scope.injury_options[0];
     $scope.current_nationality = $scope.nationality_options[0];
+
+    $cordovaProgress.hide();
 
     $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
     if ($scope.shelter_array) {
@@ -686,22 +697,27 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             break;
           }
         }*/
+        $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving and uploading information for " + newPerson.given_name);
 
         if (!duplicate) {
           if (newPerson.photo) {
             $scope.uploadPhoto(newPerson, function(){
               // On successful upload of Photo, this assigns the photo to the person
               $scope.uploadPerson(newPerson);
+              $cordovaProgress.hide();
             });
           } else {
             // On non-successful upload of Photo, the person's info will only be uploaded
             $scope.uploadPerson(newPerson);
+            $cordovaProgress.hide();
           }
         } else {
           $cordovaToast.showShortBottom($filter('translate')('dialog_person_exists'));
+          $cordovaProgress.hide();
         }
       } else {
         $cordovaToast.showShortBottom($filter('translate')('dialog_error_person_no_name'));
+        $cordovaProgress.hide();
       }
     };
 
