@@ -7,10 +7,11 @@
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
 var db = null;
+var isDisconnected = false;
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -40,6 +41,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           }
 
         db = $cordovaSQLite.openDB("localDB.db");
+        DBHelper.addDB('localDB', db);
+        DBHelper.setCurrentDB('localDB');
         var query = 'CREATE TABLE IF NOT EXISTS configuration (settings TEXT)';
         var querySelect = 'SELECT * FROM configuration';
         var defaultSettings = optionService.getDefaultConfigurationsJSON();
@@ -51,6 +54,17 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
             console.log(queryIns);
           }
         });
+
+        var peopleTableValues = optionService.getDefaultPeopleTableValues();
+        query = 'CREATE TABLE IF NOT EXISTS people (';
+        for (var i = 0; i < peopleTableValues.length; i++){
+          query += peopleTableValues[i].column + ' ' + peopleTableValues[i].type;
+
+          if (i < peopleTableValues.length - 1)
+            query += ', ';
+        }
+        query += ')';
+        $cordovaSQLite.execute(db, query);
       }
 
       if (!(navigator.camera)){
@@ -76,42 +90,48 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         value: '',
         id: 0
       }];
-      var auth = netServ.getAuthentication();
 
-      $.ajax({
-        type: 'GET',
-        xhrFields: {
-          withCredentials: true
-        },
-        url: netServ.getShelterURL(),
-        success: function (data) {
-          if (data.objects.length > 0) {
-            for (var i = 0; i < data.objects.length; i++) {
-              array.push({
-                name: data.objects[i].name,
-                value: data.objects[i].uuid,
-                id: data.objects[i].id
-              });
+      if (!isDisconnected) {
+        var auth = netServ.getUsernamePassword();
+
+        $.ajax({
+          type: 'GET',
+          xhrFields: {
+            withCredentials: true
+          },
+          url: netServ.getShelterURL(),
+          success: function (data) {
+            if (data.objects.length > 0) {
+              for (var i = 0; i < data.objects.length; i++) {
+                array.push({
+                  name: data.objects[i].name,
+                  value: data.objects[i].uuid,
+                  id: data.objects[i].id
+                });
+              }
+            } else {
+              console.log('No shelters returned - check url: ' + netServ.getShelterURL() + ' or none are available');
             }
-          } else {
-            console.log('No shelters returned - check url: ' + netServ.getShelterURL() + ' or none are available');
-          }
 
-          if ($cordovaProgress)
-            $cordovaProgress.hide();
-          return shelters.resolve(array);
-        },
-        error: function () {
-          console.log('Error - retrieving all shelters failed');
-          if ($cordovaProgress)
-            $cordovaProgress.hide();
-          return shelters.resolve(array);
-        },
-        username: auth.username,
-        password: auth.password
-      });
-
-      return shelters.promise;
+            if ($cordovaProgress)
+              $cordovaProgress.hide();
+            return shelters.resolve(array);
+          },
+          error: function () {
+            console.log('Error - retrieving all shelters failed');
+            if ($cordovaProgress)
+              $cordovaProgress.hide();
+            return shelters.resolve(array);
+          },
+          username: auth.username,
+          password: auth.password
+        });
+        return shelters.promise;
+      } else {
+        if ($cordovaProgress)
+          $cordovaProgress.hide();
+        return shelters.resolve(array);
+      }
     };
 
   // Ionic uses AngularUI Router which uses the concept of states

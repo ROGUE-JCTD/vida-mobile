@@ -13,29 +13,31 @@
                  style="" placeholder="{{'search_searchfield' | translate}}">
         </label>
         <div>
-          <button class="button button-small button-stable button-block icon ion-camera" ng-click="takeCameraPhoto_Search(1)"></button>
+          <button class="button button-small button-stable button-block icon ion-camera" ng-click="showCameraModal()"></button>
         </div>
         <div>
           <button class="button button-small button-stable button-block icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
       </div>
       <ion-list>
-        <div ng-repeat="this_person in peopleService.getPeopleInShelter()">
+        <div ng-repeat="this_person in peopleService.getPeopleInShelter() | limitTo:totalDisplayed">
           <ion-item class="item-thumbnail-left" ng-click="changeWindow('/vida/person-search/person-detail/{{this_person.id}}')">
-            <img ng-if="this_person.pic_filename !== 'undefined'" ng-src="{{networkService.getFileServiceURL()}}{{this_person.pic_filename}}/download/"
+            <img ng-if="this_person.pic_filename !== ''" ng-src="{{peopleService.getPersonalImage(this_person.pic_filename)}}"
                  err-src="{{peopleService.getPlaceholderImage()}}"
                  id="this_person.photo" ng-model="this_person.photo">
-            <img ng-if="this_person.pic_filename === 'undefined'" ng-src="{{peopleService.getPlaceholderImage()}}">
+            <img ng-if="this_person.pic_filename === ''" ng-src="{{peopleService.getPlaceholderImage()}}">
             <h2>{{this_person.given_name || Name}}</h2>
             <p>{{'search_age' | translate}}: {{this_person.age || Age}}</p>
             <p ng-if="this_person.score !== undefined">Score: {{this_person.score}}</p>
           </ion-item>
         </div>
       </ion-list>
-      <div ng-if="getPeopleInShelter().length > 0">
-        <ion-infinite-scroll on-infinite="loadMorePeople()" distance="0%">
-        </ion-infinite-scroll>
-      </div>
+      <!--<ion-infinite-scroll
+          ng-if="moreDataCanBeLoaded()"
+          on-infinite="loadMorePeople()"
+          icon="ripple"
+          distance="100%">
+      </ion-infinite-scroll>-->
     </ion-content>
   </ion-pane>
 </ion-view>

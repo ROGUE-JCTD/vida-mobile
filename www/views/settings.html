@@ -3,6 +3,12 @@
     <ion-content padding="true" class="has-header">
       <form>
         <ion-toggle toggle-class="toggle-positive">{{'settings_cache_photos' | translate}}</ion-toggle>
+
+        <ion-toggle id="disconnected_switch" ng-model="b_disconnected" ng-change="changeDisconnected()"
+                    toggle-class="toggle-positive">Disconnected Mode</ion-toggle>
+
+        <button class="button button-positive button-block" ng-click="updateSyncDatabase()">Update/Sync Database</button>
+
         <label class="item item-input item-select">
           <span class="input-label">{{'settings_language' | translate}}</span>
           <select ng-init="current_language == current_language || language_options[0]" ng-change="switchLanguage()"
@@ -13,7 +19,7 @@
         <div>
           <label class="item item-input">
             <span class="input-label">{{'settings_server_ip' | translate}}:</span>
-            <input type="text" placeholder="" ng-model-options='{debounce: 1000}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
+            <input type="text" placeholder="" ng-model-options='{debounce: 1500}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
           </label>
         </div>
         <button class="button button-positive button-block" ng-click="logout('/login')">{{'button_logout' | translate}}</button>

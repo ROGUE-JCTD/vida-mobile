@@ -8,13 +8,18 @@ function dataURLtoBlob(dataURI) {
   return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
 }
 
+// Helper function
+function fixUndefined(str){
+  return str === undefined ? "" : str;
+}
+
 angular.module('vida.services', ['ngCordova', 'ngResource'])
 
 .factory('httpRequestInterceptor', function(networkService) {
    return {
       request: function (config) {
         config.headers.Authorization = networkService.getBasicAuthentication();
-        config.timeout = 45000;
+        config.timeout = 45000;  //45s because of long face recognition request :(
         return config;
       }
     };
@@ -33,23 +38,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   $resourceProvider.defaults.stripTrailingSlashes = false;
 })
 
-/*.provider('configService', function() {
-  var service_ = null;
-  this.configuration = {};
-  this.$get = function($window, $http, $location, $translate) {
-    service_ = this;
-    this.username = 'admin';
-    this.password = 'admin';
-    //this.csrfToken = $cookies.csrftoken;
-    //$translate.use(this.currentLanguage);
-    return this;
-  };
-
-  this.isAuthenticated = function() {
-    return service_.authStatus == 200;
-  };
-})*/
-
 .factory('Camera', ['$q', function($q){
   return {
     getPicture: function(options) {
@@ -64,7 +52,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 }])
 
-.service('uploadService', function($http, networkService) {
+.service('uploadService', function($http, networkService, optionService) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
 
     var photoBlob = dataURLtoBlob(photo);
@@ -89,16 +77,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     });
   };
 
-  this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
-
+  this.updatePerson = function(person, callSuccess, callFailure){
     var JSONPerson = '{';
     var hasItem = false;
 
-    // TODO: Take all fields and put into service (for each list like this)
-    var uploadFields = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
-      'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'notes', 'description', 'phone_number',
-      'barcode', 'gender', 'injury', 'nationality', 'shelter_id', 'pic_filename', 'province_or_state',
-      'status'];
+    var uploadFields = optionService.getPersonUploadInfo();
 
     for (var i = 0; i < uploadFields.length; i++) {
       if (i > 0 && i < uploadFields.length) {
@@ -107,7 +90,37 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           JSONPerson += ', ';
       }
 
-      JSONPerson += '"' + uploadFields[i] + '":"' + person[uploadFields[i]] + '"';
+      JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
+      hasItem = true;
+    }
+
+    JSONPerson += '}';
+
+    $http.put(networkService.getPeopleURL() + person.id + '/', JSONPerson,
+      networkService.getAuthenticationHeader()).then(function (xhr) {
+      if (xhr.status === 204) {
+        callSuccess();
+      } else {
+        callFailure();
+      }
+    });
+  };
+
+  this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
+
+    var JSONPerson = '{';
+    var hasItem = false;
+
+    var uploadFields = optionService.getPersonUploadInfo();
+
+    for (var i = 0; i < uploadFields.length; i++) {
+      if (i > 0 && i < uploadFields.length) {
+        // Add ,
+        if (hasItem)
+          JSONPerson += ', ';
+      }
+
+      JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
       hasItem = true;
     }
 
@@ -121,9 +134,20 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }).success(function() {
       callSuccess();
     }).error(function(err) {
-      // can be moved to callFailure(err)
-      alert('Person not uploaded! Error: ' + err.error_message);
-      callFailure();
+      callFailure('Person not uploaded! Error: ' + err);
+    });
+  };
+
+  this.deletePerson = function(person, successCallback, errorCallback) {
+    $http.delete(networkService.getPeopleURL() + person.id + '/', {
+      headers: {
+      'Authorization': networkService.getAuthenticationHeader().headers.Authorization
+    }}).then(function(xhr){
+      if (xhr.status === 204) {
+        successCallback();
+      } else {
+        errorCallback();
+      }
     });
   };
 })
@@ -358,92 +382,128 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var lat = parseFloat(tokens[1]);
     return {lat: lat, lng: lng};
   };
-
-  this.printToConsole = function() {
-    for (var i = 0; i < peopleInShelter.length; i++) {
-      console.log(peopleInShelter[i].given_name);
-    }
-  };
 })
 
-.service('peopleService', function($http, networkService, uploadService, $cordovaFile) {
+.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
     var storedSearchQuery = "";
 
-    this.getPerson = function(URL, query, success, error) {
-      $http.get(URL + '&limit=100', networkService.getAuthenticationHeader()).then(function(xhr) {
-        if (xhr.status === 200) {
-          if (xhr.data !== null) {
-            peopleInShelter = [];    // Reset list, is safe
+    this.searchForPerson = function(URL, query, success, error) {
+      if (query !== '') {
+        if (!isDisconnected) {
+          var newURL = (URL === networkService.getPeopleURL()) ? URL + '?custom_query=' + query + '&limit=100' : URL + query + '&limit=100'; // Change parameter prefacing
+          $http.get(newURL, networkService.getAuthenticationHeader()).then(function (xhr) {
+            if (xhr.status === 200) {
+              if (xhr.data !== null) {
+                peopleInShelter = [];    // Reset list, is safe
 
-            if (query !== '') { // Temporary fix (search with '' returns all objects (since all contain ''))
-              for (var i = 0; i < xhr.data.objects.length; i++) {
-                var personOnServer = xhr.data.objects[i];
-                var newPerson = {};
+                for (var i = 0; i < xhr.data.objects.length; i++) {
+                  var personOnServer = xhr.data.objects[i];
+                  var newPerson = {};
 
-                newPerson.given_name = personOnServer.given_name;
-                newPerson.status = 'On Server';
-                newPerson.id = personOnServer.id;
-                newPerson.score = undefined;
+                  newPerson.given_name = personOnServer.given_name;
+                  newPerson.status = 'On Server';
+                  newPerson.id = personOnServer.id;
+                  newPerson.score = undefined;
 
-                peopleInShelter.push(xhr.data.objects[i]);
+                  peopleInShelter.push(xhr.data.objects[i]);
+                }
+
+                if (success)
+                  success();
+              } else {
+                if (error)
+                  error(undefined);
               }
+            } else {
+              if (error)
+                error(xhr.status);
             }
-
-            success();
-          } else {
-            error(undefined);
-          }
+          }, function (e) {
+            if (error)
+              error(e.statusText);
+          });
         } else {
-          error(xhr.status);
+          // Search local database instead
+          var whereAt = {};
+          whereAt.restriction = 'LIKE';
+          whereAt.column = 'given_name';  // TODO: Make advanced searching
+          whereAt.value = query;
+          VIDA_localDB.queryDB_select('people', '*', function (results) {
+            peopleInShelter = [];
+            for (var i = 0; i < results.length; i++) {
+              if (results[i].deleted != true)
+                peopleInShelter.push(results[i]);
+            }
+            peopleInShelter.sort(); // Results comes up weird sometimes, better off just sorting it
+            if (success)
+              success();
+          }, whereAt);
         }
-      }, function(e) {
-        error(e.statusText);
-      });
+      } else {
+        peopleInShelter = [];
+        if (success)
+          success();
+      }
     };
 
     this.searchPersonByID = function(id, success, error) {
-      var searchURL = networkService.getSearchURL();
-      searchURL += id;
+      if (!isDisconnected) {
+        var searchURL = networkService.getSearchURL();
+        searchURL += id;
 
-      $http.get(searchURL, networkService.getAuthenticationHeader()).then(function(xhr) {
-        if (xhr.status === 200) {
-          if (xhr.data !== null) {
-            if (xhr.data.objects.length > 0) {
-              if (xhr.data.objects.length > 1) {
-                // Multiple objects returned, search for ID specifically
-                for (var i = 0; i < xhr.data.objects.length; i++){
-                  if (parseInt(id) === xhr.data.objects[i].id){
-                    personByID = xhr.data.objects[i];
-                    break;
+        $http.get(searchURL, networkService.getAuthenticationHeader()).then(function (xhr) {
+          if (xhr.status === 200) {
+            if (xhr.data !== null) {
+              if (xhr.data.objects.length > 0) {
+                if (xhr.data.objects.length > 1) {
+                  // Multiple objects returned, search for ID specifically
+                  for (var i = 0; i < xhr.data.objects.length; i++) {
+                    if (parseInt(id) === xhr.data.objects[i].id) {
+                      personByID = xhr.data.objects[i];
+                      break;
+                    }
                   }
-                }
-              } else
-                personByID = xhr.data.objects[0]; // Only 1 object returned
+                } else
+                  personByID = xhr.data.objects[0]; // Only 1 object returned
 
-              success();
+                success();
+              } else {
+                error(); // No objects returned
+              }
             } else {
-              error(); // No objects returned
+              error();
             }
           } else {
             error();
           }
-        } else {
-          error();
-        }
-      }, function(e) {
-        if (e) {
-          if (e.status === 401) {
-            alert("Something went wrong with credentials.."); // Should never get in here
-          } else {
-            alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description);
+        }, function (e) {
+          if (e) {
+            if (e.status === 401) {
+              alert("Something went wrong with credentials.."); // Should never get in here
+            } else {
+              alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description);
+            }
           }
-        }
-        error();
-      });
-
+          error();
+        });
+      } else {
+        var whereAt = {};
+        whereAt.restriction = 'EXACT';
+        whereAt.column = 'id';
+        whereAt.value = '\"' + id + '\"';
+        VIDA_localDB.queryDB_select('people', '*', function(results){
+          if (results.length > 0) {
+            personByID = results[0];
+            success();
+          } else {
+            personByID = undefined;
+            error();
+          }
+        }, whereAt)
+      }
       personByID = undefined; // Set by default
     };
 
@@ -459,6 +519,32 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return storedSearchQuery;
     };
 
+    this.removePersonFromList = function(ID){
+      for (var i = 0; i < peopleInShelter.length; i++){
+        if (peopleInShelter[i].id === ID){
+          peopleInShelter.splice(i, 1); // Remove that person
+        }
+      }
+    };
+
+    this.testPersonForNull = function(ID, isNotNull, isNull){
+      $http.get(networkService.getPeopleURL() + ID + "/", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data != null){
+            isNotNull();
+          } else {
+            isNull();
+          }
+        } else {
+          isNull();
+        }
+      }, function errorCallback(xhr){
+        // This could be dangerous
+        //if (xhr.status === 404)
+        //  isNull();
+      });
+    };
+
     this.createSearchResult = function(peopleArr, scoreArr){
       peopleInShelter = [];    // Reset list, is safe
 
@@ -468,6 +554,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         peopleInShelter.push(peopleArr[i]);
       }
     };
+
+    /*this.getAllPeopleToList = function(callback) {
+      this.updateAllPeople(networkService.getPeopleURL(), function (success) {
+        if (callback) {
+          console.log("getAllPeople->updateAllPeople callback - success: " + success);
+          callback(success);
+        }
+      })
+    };*/
 
     this.updateAllPeople = function(URL, success) {
       $http.get(URL + "?limit=100", networkService.getAuthenticationHeader()).then(function(xhr) {
@@ -497,7 +592,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               }
             }
 
-            success();
+            if (success)
+              success();
           }
         }
       });
@@ -507,9 +603,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var putJSON = '{';
       var hasItem = false;
 
-      var changeList = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
-      'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode',
-      'gender', 'injury', 'nationality', 'shelter_id'];
+      var changeList = optionService.getPersonToDBInformation();
 
       for (var i = 0; i < changeList.length; i++) {
         if (newPerson[changeList[i]] !== undefined) {
@@ -527,39 +621,110 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       // Separate photo check (has different method)
       if (newPerson.photo !== undefined) {
         // Photo has changed, upload it
-        uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function(data) {
-          // Successful
-          if (hasItem)
-            putJSON += ', ';
+        if (!isDisconnected) {
+          uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
+            // Successful
+            if (hasItem)
+              putJSON += ', ';
 
-          putJSON += ' "pic_filename":"' + data.name + '"';
-          hasItem = true;
+            putJSON += ' "pic_filename":"' + data.name + '"';
+            hasItem = true;
 
-          finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
-        }, function() {
-          // Error
-          finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
-        });
+            finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+          }, function () {
+            // Error
+            finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+          });
+        } else {
+          console.log("Picture needs to be uploaded for " + newPerson.given_name);
+          finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
+        }
       } else {
-        finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+        finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
       }
     };
 
-    var finishHttpPut = function(hasItem, id, putJSON, success, error) {
+    var finishHttpPut = function(hasItem, id, putJSON, success, error, newPerson) {
       // Put into it's own function to not have gross copy+paste everywhere
       putJSON += '}';
 
       if (hasItem === true) {
-        $http.put(networkService.getPeopleURL() + id + '/', putJSON, networkService.getAuthenticationHeader()).then(function (xhr) {
-          if (xhr.status === 204) {
-            success();
-          } else {
-            error();
+        if (!isDisconnected) {
+          $http.put(networkService.getPeopleURL() + id + '/', putJSON, networkService.getAuthenticationHeader()).then(function (xhr) {
+            if (xhr.status === 204) {
+              success();
+            } else {
+              error();
+            }
+          });
+        } else {
+          // Use information and put into database for later upload
+          var DBInfo = optionService.getPersonToDBInformation();
+          var values = [];
+          var JSONForPut = JSON.parse(putJSON);
+
+          // Check which information needs to be updated
+          for (var i = 0; i < DBInfo.length; i++) {
+            if (JSONForPut[DBInfo[i]] !== undefined) {
+              values.push({
+                type: DBInfo[i],
+                value: "\"" + JSONForPut[DBInfo[i]] + "\""
+              })
+            }
           }
-        });
+
+          if (values.length > 0) {
+            // There is a change, mark the DB as dirty
+            values.push({
+              type: 'isDirty',
+              value: 1
+            });
+
+            // Update DB
+            VIDA_localDB.queryDB_update('people', values, 'uuid=\"' + newPerson.uuid + '\"');
+          }
+
+          success();
+        }
       } else {
         success();
       }
+    };
+
+    this.getAllPeopleWithReturn = function(success, error) {
+      //var promise = $q.defer();
+
+      $http.get(networkService.getPeopleURL() + "?limit=100", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data !== null) {
+            var temp_peopleInShelter = [];
+
+            for (var i = 0; i < xhr.data.objects.length; i++) {
+              temp_peopleInShelter.push(xhr.data.objects[i]);
+            }
+
+            console.log("Get all people retrieval completed!");
+            success(temp_peopleInShelter);
+            //return promise.resolve(peopleInShelter);
+          } else {
+            // TODO: Translate
+            if (error)
+              error("Data retrieved was invalid!");
+          }
+        } else {
+          // TODO: Translate
+          if (error)
+            error("Could not reach the server!");
+        }
+        // Problem
+        //return promise.reject();
+      }, function errorCallback(err){
+        // TODO: Translate
+        if (error)
+          error("Could not contact the server. Please try again.");
+      });
+
+      //return promise.promise;
     };
 
     this.printToConsole = function() {
@@ -574,6 +739,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getPhoto = function() {
       return testPhoto;
+    };
+
+    this.getPersonalImage = function(pic_filename) {
+      if (!isDisconnected) {
+        // Get normal image from server
+        return networkService.getFileServiceURL() + pic_filename + '/download/';
+      } else {
+        // Get image from DB
+        return this.getPlaceholderImage();
+      }
     };
 
     this.getPlaceholderImage = function() {
@@ -672,6 +847,84 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     ];
 
+    var people_table_values = [{
+      column: 'id',
+      type: 'INTEGER PRIMARY KEY AUTOINCREMENT'
+    }, {
+      column: 'uuid',
+      type: 'TEXT'
+    }, {
+      column: 'isDirty',
+      type: 'TEXT DEFAULT \"false\"'
+    }, {
+      column: 'deleted',
+      type: 'TEXT DEFAULT \"false\"'
+    }, {
+      column: 'given_name',
+      type: 'TEXT'
+    }, {
+      column: 'family_name',
+      type: 'TEXT'
+    }, {
+      column: 'fathers_given_name',
+      type: 'TEXT'
+    }, {
+      column: 'mothers_given_name',
+      type: 'TEXT'
+    }, {
+      column: 'age',
+      type: 'TEXT'
+    }, {
+      column: 'date_of_birth',
+      type: 'TEXT'
+    }, {
+      column: 'street_and_number',
+      type: 'TEXT'
+    }, {
+      column: 'city',
+      type: 'TEXT'
+    }, {
+      column: 'phone_number',
+      type: 'TEXT'
+    }, {
+      column: 'neighborhood',
+      type: 'TEXT'
+    }, {
+      column: 'gender',
+      type: 'TEXT'
+    }, {
+      column: 'injury',
+      type: 'TEXT'
+    }, {
+      column: 'nationality',
+      type: 'TEXT'
+    }, {
+      column: 'barcode',
+      type: 'TEXT'
+    }, {
+      column: 'shelter_id',
+      type: 'TEXT'
+    }, {
+      column: 'description',
+      type: 'TEXT'
+    }, {
+      column: 'pic_filename',
+      type: 'TEXT'
+    }, {
+      column: 'province_or_state',
+      type: 'TEXT'
+    }];
+
+    var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol',' language', 'workOffline'];
+
+    var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
+    'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
+    'description', 'pic_filename', 'province_or_state'];
+
+    var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
+      'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
+      'description', 'pic_filename', 'province_or_state', 'notes', 'status', 'uuid'];
+
     var default_configurations = {};
     default_configurations.configuration = {};
     default_configurations.configuration.serverURL = "192.168.33.15";
@@ -701,8 +954,20 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return default_configurations;
     };
 
+    this.getDefaultPeopleTableValues = function() {
+      return people_table_values;
+    };
+
+    this.getPersonToDBInformation = function() {
+      return info_to_put_to_DB;
+    };
+
+    this.getPersonUploadInfo = function() {
+      return info_to_upload_extra;
+    };
+
     this.getDefaultConfigurationsJSON = function() {
-      var configs = ['serverURL', 'username', 'password', 'protocol',' language', 'workOffline'];
+      var configs = settings_and_configurations;
       var JSONObject = "'{\"configuration\":{";
       for (var i = 0; i < configs.length; i++){
         JSONObject += '\"' + configs[i] + '\":\"' + default_configurations.configuration[configs[i]] + '\"';
@@ -712,9 +977,34 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       JSONObject += "}}'";
       return JSONObject;
     };
+
+    // CREDIT: used from user Kaizhu256 - URL: https://gist.github.com/kaizhu256/4482069
+    this.generate_uuid4 = function () {
+      //// return uuid of form xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+      var uuid = '', ii;
+      for (ii = 0; ii < 32; ii += 1) {
+        switch (ii) {
+          case 8:
+          case 20:
+            uuid += '-';
+            uuid += (Math.random() * 16 | 0).toString(16);
+            break;
+          case 12:
+            uuid += '-';
+            uuid += '4';
+            break;
+          case 16:
+            uuid += '-';
+            uuid += (Math.random() * 4 | 8).toString(16);
+            break;
+          default:
+            uuid += (Math.random() * 16 | 0).toString(16);
+        }
+      }
+      return uuid;
+    };
   })
 
-  // TODO: Rename to configService
 .service('networkService', function(optionService, $translate) {
 
     var self = this;
@@ -797,12 +1087,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       this.configuration.language = current_language;
     };
 
-    this.getConfiguration = function(){
-      return this.configuration;
+    this.getUsernamePassword = function() {
+      var user_pass = {};
+      user_pass.username = this.configuration.username;
+      user_pass.password = this.configuration.password;
+      return user_pass;
     };
 
-    // todo: get rid of this usage
-    this.getAuthentication = function(){
+    this.getConfiguration = function(){
       return this.configuration;
     };
 
@@ -829,17 +1121,40 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.getFaceSearchServiceURL = function() {
       return this.configuration.api.faceSearchURL;
     };
+
   })
 
 .factory('DBHelper', function($cordovaSQLite, $q, $ionicPlatform) {
     var self = this;
+    var databases = [];
+    var currDB = {};
+
+    self.addDB = function(name, db){
+      var newDB = {};
+      newDB.name = name;
+      newDB.database = db;
+      databases.push(newDB);
+      //console.log("added database: " + name + ": " + db);
+    };
+
+    self.setCurrentDB = function(dbName){
+      for (var i = 0; i < databases.length; i++) {
+        if (databases[i].name === dbName) {
+          currDB = databases[i].database;
+          //console.log("changed database: " + databases[i].name + ": " + databases[i].database);
+          return;
+        }
+      }
+
+      console.log("problem choosing database!! was the database chosen incorrectly? dbName: " + dbName);
+    };
 
     self.query = function(query, parameters) {
       parameters = parameters || [];
       var q = $q.defer();
 
       $ionicPlatform.ready(function() {
-        $cordovaSQLite.execute(db, query, parameters).then(
+        $cordovaSQLite.execute(currDB, query, parameters).then(
           function(result){
             q.resolve(result);
         }, function(error){
@@ -873,23 +1188,47 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 .factory('VIDA_localDB', function($cordovaSQLite, DBHelper, networkService){
     var self = this;
 
-    self.queryDB_select = function(tableName, columnName, afterQuery) {
-      return DBHelper.query("SELECT " + columnName + " FROM " + tableName)
+    self.queryDB_createTable = function(tableName, values){
+      var query = "CREATE TABLE IF NOT EXISTS " + tableName + "(" + values + ")";
+      return DBHelper.query(query).then(function(result){
+        console.log(result);
+      });
+    };
+
+    self.queryDB_select = function(tableName, columnName, afterQuery, where) {
+      var query = "SELECT " + columnName + " FROM " + tableName;
+      if (where) {
+        if (where.restriction == 'LIKE')
+          query += " WHERE " + where.column + " LIKE \"%" + where.value + "%\"";
+        else if (where.restriction == 'EXACT')
+          query += " WHERE " + where.column + "=" + where.value;
+      }
+      console.log(query);
+      return DBHelper.query(query)
         .then(function(result){
           afterQuery(DBHelper.getAll(result));
         });
     };
 
-    self.queryDB_update = function(tableName, JSONObject) {
-      var query = "UPDATE " + tableName + " SET settings=" + JSONObject;
-      console.log(query);
-      DBHelper.query(query)
-        .then(function (result) {
-          console.log(result);
-        });
+    self.queryDB_update = function(tableName, values, whereAt, afterQuery) {
+      for (var i = 0; i < values.length; i++) {
+        var query = "UPDATE " + tableName + " SET " + values[i].type + "=" + values[i].value + " ";
+
+        if (whereAt) {
+          query += "WHERE " + whereAt;
+        }
+
+        console.log(query);
+        DBHelper.query(query)
+          .then(function (result) {
+            console.log(result);
+            if (afterQuery)
+              afterQuery();
+          });
+      }
     };
 
-    self.queryDB_update_settings = function(){
+    self.queryDB_update_settings = function(success){
       var fields = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
       var currentConfiguration = networkService.getConfiguration();
       var JSONObject = "'{\"configuration\":{";
@@ -903,15 +1242,19 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       console.log(query);
       DBHelper.query(query).then(function(result){
         console.log(result);
+        if (success)
+          success();
       });
     };
 
-    self.queryDB_insert = function(tableName, JSONObject) {
+    self.queryDB_insert = function(tableName, JSONObject, success) {
       var query = "INSERT INTO " + tableName + " VALUES (" + JSONObject + ")";
       console.log(query);
       DBHelper.query(query)
         .then(function (result) {
           console.log(result);
+          if (success)
+            success();
         });
     };
 
