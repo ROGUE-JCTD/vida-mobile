@@ -1306,15 +1306,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.credentials = {};
 
   var doLogin = function(credentials, success, error){
-    var _authentication = btoa(credentials.username + ":" + credentials.password);
-    var config = {};
-    config.headers = {};
-    if (_authentication !== null){
-      config.headers.Authorization = 'Basic ' + _authentication;
-    } else {
-      config.headers.Authorization = '';
-    }
     networkService.setAuthentication(credentials.username, credentials.password);
+    var config = networkService.getAuthenticationHeader();
 
     $http.get(networkService.getAuthenticationURL(), config).then(function(xhr) {
       if (xhr.status === 200){

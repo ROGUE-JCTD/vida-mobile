@@ -129,7 +129,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
       headers: {
-        'Authorization': 'Basic ' + btoa('admin:admin')
+        'Authorization': networkService.getAuthenticationHeader().headers.Authorization
       }
     }).success(function() {
       callSuccess();
@@ -1017,14 +1017,18 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.configuration.protocol = default_config.configuration.protocol;
     this.configuration.language = default_config.configuration.language;
     this.configuration.workOffline = (default_config.configuration.workOffline === 'true');
-
-    var URL = this.configuration.protocol + '://' + this.configuration.serverURL + '/api/v1';
     this.configuration.api = {};
-    this.configuration.api.personURL = URL + '/person/';
-    this.configuration.api.searchURL = URL + '/person/?custom_query=';
-    this.configuration.api.fileServiceURL = URL + '/fileservice/';
-    this.configuration.api.shelterURL = URL + '/shelter/';
-    this.configuration.api.faceSearchURL = URL + '/facesearchservice/';
+
+    this.compute_API_URLs = function() {
+      var URL = this.configuration.protocol + '://' + this.configuration.serverURL + '/api/v1';
+      this.configuration.api.personURL = URL + '/person/';
+      this.configuration.api.searchURL = URL + '/person/?custom_query=';
+      this.configuration.api.fileServiceURL = URL + '/fileservice/';
+      this.configuration.api.shelterURL = URL + '/shelter/';
+      this.configuration.api.faceSearchURL = URL + '/facesearchservice/';
+    };
+
+    this.compute_API_URLs();
 
     this.SetConfigurationFromDB = function(DBSettings) {
       // Set DB settings
@@ -1051,13 +1055,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.setServerAddress = function(Addr) {
       this.configuration.serverURL = Addr;
 
-      var URL = this.configuration.protocol + '://' + Addr + '/api/v1';
       // Need to reset variables
-      this.configuration.api.personURL = URL + '/person/';
-      this.configuration.api.searchURL = URL + '/person/?custom_query=';
-      this.configuration.api.fileServiceURL = URL + '/fileservice/';
-      this.configuration.api.shelterURL = URL + '/shelter/';
-      this.configuration.api.faceSearchURL = URL + '/facesearchservice/';
+      this.compute_API_URLs();
     };
 
     this.getBasicAuthentication = function() {
