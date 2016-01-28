@@ -11,7 +11,7 @@ var isDisconnected = false;
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -54,6 +54,9 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
             console.log(queryIns);
           }
         });
+
+        // Create offline photo directory
+        $cordovaFile.createDir(cordova.file.dataDirectory, 'Photos/', {create: true});
 
         var peopleTableValues = optionService.getDefaultPeopleTableValues();
         query = 'CREATE TABLE IF NOT EXISTS people (';

@@ -8,6 +8,12 @@ function dataURLtoBlob(dataURI) {
   return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
 }
 
+function b64EncodeUnicode(str) {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    return String.fromCharCode('0x' + p1);
+  }));
+}
+
 // Helper function
 function fixUndefined(str){
   return str === undefined ? "" : str;
@@ -384,7 +390,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService) {
+.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService, $q, $cordovaFile) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
@@ -636,7 +642,18 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
           });
         } else {
-          console.log("Picture needs to be uploaded for " + newPerson.given_name);
+          // Replace pic_filename_thumb with new picture (Same as write file)
+          if (newPerson.pic_filename) {
+            var pic = newPerson.pic_filename.split('.');
+            var thumbnail = pic[0] + '_thumb.' + pic[1];
+            var picData = window.atob(newPerson.photo.split('base64,')[1]);
+            //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, picData, true);
+            //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + thumbnail, picData, true);
+          } else {
+            //TODO: Take care of edge case if someone didn't have a picture beforehand
+
+          }
+
           finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
         }
       } else {
@@ -691,10 +708,27 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     };
 
+    this.downloadPersonalImage = function(filename, success, error) {
+      $http.get(networkService.getFileServiceURL() + filename + '/download/', networkService.getAuthenticationHeader()).then(function (xhr) {
+        if (xhr.status === 200) {
+          if (xhr.data != null){
+            if (!xhr.data.status)
+              success(xhr.data, filename);
+            else
+              error(xhr.data.status);
+          } else {
+            error(xhr.status);
+          }
+        } else {
+          error(xhr.status);
+        }
+      });
+    };
+
     this.getAllPeopleWithReturn = function(success, error) {
       //var promise = $q.defer();
 
-      $http.get(networkService.getPeopleURL() + "?limit=100", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
+      $http.get(networkService.getPeopleURL() + "?limit=1000000", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             var temp_peopleInShelter = [];
@@ -746,8 +780,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         // Get normal image from server
         return networkService.getFileServiceURL() + pic_filename + '/download/';
       } else {
-        // Get image from DB
-        return this.getPlaceholderImage();
+        // Get image from phone
+        var picture = pic_filename.split('.');
+        var thumbnail = picture[0] + '_thumb.' + picture[1];
+
+        // Temporary until database referencing
+        if ($cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail))
+          return cordova.file.dataDirectory + 'Photos/' + thumbnail;
+        else
+          return this.getPlaceholderImage();
       }
     };
 
@@ -912,6 +953,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       type: 'TEXT'
     }, {
       column: 'province_or_state',
+      type: 'TEXT'
+    }, {
+      column: 'personal_picture',
       type: 'TEXT'
     }];
 
@@ -1217,7 +1261,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           query += "WHERE " + whereAt;
         }
 
-        console.log(query);
+        //console.log(query);
         DBHelper.query(query)
           .then(function (result) {
             console.log(result);
