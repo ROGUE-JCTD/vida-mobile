@@ -58,7 +58,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 }])
 
-.service('uploadService', function($http, networkService, optionService) {
+.service('uploadService', function($http, networkService, optionService, $ionicPopup) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
 
     var photoBlob = dataURLtoBlob(photo);
@@ -76,7 +76,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }).error(function(err) {
       if (err) {
         // if err is null, server not found?
-        alert('Photo not uploaded! Error: ' + err.error_message);
+        $ionicPopup.alert({
+          title: 'Error',
+          template: 'Photo not uploaded! Error: ' + err.error_message
+        });
       }
       callFailure(err);
     });
@@ -389,7 +392,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService, $q, $cordovaFile) {
+.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService, $q, $cordovaFile, $ionicPopup) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
@@ -488,9 +491,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         }, function (e) {
           if (e) {
             if (e.status === 401) {
-              alert("Something went wrong with credentials.."); // Should never get in here
+              $ionicPopup.alert({
+                title: 'Big Error',
+                template: "Something went wrong with credentials.."
+              }); // Should never get in here
             } else {
-              alert("A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description);
+              $ionicPopup.alert({
+                title: 'Error',
+                template: "A problem occurred when connecting to the server. \nStatus: " + e.status + ": " + e.description
+              });
             }
           }
           error();
@@ -982,6 +991,20 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getPersonUploadInfo = function() {
       return info_to_upload_extra;
+    };
+
+    this.getCameraOptions = function(source) {
+      var camera_options = {
+        quality: 90,
+        destinationType: Camera.DestinationType.DATA_URL,
+        sourceType: source,
+        allowEdit: true,
+        encodingType: Camera.EncodingType.JPEG,
+        popoverOptions: CameraPopoverOptions,
+        saveToPhotoAlbum: true
+      };
+
+      return camera_options;
     };
 
     this.getDefaultConfigurationsJSON = function() {
