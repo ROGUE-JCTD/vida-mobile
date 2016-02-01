@@ -74,7 +74,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }).success(function(data) {
       callSuccess(data);
     }).error(function(err) {
-      // can be moved to callFailure(err)
       if (err) {
         // if err is null, server not found?
         alert('Photo not uploaded! Error: ' + err.error_message);
@@ -399,7 +398,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.searchForPerson = function(URL, query, success, error) {
       if (query !== '') {
         if (!isDisconnected) {
-          var newURL = (URL === networkService.getPeopleURL()) ? URL + '?custom_query=' + query + '&limit=100' : URL + query + '&limit=100'; // Change parameter prefacing
+          var newURL = (URL === networkService.getPeopleURL()) ? URL + '?custom_query=' + query + '&limit=' + networkService.getPersonRetrievalLimit()
+            : URL + query + '&limit=' + networkService.getPersonRetrievalLimit(); // Change parameter prefacing
           $http.get(newURL, networkService.getAuthenticationHeader()).then(function (xhr) {
             if (xhr.status === 200) {
               if (xhr.data !== null) {
@@ -561,17 +561,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     };
 
-    /*this.getAllPeopleToList = function(callback) {
-      this.updateAllPeople(networkService.getPeopleURL(), function (success) {
-        if (callback) {
-          console.log("getAllPeople->updateAllPeople callback - success: " + success);
-          callback(success);
-        }
-      })
-    };*/
-
     this.updateAllPeople = function(URL, success) {
-      $http.get(URL + "?limit=100", networkService.getAuthenticationHeader()).then(function(xhr) {
+      $http.get(URL + "?limit=" + networkService.getPersonRetrievalLimit(), networkService.getAuthenticationHeader()).then(function(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             peopleInShelter = [];
@@ -644,14 +635,19 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         } else {
           // Replace pic_filename_thumb with new picture (Same as write file)
           if (newPerson.pic_filename) {
-            var pic = newPerson.pic_filename.split('.');
-            var thumbnail = pic[0] + '_thumb.' + pic[1];
-            var picData = window.atob(newPerson.photo.split('base64,')[1]);
+            // Make filename
+            //var pic = newPerson.pic_filename.split('.');
+            //var thumbnail = pic[0] + '_thumb.' + pic[1];
+            //var picData = window.atob(newPerson.photo.split('base64,')[1]);
+
+            // Write out file
             //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, picData, true);
             //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + thumbnail, picData, true);
           } else {
             //TODO: Take care of edge case if someone didn't have a picture beforehand
+            // Generate filename (same way server would)
 
+            // Write out file
           }
 
           finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
@@ -712,9 +708,27 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       $http.get(networkService.getFileServiceURL() + filename + '/download/', networkService.getAuthenticationHeader()).then(function (xhr) {
         if (xhr.status === 200) {
           if (xhr.data != null){
-            if (!xhr.data.status)
-              success(xhr.data, filename);
-            else
+            if (!xhr.data.status) {
+              //TODO: This is downloading a broken image (see screenshot on desktop)
+
+              /*var canvas = document.createElement('CANVAS');
+              var ctx = canvas.getContext('2d');
+              var dataURL;
+              canvas.height = 1024;
+              canvas.width = 1024;
+              ctx.drawImage(this, 0, 0);
+              dataURL = canvas.toDataURL(xhr.data);
+
+              var reader = new window.FileReader();
+              reader.readAsDataURL(new Blob([xhr.data]));
+
+              reader.onloadend = function () {
+                var start = reader.result.split(',');
+                var Base64Photo = "data:image/jpeg;base64," + start[1];
+                success(Base64Photo, filename);
+              };
+              */
+            } else
               error(xhr.data.status);
           } else {
             error(xhr.status);
@@ -728,7 +742,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.getAllPeopleWithReturn = function(success, error) {
       //var promise = $q.defer();
 
-      $http.get(networkService.getPeopleURL() + "?limit=1000000", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
+      $http.get(networkService.getPeopleURL() + "?limit=" + networkService.getPersonRetrievalLimit(), networkService.getAuthenticationHeader()).then(
+        function successCallback(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null) {
             var temp_peopleInShelter = [];
@@ -737,9 +752,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               temp_peopleInShelter.push(xhr.data.objects[i]);
             }
 
-            console.log("Get all people retrieval completed!");
+            //console.log("Get all people retrieval completed!");
             success(temp_peopleInShelter);
-            //return promise.resolve(peopleInShelter);
           } else {
             // TODO: Translate
             if (error)
@@ -750,29 +764,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           if (error)
             error("Could not reach the server!");
         }
-        // Problem
-        //return promise.reject();
       }, function errorCallback(err){
         // TODO: Translate
         if (error)
           error("Could not contact the server. Please try again.");
       });
-
-      //return promise.promise;
-    };
-
-    this.printToConsole = function() {
-      for (var i = 0; i < peopleInShelter.length; i++) {
-        console.log(peopleInShelter[i].given_name);
-      }
     };
 
     this.getPeopleInShelter = function() {
       return peopleInShelter;
-    };
-
-    this.getPhoto = function() {
-      return testPhoto;
     };
 
     this.getPersonalImage = function(pic_filename) {
@@ -795,32 +795,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.getPlaceholderImage = function() {
       return cordova.file.applicationDirectory + 'www/img/profile-photo-placeholder.jpg';
     };
-
-    /*this.downloadPhotos = function() {
-      var array = peopleInShelter;
-      for (var i = 0; i < array.length; i++) {
-        if (array[i].pic_filename && array[i].pic_filename !== "undefined") {
-          var thisURL = networkService.getFileServiceURL() + array[i].pic_filename + 'download/';
-          $http.get(thisURL).then(function (xhr) {
-            if (xhr.status === 200) {
-              if (xhr.data.status !== "file not found") {
-                testPhoto = xhr.data;
-                if (false) {
-                  var reader = new window.FileReader();
-                  reader.readAsDataURL(new Blob([xhr.data]));
-                  reader.onloadend = function () {
-                    var start = reader.result.split(',');
-                    testPhoto = "data:image/jpeg;base64," + start[1];
-                  };
-                }
-              }
-            }
-          }, function (error) {
-            // Error
-          });
-        }
-      }
-    };*/
   })
 
 .service('optionService', function() {
@@ -1062,6 +1036,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.configuration.language = default_config.configuration.language;
     this.configuration.workOffline = (default_config.configuration.workOffline === 'true');
     this.configuration.api = {};
+    this.network_personRetrievalLimit = "1000000";
 
     this.compute_API_URLs = function() {
       var URL = this.configuration.protocol + '://' + this.configuration.serverURL + '/api/v1';
@@ -1137,6 +1112,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return user_pass;
     };
 
+    this.getPersonRetrievalLimit = function(){
+      return this.network_personRetrievalLimit;
+    };
+
     this.getConfiguration = function(){
       return this.configuration;
     };
@@ -1177,14 +1156,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       newDB.name = name;
       newDB.database = db;
       databases.push(newDB);
-      //console.log("added database: " + name + ": " + db);
     };
 
     self.setCurrentDB = function(dbName){
       for (var i = 0; i < databases.length; i++) {
         if (databases[i].name === dbName) {
           currDB = databases[i].database;
-          //console.log("changed database: " + databases[i].name + ": " + databases[i].database);
           return;
         }
       }
