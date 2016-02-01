@@ -1441,6 +1441,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService) {
   console.log("---- ShelterSearchCtrl");
+  $scope.checkDisconnected = function() {
+    return !isDisconnected;
+  };
+
   shelterService.getAll().then(function(shelters) {
     // clear the markers object without recreating it
     for (var variableKey in $rootScope.markers){
