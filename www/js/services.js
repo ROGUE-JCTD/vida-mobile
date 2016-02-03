@@ -440,7 +440,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           VIDA_localDB.queryDB_select('people', '*', function (results) {
             peopleInShelter = [];
             for (var i = 0; i < results.length; i++) {
-              if (results[i].deleted != true)
+              if (results[i].deleted !== true)
                 peopleInShelter.push(results[i]);
             }
             peopleInShelter.sort(); // Results comes up weird sometimes, better off just sorting it
@@ -508,7 +508,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             personByID = undefined;
             error();
           }
-        }, whereAt)
+        }, whereAt);
       }
       personByID = undefined; // Set by default
     };
@@ -536,7 +536,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.testPersonForNull = function(ID, isNotNull, isNull){
       $http.get(networkService.getPeopleURL() + ID + "/", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
         if (xhr.status === 200) {
-          if (xhr.data != null){
+          if (xhr.data !== null){
             isNotNull();
           } else {
             isNull();
@@ -686,7 +686,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               values.push({
                 type: DBInfo[i],
                 value: "\"" + JSONForPut[DBInfo[i]] + "\""
-              })
+              });
             }
           }
 
@@ -711,7 +711,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.downloadPersonalImage = function(filename, success, error) {
       $http.get(networkService.getFileServiceURL() + filename + '/download/', networkService.getAuthenticationHeader()).then(function (xhr) {
         if (xhr.status === 200) {
-          if (xhr.data != null){
+          if (xhr.data !== null){
             if (!xhr.data.status)
               success(xhr.data, filename);
             else

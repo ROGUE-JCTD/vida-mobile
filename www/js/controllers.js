@@ -921,7 +921,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           if (error)
             $cordovaToast.showShortBottom("Error uploading person: " + error.error_message);
           else
-            $cordovaToast.showShortBottom("Uploading " + newPerson.given_name + " failed! Please check your connection.")
+            $cordovaToast.showShortBottom("Uploading " + newPerson.given_name + " failed! Please check your connection.");
         });
       } else {
         // Add person to local database (Creation)
@@ -1146,7 +1146,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       });
     } else {
       uploadService.updatePerson(newPerson, function() {
-        console.log("updatePerson - updated " + newPerson.given_name + " on server successfully!")
+        console.log("updatePerson - updated " + newPerson.given_name + " on server successfully!");
       }, function() {
         console.log("uploadPerson - updatePerson error");
       });
@@ -1207,7 +1207,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       peopleService.getAllPeopleWithReturn(function(peopleFromServer){
         for (var i = 0; i < peopleFromServer.length; i++){
-          if (peopleFromServer[i].pic_filename != "") {
+          if (peopleFromServer[i].pic_filename !== "") {
             var uuid = peopleFromServer[i].uuid;
             var filename = peopleFromServer[i].pic_filename.split('.');
             var extension = filename[1];
@@ -1260,7 +1260,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       VIDA_localDB.queryDB_select('people', '*', function(results){
         for (var i = 0; i < results.length; i++){
-          if (Number(results[i].isDirty) == true){
+          if (Number(results[i].isDirty) === true){
             dirtyArr.push(results[i]);
           } else {
             cleanArr.push(results[i]);
@@ -1439,10 +1439,45 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService) {
+.controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService, $cordovaSQLite) {
   console.log("---- ShelterSearchCtrl");
+  var MapLayers = [];
+
   $scope.checkDisconnected = function() {
-    return !isDisconnected;
+    var leafletDirective = angular.element(document.body).injector().get('leafletData');
+
+    // Layers are created and stored into an array to keep track of how many has actually been applied.
+    //  The reason I remove and pop them if not disconnected is to remove ANY and ALL layers that I apply.
+
+    if (!isDisconnected) {
+      // Connected Map
+      leafletDirective.getMap().then(function (thisMap) {
+        for (var i = 0; i < MapLayers.length; i++){
+          thisMap.removeLayer(MapLayers[i]);
+          MapLayers.pop(); // Could splice for accuracy, but this hasn't proved to be dangerous yet
+        }
+      });
+      } else {
+      // Disconnected Map
+      leafletDirective.getMap().then(function (thisMap) {
+        var onDisk = true; // TESTING
+
+        if (MapLayers.length <= 0) {
+          if (onDisk) {
+            var IMG_URL = 'img/mapTiles/{z}-{x}-{y}.png';
+            var imageOnDiskLayer = L.tileLayer(IMG_URL, {maxZoom: 16}).addTo(thisMap);
+            MapLayers.push(imageOnDiskLayer);
+          }
+          else {
+            // Doesn't need a URL, just a reference to the MBTiles DB
+            var disconnectedLayer = new L.TileLayer.MBTiles('', {maxZoom: 16}, mapDB).addTo(thisMap);
+            MapLayers.push(disconnectedLayer);  // Temporary
+          }
+        }
+      });
+    }
+
+    return true; // Always display map
   };
 
   shelterService.getAll().then(function(shelters) {
@@ -1532,5 +1567,5 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }
 
       $state.go('vida.shelter-search');
-    }
+    };
 });

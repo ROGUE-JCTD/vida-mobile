@@ -1,8 +1,9 @@
 <ion-view title="{{'title_shelters' | translate}}">
   <ion-content scroll="false">
     <div style="width: 100%; position: absolute; top: 0px; bottom: 0px;" data-tap-disabled="true">
-      <leaflet ng-if="checkDisconnected()" resizeable markers="markers" paths="paths"
+      <leaflet resizeable markers="markers" paths="paths"
                center="center" width="100%" height="100%" event-broadcast="events"></leaflet>
     </div>
+    <button style="position: absolute" ng-click="checkDisconnected()" class="button-block">Test Disconnected</button>
   </ion-content>
 </ion-view>
