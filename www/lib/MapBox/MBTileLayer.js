@@ -12,14 +12,15 @@ L.TileLayer.MBTiles = L.TileLayer.extend({
     var z = this._getZoomForUrl(zoom);
     var x = tilePoint.x;
     var y = tilePoint.y;
-    var base64Prefix = 'data:image/gif;base64,';
+    var base64Prefix = 'data:image/jpg;base64,';
 
 
     // FROM tiles **INNER JOIN map ON tiles.tile_id = map.tile_id** WHERE zoom_level
     this.mbTilesDB.transaction(function(tx){
       tx.executeSql("SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?;", [z, x, y],
         function (tx, res) {
-          tile.src = base64Prefix + res.rows[0].tile_data;
+          if (res.rows.length > 0)
+            tile.src = base64Prefix + res.rows.item(0).tile_data;
         }, function (er) {
           console.log('error with executeSql', er);
       });

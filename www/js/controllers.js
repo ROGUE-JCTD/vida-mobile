@@ -1441,75 +1441,78 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService, $cordovaSQLite) {
   console.log("---- ShelterSearchCtrl");
-  var MapLayers = [];
+
+  // Used as a single reference to which current MapLayer is being used.
+  //  I had it as an array previously, but only one item was being referenced.
+  //  If multiple map layers comes into play, I can put it back.
+  //  So far tested well - will change if I run into any problems.
+  var MapLayer = {};
+  var leafletDirective = angular.element(document.body).injector().get('leafletData');
 
   $scope.checkDisconnected = function() {
-    var leafletDirective = angular.element(document.body).injector().get('leafletData');
+    leafletDirective.getMap().then(function (thisMap) {
+      // Remove previous layer (Connected Layer or Disconnected Layer)
+      thisMap.removeLayer(MapLayer);
 
-    // Layers are created and stored into an array to keep track of how many has actually been applied.
-    //  The reason I remove and pop them if not disconnected is to remove ANY and ALL layers that I apply.
-
-    if (!isDisconnected) {
-      // Connected Map
-      leafletDirective.getMap().then(function (thisMap) {
-        for (var i = 0; i < MapLayers.length; i++){
-          thisMap.removeLayer(MapLayers[i]);
-          MapLayers.pop(); // Could splice for accuracy, but this hasn't proved to be dangerous yet
-        }
-      });
+      // Add new layer to the map
+      if (!isDisconnected) {
+        // Connected Map
+        // Add URL based layer to map
+        var defaultDirective = angular.element(document.body).injector().get('leafletMapDefaults');
+        var defaults = defaultDirective.getDefaults();
+        MapLayer = L.tileLayer(defaults.tileLayer, defaults.tileLayerOptions).addTo(thisMap);
       } else {
-      // Disconnected Map
-      leafletDirective.getMap().then(function (thisMap) {
-        var onDisk = true; // TESTING
+        // Disconnected Map
+        MapLayer = new L.TileLayer.MBTiles('', {maxZoom: 16}, mapDB).addTo(thisMap);
+      }
 
-        if (MapLayers.length <= 0) {
-          if (onDisk) {
-            var IMG_URL = 'img/mapTiles/{z}-{x}-{y}.png';
-            var imageOnDiskLayer = L.tileLayer(IMG_URL, {maxZoom: 16}).addTo(thisMap);
-            MapLayers.push(imageOnDiskLayer);
-          }
-          else {
-            // Doesn't need a URL, just a reference to the MBTiles DB
-            var disconnectedLayer = new L.TileLayer.MBTiles('', {maxZoom: 16}, mapDB).addTo(thisMap);
-            MapLayers.push(disconnectedLayer);  // Temporary
-          }
-        }
-      });
-    }
+    });
 
     return true; // Always display map
   };
 
-  shelterService.getAll().then(function(shelters) {
-    // clear the markers object without recreating it
-    for (var variableKey in $rootScope.markers){
-      if ($rootScope.markers.hasOwnProperty(variableKey)){
-        delete $rootScope.markers[variableKey];
+  $scope.showAllSheltersOnMap = function() {
+    shelterService.getAll().then(function (shelters) {
+      // clear the markers object without recreating it
+      for (var variableKey in $rootScope.markers) {
+        if ($rootScope.markers.hasOwnProperty(variableKey)) {
+          delete $rootScope.markers[variableKey];
+        }
       }
-    }
 
-    console.log("---- got all shelters: ", shelters);
-    for (var i = 0; i < shelters.length; i++) {
-      var shelter = shelters[i];
+      console.log("---- got all shelters: ", shelters);
+      for (var i = 0; i < shelters.length; i++) {
+        var shelter = shelters[i];
 
-      // look for 'point' in wkt and get the pair of numbers in the string after it
-      var trimParens = /^\s*\(?(.*?)\)?\s*$/;
-      var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
-      var tokens = coordinateString.split(' ');
-      var lng = parseFloat(tokens[0]);
-      var lat = parseFloat(tokens[1]);
-      var coord = shelterService.getLatLng(shelter.id);
-      var detailUrl = '#/vida/shelter-search/shelter-detail/' + shelter.id;
+        // look for 'point' in wkt and get the pair of numbers in the string after it
+        var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+        var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+        var tokens = coordinateString.split(' ');
+        var lng = parseFloat(tokens[0]);
+        var lat = parseFloat(tokens[1]);
+        var coord = shelterService.getLatLng(shelter.id);
+        var detailUrl = '#/vida/shelter-search/shelter-detail/' + shelter.id;
 
-      $rootScope.markers["shelter_" + shelter.id] = {
-        draggable: false,
-        message: '<div><span style="padding-right: 5px;">' + shelter.name + '</span><a class="icon ion-chevron-right trigger" href=' + detailUrl + '></a></div>',
-        lat: coord.lat,
-        lng: coord.lng,
-        icon: {}
-      };
-    }
+        $rootScope.markers["shelter_" + shelter.id] = {
+          draggable: false,
+          message: '<div><span style="padding-right: 5px;">' + shelter.name + '</span><a class="icon ion-chevron-right trigger" href=' + detailUrl + '></a></div>',
+          lat: coord.lat,
+          lng: coord.lng,
+          icon: {}
+        };
+      }
+    });
+  };
+
+  // Do on startup!
+  leafletDirective.getMap().then(function (thisMap) {
+    thisMap.eachLayer(function(layer){
+      // Since it's on startup, the only map layer will
+      //   be the initialized URL-based map from Leaflet
+      MapLayer = layer;
+    });
   });
+  $scope.showAllSheltersOnMap();
 })
 
 .controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService, $rootScope) {

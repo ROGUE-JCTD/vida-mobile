@@ -73,9 +73,9 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         query += ')';
         $cordovaSQLite.execute(db, query);
 
-        // Commented out to prevent any possible crashing
-        /*mapDB = $cordovaSQLite.openDB("PleaseWork.db");
-        var queries = [
+        mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
+        // Debug tests
+        /*var queries = [
           'SELECT zoom_level FROM tiles',
           'SELECT tile_column FROM tiles',
           'SELECT tile_row FROM tiles',
