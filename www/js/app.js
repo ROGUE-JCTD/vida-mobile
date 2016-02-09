@@ -6,8 +6,11 @@
 // 'vida.services' is found in services.js
 // 'vida.controllers' is found in controllers.js
 // 'vida.services' is found in services.js
-var db = null;
-var isDisconnected = false;
+
+var db = null;              // Will store non-globally once fully working
+var mapDB = null;           // Will store non-globally once fully working
+var isDisconnected = false; // Will store non-globally once fully working
+
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
@@ -36,10 +39,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       if (!(window.cordova.plugins)){
           alert("window.cordova.plugins: " + window.cordova.plugins);
       } else {
-          if (!(window.cordova.plugins.Keyboard)) {
-              alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
-          }
+        if (!(window.cordova.plugins.Keyboard)) {
+          alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
+        }
 
+        // TODO: This can all be done on initialization of the application
         db = $cordovaSQLite.openDB("localDB.db");
         DBHelper.addDB('localDB', db);
         DBHelper.setCurrentDB('localDB');
@@ -48,8 +52,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         var defaultSettings = optionService.getDefaultConfigurationsJSON();
         var queryIns = 'INSERT INTO configuration VALUES (' + defaultSettings + ')';
         $cordovaSQLite.execute(db, query);
-        $cordovaSQLite.execute(db, querySelect).then(function(result){
-          if (result.rows.length <= 0){
+        $cordovaSQLite.execute(db, querySelect).then(function (result) {
+          if (result.rows.length <= 0) {
             $cordovaSQLite.execute(db, queryIns); // add default configuration row if doesn't exist
             console.log(queryIns);
           }
@@ -60,7 +64,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
         var peopleTableValues = optionService.getDefaultPeopleTableValues();
         query = 'CREATE TABLE IF NOT EXISTS people (';
-        for (var i = 0; i < peopleTableValues.length; i++){
+        for (var i = 0; i < peopleTableValues.length; i++) {
           query += peopleTableValues[i].column + ' ' + peopleTableValues[i].type;
 
           if (i < peopleTableValues.length - 1)
@@ -68,6 +72,26 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         }
         query += ')';
         $cordovaSQLite.execute(db, query);
+
+        mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
+        // Debug tests
+        /*var queries = [
+          'SELECT zoom_level FROM tiles',
+          'SELECT tile_column FROM tiles',
+          'SELECT tile_row FROM tiles',
+          'SELECT tile_data FROM tiles'
+        ];
+        for (var k = 0; k < queries.length; k++) {
+          console.log(queries[k]);
+          $cordovaSQLite.execute(mapDB, queries[k]).then(
+            function (result) {
+              //console.log(tx);
+              if (result.rows.length > 0) {
+                var item = result.rows.item(0);
+                console.log(item);
+              }
+            });
+        }*/
       }
 
       if (!(navigator.camera)){
