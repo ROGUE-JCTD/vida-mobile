@@ -716,7 +716,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     this.downloadPersonalImage = function(filename, success, error) {
       $http.get(networkService.getFileServiceURL() + filename + '/download/', networkService.getAuthenticationHeader()).then(function (xhr) {
         if (xhr.status === 200) {
-<<<<<<< HEAD
           if (xhr.data != null){
             if (!xhr.data.status) {
               //TODO: This is downloading a broken image (see screenshot on desktop)
@@ -739,12 +738,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               };
               */
             } else
-=======
-          if (xhr.data !== null){
-            if (!xhr.data.status)
-              success(xhr.data, filename);
-            else
->>>>>>> disconnected_map
               error(xhr.data.status);
           } else {
             error(xhr.status);
