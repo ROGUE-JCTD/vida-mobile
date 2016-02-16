@@ -60,6 +60,10 @@
     'person_nationality_english': 'English',
     'person_nationality_african': 'African',
     'person_nationality_asian': 'Asian',
+    'person_nationality_american_indian': 'American Indian',
+    'person_nationality_hispanic_latino': 'Hispanic/Latino',
+    'person_nationality_caucasian': 'Caucasian/White',
+    'person_nationality_other': 'Other',
     'person_phone_number': 'Numero de telefono',
     'person_barcode': 'Codigo de Barras',
     'person_current_shelter': 'Refugio',
@@ -80,7 +84,18 @@
     'error_connecting_server': 'A problem occurred when connecting to the server. Status: ',
     'error_no_results': 'No results found.',
     'error_couldnt_get_results': 'Could not get results. Please try again.',
-    'loading_face_search': 'Loading Best Possible Matches..'
+    'error_upload_person_failed': 'Uploading person failed. Please check your internet connection.',
+    'error_uploading_person': 'Error uploading person: ',
+    'loading_face_search': 'Loading Best Possible Matches..',
+    'dialog_box_title_saving': 'Saving',
+    'dialog_box_message_uploading': 'Saving and uploading information for ',
+    'dialog_box_message_saving_settings': 'Saving settings..',
+    'dialog_clear_fields_title': 'Clear Fields',
+    'dialog_clear_fields_message': 'Are you sure you want to clear all fields?',
+    'toast_added_person_locally': 'Added person locally: ',
+    'dialog_location_title':'Found Previous Location!',
+    'dialog_location_prev_location': 'Use Previous Location',
+    'dialog_location_curr_location': 'Use Current Location',
   };
 
   var module = angular.module('vida-translations-es', ['pascalprecht.translate']);

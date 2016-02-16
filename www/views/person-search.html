@@ -1,6 +1,9 @@
 <ion-view title="{{'title_search' | translate}}">
   <ion-pane>
     <ion-content padding="false" class="has-header">
+      <div ng-if="checkDisconnected()" class="text-center">
+        <h6 style="margin-top: 2px; margin-bottom: 2px">*Disconnected Search*</h6>
+      </div>
       <div class="item item-input-inset">
         <label class="item-input-wrapper margin-right-8px" name="search-people">
           <div ng-if="searchRequestCounter <= 0">
@@ -24,7 +27,7 @@
           <ion-item class="item-thumbnail-left" ng-click="changeWindow('/vida/person-search/person-detail/{{this_person.id}}')">
             <img ng-if="this_person.pic_filename !== ''" ng-src="{{peopleService.getPersonalImage(this_person.pic_filename)}}"
                  err-src="{{peopleService.getPlaceholderImage()}}"
-                 id="this_person.photo" ng-model="this_person.photo">
+                 id="this_person_picture" ng-model="this_person.photo">
             <img ng-if="this_person.pic_filename === ''" ng-src="{{peopleService.getPlaceholderImage()}}">
             <h2>{{this_person.given_name || Name}}</h2>
             <p>{{'search_age' | translate}}: {{this_person.age || Age}}</p>

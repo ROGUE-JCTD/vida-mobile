@@ -133,7 +133,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
                 array.push({
                   name: data.objects[i].name,
                   value: data.objects[i].uuid,
-                  id: data.objects[i].id
+                  id: data.objects[i].id,
+                  geom: data.objects[i].geom
                 });
               }
             } else {
@@ -146,6 +147,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           },
           error: function () {
             console.log('Error - retrieving all shelters failed');
+            //TODO: MAKE THIS PROBLEM KNOWN
             if ($cordovaProgress)
               $cordovaProgress.hide();
             return shelters.resolve(array);

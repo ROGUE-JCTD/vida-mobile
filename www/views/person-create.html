@@ -87,13 +87,21 @@
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>
-        <label class="item item-input item-select">
-          <span class="input-label">{{'person_current_shelter' | translate}}</span>
-          <select id="shelter" ng-init="current_shelter == current_shelter || shelter_array[0]"
-                  ng-model="current_shelter" ng-change="changeShelter()"
-                  ng-options="option.name for option in shelter_array">
-          </select>
-        </label>
+        <div class="item item-input-inset">
+          <label id="locationItemLabel" class="item-input-wrapper item-select">
+            <span class="input-label" style="max-width:50px;">{{'person_current_shelter' | translate}}</span>
+            <select id="shelter" ng-init="current_shelter == current_shelter || shelter_array[0]"
+                    ng-model="current_shelter" ng-change="changeShelter()"
+                    ng-options="option.name for option in shelter_array"
+                    style="padding-left: 0px; padding-right: 28px; width: 200px"
+                    ng-disabled="LocationDropdownDisabled">
+            </select>
+          </label>
+          <button ng-if="LocationDropdownDisabled === false" class="button button-small button-stable icon ion-location"
+                  ng-click="useLocation()"></button>
+          <button ng-if="LocationDropdownDisabled === true" class="button button-small button-stable icon ion-close"
+                  ng-click="revertLocation()"></button>
+        </div>
         <div ng-if="isEditing === false">
           <button class="button button-stable button-block" ng-click="savePerson()">{{'button_save' | translate}}</button>
         </div>

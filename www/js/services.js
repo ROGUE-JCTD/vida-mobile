@@ -121,15 +121,18 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var uploadFields = optionService.getPersonUploadInfo();
 
+    // TODO: Don't build JSON by hand
     for (var i = 0; i < uploadFields.length; i++) {
-      if (i > 0 && i < uploadFields.length) {
-        // Add ,
-        if (hasItem)
-          JSONPerson += ', ';
-      }
+      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined) {
+        if (i > 0 && i < uploadFields.length) {
+          // Add ,
+          if (hasItem)
+            JSONPerson += ', ';
+        }
 
-      JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
-      hasItem = true;
+        JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
+        hasItem = true;
+      }
     }
 
     JSONPerson += '}';
@@ -142,7 +145,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }).success(function() {
       callSuccess();
     }).error(function(err) {
-      callFailure('Person not uploaded! Error: ' + err);
+      //TODO: Translate
+      if (err.error_message)
+        callFailure('Person not uploaded! Error: ' + err.error_message);
+      else
+        callFailure('Person not uploaded! Error: ' + err);
     });
   };
 
@@ -392,7 +399,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, optionService, $q, $cordovaFile, $ionicPopup) {
+.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, $cordovaToast,
+                                   optionService, $q, $cordovaFile, $ionicPopup) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
@@ -432,7 +440,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             }
           }, function (e) {
             if (error)
-              error(e.statusText);
+              error("Error: Server - " + e.statusText);
           });
         } else {
           // Search local database instead
@@ -443,7 +451,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           VIDA_localDB.queryDB_select('people', '*', function (results) {
             peopleInShelter = [];
             for (var i = 0; i < results.length; i++) {
-              if (results[i].deleted !== true)
+              if (results[i].deleted != true)
                 peopleInShelter.push(results[i]);
             }
             peopleInShelter.sort(); // Results comes up weird sometimes, better off just sorting it
@@ -542,6 +550,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     };
 
+    this.resetPersonList = function() {
+      peopleInShelter = [];
+    };
+
     this.testPersonForNull = function(ID, isNotNull, isNull){
       $http.get(networkService.getPeopleURL() + ID + "/", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
         if (xhr.status === 200) {
@@ -606,6 +618,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.editPerson_saveChanges = function(newPerson, success, error){
+      // TODO: Don't build JSON by hand
       var putJSON = '{';
       var hasItem = false;
 
@@ -677,8 +690,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               success();
             } else {
               error();
-            }
-          });
+            }}, function(errorMsg){
+              $cordovaToast.showShortBottom(errorMsg);
+              error();
+            });
         } else {
           // Use information and put into database for later upload
           var DBInfo = optionService.getPersonToDBInformation();
@@ -737,6 +752,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
                 success(Base64Photo, filename);
               };
               */
+              success(xhr.data);
             } else
               error(xhr.data.status);
           } else {
@@ -784,7 +800,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return peopleInShelter;
     };
 
-    this.getPersonalImage = function(pic_filename) {
+    this.getPersonalImage = function(pic_filename, success, error) {
       if (!isDisconnected) {
         // Get normal image from server
         return networkService.getFileServiceURL() + pic_filename + '/download/';
@@ -792,12 +808,22 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         // Get image from phone
         var picture = pic_filename.split('.');
         var thumbnail = picture[0] + '_thumb.' + picture[1];
+        var self = this;
 
-        // Temporary until database referencing
-        if ($cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail))
+        // TODO: Promise doesn't resolve correctly, only direct sync (not a-sync) link works
+        // Check file system (
+        $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail).then(function(pass){
+          var URL = cordova.file.dataDirectory + 'Photos/' + thumbnail;
+          if (success)
+            success(URL);
+          //document.getElementById("this_person_picture").src = URL; /// Only sets first picture in list
           return cordova.file.dataDirectory + 'Photos/' + thumbnail;
-        else
-          return this.getPlaceholderImage();
+        }, function(fail){
+          var placeholder = self.getPlaceholderImage();
+          if (error)
+            error(placeholder, fail);
+          return placeholder;
+        });
       }
     };
 
@@ -858,16 +884,28 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         "value": "Not Specified"
       },
       {
-        "name": 'person_nationality_english',
-        "value": "English"
-      },
-      {
-        "name": 'person_nationality_african',
-        "value": "African"
+        "name": 'person_nationality_american_indian',
+        "value": "American Indian"
       },
       {
         "name": 'person_nationality_asian',
         "value": "Asian"
+      },
+      {
+        "name": 'person_nationality_african',
+        "value": "African American"
+      },
+      {
+        "name": 'person_nationality_hispanic_latino',
+        "value": "Hispanic/Latino"
+      },
+      {
+        "name": 'person_nationality_caucasian',
+        "value": "Caucasian/White"
+      },
+      {
+        "name": 'person_nationality_other',
+        "value": "Other"
       }
     ];
 
@@ -938,6 +976,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'province_or_state',
       type: 'TEXT'
     }, {
+      column: 'geom',
+      type: 'TEXT'
+    }, {
       column: 'personal_picture',
       type: 'TEXT'
     }];
@@ -946,11 +987,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'pic_filename', 'province_or_state'];
+    'description', 'pic_filename', 'province_or_state', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-      'description', 'pic_filename', 'province_or_state', 'notes', 'status', 'uuid'];
+      'description', 'pic_filename', 'province_or_state', 'notes', 'status', 'uuid', 'geom'];
 
     var default_configurations = {};
     default_configurations.configuration = {};
@@ -960,6 +1001,34 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     default_configurations.configuration.protocol = "http";
     default_configurations.configuration.language = "English";
     default_configurations.configuration.workOffline = "false";
+
+    this.getAllDropdownOptions = function() {
+      // This is a dumb-nice looking way to get default "Not Specified", "None", etc. type options.
+      //    Shown off in PersonDetailEditCtrl - in buttonPersonSave().
+      var allOptions = [];
+
+      var option = {
+        dropdown: 'gender',
+        options: gender_options
+      };
+      allOptions.push(option);
+
+      option = {
+        dropdown: 'injury',
+        options: injury_options
+      };
+
+      allOptions.push(option);
+
+      option = {
+        dropdown: 'nationality',
+        options: nationality_options
+      };
+
+      allOptions.push(option);
+
+      return allOptions;
+    };
 
     this.getGenderOptions = function() {
       return gender_options;
@@ -1008,6 +1077,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.getDefaultConfigurationsJSON = function() {
+      // TODO: Don't build JSON by hand
       var configs = settings_and_configurations;
       var JSONObject = "'{\"configuration\":{";
       for (var i = 0; i < configs.length; i++){
@@ -1254,24 +1324,33 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     self.queryDB_update = function(tableName, values, whereAt, afterQuery) {
-      for (var i = 0; i < values.length; i++) {
-        var query = "UPDATE " + tableName + " SET " + values[i].type + "=" + values[i].value + " ";
+      var query = "UPDATE " + tableName + " SET ";
 
-        if (whereAt) {
-          query += "WHERE " + whereAt;
-        }
+      var length = values.length;
+      for (var i = 0; i < length; i++) {
+         query += values[i].type + "=" + values[i].value;
 
-        //console.log(query);
-        DBHelper.query(query)
-          .then(function (result) {
-            console.log(result);
-            if (afterQuery)
-              afterQuery();
-          });
+        if (i < length - 1)
+          query += ", ";
+        else
+          query += " ";
       }
+
+      if (whereAt) {
+        query += "WHERE " + whereAt;
+      }
+
+      console.log(query);
+      DBHelper.query(query)
+        .then(function (result) {
+          console.log(result);
+          if (afterQuery)
+            afterQuery();
+        });
     };
 
     self.queryDB_update_settings = function(success){
+      // TODO: Don't build JSON by hand
       var fields = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
       var currentConfiguration = networkService.getConfiguration();
       var JSONObject = "'{\"configuration\":{";

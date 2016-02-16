@@ -48,3 +48,4 @@ ionic plugin add https://github.com/litehelpers/Cordova-sqlite-storage.git
 ionic plugin add https://github.com/an-rahulpandey/cordova-plugin-dbcopy.git
 ionic plugin add https://github.com/pbernasconi/cordova-progressIndicator.git
 ionic plugin add cordova-plugin-network-information
+ionic plugin add cordova-plugin-geolocation

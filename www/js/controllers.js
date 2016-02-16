@@ -88,6 +88,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.networkService = networkService;
     $scope.allPeopleInShelter = peopleService.getPeopleInShelter();
 
+    $scope.checkDisconnected = function() {
+      return isDisconnected;
+    };
+
     // TODO: Infinite Scrolling - not finished
     ////////////
     $scope.loadMorePeople = function() {
@@ -163,7 +167,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           });
         });
       } else {
-        // TODO: Test to see if on DB
         $location.path(url);
       }
     };
@@ -237,12 +240,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.personPhoto = null;
   $scope.isDisconnected = isDisconnected; // used for saving locally button
 
-  //TODO - known bug: Goto shelter will appear on "None" - fixed? need to test
   $scope.setupShelterButton = function() {
     if (shelter_array) {
       var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
       var wasSet = false;
-      for (var i = 0; i < shelter_array.length; i++) {
+      // If shelter_array is valid, the first item in the array will be "None".
+      // Starting at 1 to skip that.
+      for (var i = 1; i < shelter_array.length; i++) {
         if (shelter_array[i].value === shelterID) {
           shelterService.setCurrentShelter(shelter_array[i]);
           shelterService.getAll();
@@ -250,7 +254,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           break;
         }
       }
-
       if (!wasSet)
         shelterService.setCurrentShelter('None');
     } else {
@@ -317,7 +320,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   var createPersonObj = function(ID, person) {
     var person_info_indexing = optionService.getPersonToDBInformation();
-    var isDirty = 1; // Just created, should be dirty
+    var isDirty = 0; // Saving out last updated person - no need to be dirty
     var isDeleted = 0;
     var obj = (ID).toString() + ", '" + peopleService.getRetrievedPersonByID().uuid + "', " + isDirty + ", " + isDeleted + ", ";
     for (var k = 0; k < person_info_indexing.length; k++) {
@@ -356,15 +359,19 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 
   // Initial Commands
+  // TODO: Translate
+  $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Loading details..");
   $scope.setupEditDeleteButtons();
   peopleService.searchPersonByID($stateParams.personId, // Will initiate search
     function() {
       // Success
       $scope.searchPersonRequest--;
       $scope.setupShelterButton();
+      $cordovaProgress.hide();
     }, function(error){
       // Error
       $scope.searchPersonRequest--;
+      $cordovaProgress.hide();
     });
   $scope.searchPersonRequest++;
 
@@ -373,7 +380,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     console.log('PersonDetailCtrl - buttonPersonEdit()');
 
     // TODO: Translate
-    $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Loading details of " + peopleService.getRetrievedPersonByID().given_name);
+    $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Settings up editing page for " + peopleService.getRetrievedPersonByID().given_name);
     $state.go('vida.person-search.person-detail.person-edit');
   };
 
@@ -417,7 +424,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array, $cordovaToast, $ionicPopup,
+.controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array, $cordovaToast, $ionicPopup, $cordovaGeolocation,
                                              networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService, $cordovaProgress) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
@@ -431,6 +438,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.gender_options = optionService.getGenderOptions();
   $scope.injury_options = optionService.getInjuryOptions();
   $scope.nationality_options = optionService.getNationalityOptions();
+
+  $scope.LocationDropdownDisabled = false;
+  $scope.current_location = {};
+  $scope.current_location.lat = -1111;
+  $scope.current_location.long = -1111;
+  $scope.previous_shelter_label = "None";
 
   var checkFields = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age',
     'date_of_birth', 'street_and_number', 'city', 'neighborhood', 'description', 'phone_number', 'barcode'];
@@ -471,8 +484,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           $scope.pictureTestSpinner--;
         });
       } else {
-        document.getElementById('personal_photo').src = peopleService.getPersonalImage(person.pic_filename);
-        $scope.hasPlaceholderImage = false;
+        peopleService.getPersonalImage(person.pic_filename, function(URL){
+          document.getElementById('personal_photo').src = URL;
+          $scope.hasPlaceholderImage = false;
+        }, function(placeholder, error){
+          document.getElementById('personal_photo').src = placeholder;
+          $scope.hasPlaceholderImage = true;
+        });
       }
     }
     else {
@@ -509,16 +527,37 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     if ($scope.shelter_array) {
       // Look at person and see what shelter they are assigned to
       var isAssigned = false;
-      for (var j = 0; j < shelter_array.length; j++) {
+      for (var j = 1; j < shelter_array.length; j++) {
         if (person.shelter_id === shelter_array[j].value) {
           $scope.current_shelter = $scope.shelter_array[j];
+          $scope.previous_shelter_label = $scope.shelter_array[j].name;
           isAssigned = true;
           break;
         }
       }
 
+      // TODO: Discuss whether location is more important than shelter
       if (!isAssigned) {
-        $scope.current_shelter = $scope.shelter_array[0];
+        // See if they have a geometry
+        if (person.geom !== "") {
+          var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this
+          var personLocation = {};
+          personLocation.lat = split_geom[0];
+          personLocation.long = split_geom[1];
+          if (Number(personLocation.lat) !== 0.0 && Number(personLocation.long) !== 0.0) {
+            // Gray out shelters section and fill with "Using Current Location"
+            $scope.LocationDropdownDisabled = true;
+            document.getElementById('locationItemLabel').setAttribute("class", "item-input-wrapper item-select grayout");
+            document.getElementById('shelter').disabled = true;
+            document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+            $scope.current_location.lat = personLocation.lat;
+            $scope.current_location.long = personLocation.long;
+          } else {
+            $scope.current_shelter = $scope.shelter_array[0];
+          }
+        } else {
+          $scope.current_shelter = $scope.shelter_array[0];
+        }
       }
     } else {
       var array = [{
@@ -545,6 +584,59 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   } else {
     $scope.setupFields();
   }
+
+  $scope.revertLocation = function() {
+    // Reset back to normal
+    $scope.LocationDropdownDisabled = false;
+    document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select" );
+    document.getElementById('shelter').disabled = false;
+    document.getElementById('shelter').selectedOptions[0].label = $scope.previous_shelter_label;
+
+    var changed = false;
+    for (var i = 0; i < $scope.shelter_array.length; i++){
+      if ($scope.previous_shelter_label === $scope.shelter_array[i].name) {
+        changed = true;
+        $scope.current_shelter = $scope.shelter_array[i];
+        $scope.previous_shelter_label = $scope.shelter_array[i].name;
+        break;
+      }
+    }
+
+    if (!changed){
+      $scope.current_shelter = $scope.shelter_array[0];
+      $scope.previous_shelter_label = $scope.shelter_array[0].name;
+    }
+  };
+
+  $scope.useLocation = function() {
+    $cordovaProgress.showSimpleWithLabel(true, "Getting location..");
+
+    var posOptions = {timeout: 20000, enableHighAccuracy: true};
+
+    $cordovaGeolocation.getCurrentPosition(posOptions).then(function(position){
+      console.log("Current position: " + position);
+      // Is there a previous location stored?
+
+      // Gray out shelters section and fill with "Using Current Location"
+      $scope.LocationDropdownDisabled = true;
+      document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
+      document.getElementById('shelter').disabled = true;
+      $scope.current_location.lat = position.coords.latitude;
+      $scope.current_location.long = position.coords.longitude;
+      document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+
+      $cordovaProgress.hide();
+      $cordovaToast.showLongBottom("Location found! Using this location.");
+    }, function(error){
+      console.log("Problem getting location: " + error.message);
+
+      // Reset back to normal
+      $scope.revertLocation();
+
+      $cordovaProgress.hide();
+      $cordovaToast.showLongBottom("Could not find location. Please try again.");
+    });
+  };
 
   $scope.changeGender = function() {
     $scope.current_gender = this.current_gender;
@@ -614,22 +706,80 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.setupDocumentValues(documentValues);
 
     var changedPerson = {};
-    changedPerson.uuid = person.uuid; //used for disconnected reference
+    changedPerson.uuid = person.uuid; // used for disconnected reference
     var saveFields = checkFields;
-    saveFields.push('gender', 'injury', 'nationality', 'shelter_id');
 
     for (var i = 0; i < saveFields.length; i++) {
       changedPerson[saveFields[i]] = ((person[saveFields[i]] !== documentValues[saveFields[i]])) ? documentValues[saveFields[i]] : undefined;
     }
-    // specific case
+
+    // specific cases
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
     if (changedPerson.photo === peopleService.getPlaceholderImage())
       changedPerson.photo = undefined;
+
+    // all dropdowns (gender, injury, nationality, shelter_id)
+    var dropdownOptions = optionService.getAllDropdownOptions();
+    dropdownOptions.push({
+      dropdown: 'shelter_id',
+      options: $scope.shelter_array
+    });
+    var originalPersonValue, documentValue, originalDropdownValue;
+    for (var j = 0; j < dropdownOptions.length; j++) {
+      originalPersonValue = person[dropdownOptions[j].dropdown];
+      documentValue = documentValues[dropdownOptions[j].dropdown];
+      originalDropdownValue = dropdownOptions[j].options[0].value;
+
+      changedPerson[dropdownOptions[j].dropdown] =
+        ((originalPersonValue !== documentValue) &&
+        documentValue !== originalDropdownValue)
+        ? documentValue : undefined;
+
+      if (changedPerson[dropdownOptions[j].dropdown] === undefined) {
+        // See if they are trying to change back to "None"
+        if (documentValue === originalDropdownValue &&
+          (originalPersonValue !== originalDropdownValue &&
+           originalPersonValue !== "")) {
+          changedPerson[dropdownOptions[j].dropdown] = originalDropdownValue;
+        }
+      }
+    }
 
     changedPerson.id = person.id;
 
     if (person.pic_filename)
       changedPerson.pic_filename = person.pic_filename;
+
+    var geom = {};
+    if (person.geom) {
+      if (person.geom !== "") {
+        var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this again
+        geom.lat = split_geom[0];
+        geom.long = split_geom[1];
+      }
+    }
+
+    // If no shelter ID, or no location usage
+    if (changedPerson.shelter_id !== undefined) {
+      // See if they have shelter
+      if ($scope.LocationDropdownDisabled == true) {
+        // Check for possible new location
+        if (geom.lat !== $scope.current_location.lat &&
+          geom.long !== $scope.current_location.long)
+          changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.lat + " " + $scope.current_location.long + ")";
+      } else {
+        // Use possibly new shelter location
+        if (person.geom !== $scope.current_shelter.geom)
+          changedPerson.geom = $scope.current_shelter.geom;
+        else
+          changedPerson.geom = undefined;
+      }
+    } else if ($scope.LocationDropdownDisabled == true) {
+      // Check for possible new location
+      if (geom.lat !== $scope.current_location.lat &&
+        geom.long !== $scope.current_location.long)
+        changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.lat + " " + $scope.current_location.long + ")";
+    }
 
     // Show loading dialog
     // TODO: Translate
@@ -647,7 +797,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           // Update current Shelter on detail page
           var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
           var wasSet = false;
-          for (var i = 0; i < $scope.shelter_array.length; i++) {
+          for (var i = 1; i < $scope.shelter_array.length; i++) {
             if ($scope.shelter_array[i].value === shelterID) {
               shelterService.setCurrentShelter(shelter_array[i]);
               shelterService.getAll();
@@ -780,10 +930,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
                                          $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService,
-                                          optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup){
+                                          optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup, $cordovaGeolocation){
     $scope.person = {};
     $scope.person.photo = null;
     $scope.person.barcode = {};
+    $scope.person.location = {};
+    $scope.person.location.lat = -1111;
+    $scope.person.location.long = -1111;
     $scope.peopleService = peopleService;
     $scope.isEditing = false;
     $scope.createTabTitle = 'title_create';
@@ -799,6 +952,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $cordovaProgress.hide();
 
+    // TODO: Bug - only will update the shelter list the first time it goes to the create tab
     $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
     if ($scope.shelter_array) {
       $scope.current_shelter = $scope.shelter_array[0];
@@ -816,22 +970,26 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         var Gender;
         if ($scope.current_gender !== undefined) {
-          Gender = $scope.current_gender.value;
+          if ($scope.current_gender.value !== $scope.gender_options[0].value)
+            Gender = $scope.current_gender.value;
         }
 
         var Injury;
         if ($scope.current_injury !== undefined) {
-          Injury = $scope.current_injury.value;
+          if ($scope.current_injury.value !== $scope.injury_options[0].value)
+            Injury = $scope.current_injury.value;
         }
 
         var Nationality;
         if ($scope.current_nationality !== undefined) {
-          Nationality = $scope.current_nationality.value;
+          if ($scope.current_nationality.value !== $scope.nationality_options[0].value)
+            Nationality = $scope.current_nationality.value;
         }
 
         var ShelterID;
         if ($scope.current_shelter !== undefined) {
-          ShelterID = $scope.current_shelter.value;
+          if ($scope.current_shelter.value !== $scope.shelter_array[0].value)
+            ShelterID = $scope.current_shelter.value;
         }
 
         var Photo;
@@ -870,44 +1028,50 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // This is here to store photo for upload
         newPerson.photo               = Photo;  // photo being undefined is checked
 
+        // Find Geom for person
+        if ($scope.LocationDropdownDisabled === true) {
+          // Using current location
+          newPerson.geom = "SRID=4326;POINT (" + $scope.person.location.lat + " " + $scope.person.location.long + ")";
+        } else {
+          if (newPerson.shelter_id !== undefined) {
+            newPerson.geom = $scope.current_shelter.geom;
+          } else {
+            newPerson.geom = undefined;
+          }
+        }
 
         // Check for duplicates based on UUID
-        var duplicate = false;
+        /*var duplicate = false;
         var peopleInShelter = peopleService.getPeopleInShelter();
         for (var i = 0; i < peopleInShelter.length; i++) {
           if (peopleInShelter[i].uuid === newPerson.uuid) {
             duplicate = true;
             break;
           }
-        }
+        }*/
 
-        // TODO: Translate
-        $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving and uploading information for " + newPerson.given_name);
+        $cordovaProgress.showSimpleWithLabelDetail(true, $filter('translate')('dialog_box_title_saving')
+                          ,$filter('translate')('dialog_box_message_uploading') + newPerson.given_name);
 
-        if (!duplicate) {
-          if (newPerson.photo) {
-            if (!isDisconnected) {
-              $scope.uploadPhoto(newPerson, function () {
-                // On successful upload of Photo, this assigns the photo to the person
-                $scope.uploadPerson(newPerson);
-                $cordovaProgress.hide();
-              });
-            } else {
-              $ionicPopup.alert({
-                title: 'Disconnected',
-                template: 'Since you are disconnected, the photo will be uploaded next time you sync.'
-              }); // Debug
-              //TODO: ---^ That
+        if (newPerson.photo) {
+          if (!isDisconnected) {
+            $scope.uploadPhoto(newPerson, function () {
+              // On successful upload of Photo, this assigns the photo to the person
               $scope.uploadPerson(newPerson);
               $cordovaProgress.hide();
-            }
+            });
           } else {
-            // On non-successful upload of Photo, the person's info will only be uploaded
+            $ionicPopup.alert({
+              title: 'Disconnected',
+              template: 'Since you are disconnected, the photo will be uploaded next time you sync.'
+            }); // Debug
+            //TODO: ---^ That
             $scope.uploadPerson(newPerson);
             $cordovaProgress.hide();
           }
         } else {
-          $cordovaToast.showShortBottom($filter('translate')('dialog_person_exists'));
+          // On non-successful upload of Photo, the person's info will only be uploaded
+          $scope.uploadPerson(newPerson);
           $cordovaProgress.hide();
         }
       } else {
@@ -950,11 +1114,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           });
         }, function (error) {
           // Error uploading person
-          // TODO: Double translate
           if (error)
-            $cordovaToast.showShortBottom("Error uploading person: " + error.error_message);
+            $cordovaToast.showShortBottom($filter('translate')('error_uploading_person') + error);
           else
-            $cordovaToast.showShortBottom("Uploading " + newPerson.given_name + " failed! Please check your connection.");
+            $cordovaToast.showShortBottom($filter('translate')('error_upload_person_failed'));
         });
       } else {
         // Add person to local database (Creation)
@@ -965,10 +1128,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.showClearAllModal = function() {
-      //TODO: Translate
       $ionicPopup.confirm({
-        title: 'Clear Fields',
-        template: 'Are you sure you want to clear all fields?'
+        title: $filter('translate')('dialog_clear_fields_title'),
+        template: $filter('translate')('dialog_clear_fields_message')
       }).then(function(result){
         if (result) {
           $scope.clearAllFields();
@@ -998,6 +1160,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       document.getElementById('nationality').selectedOptions[0].label = $scope.nationality_options[0].value;
       $scope.current_injury = $scope.injury_options[0];
       document.getElementById('injury').selectedOptions[0].label = $scope.injury_options[0].value;
+
+      $scope.revertLocation();
       $scope.current_shelter = $scope.shelter_array[0];
       document.getElementById('shelter').selectedOptions[0].label = $scope.shelter_array[0].value;
     };
@@ -1007,7 +1171,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       VIDA_localDB.queryDB_select('people', '*', function(results){
         var ID = results.length + 1;
-        var isDirty = 1; // Just created, should be dirty
+        var isDirty = isDisconnected ? 1 : 0; // Person could have just been uploaded, therefore not dirty
         var isDeleted = 0;
         var obj = (ID).toString() + ", '" + localPerson.uuid + "', " + isDirty + ", " + isDeleted + ", ";
         var person_info_indexing = optionService.getPersonToDBInformation();
@@ -1022,8 +1186,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         obj += ", " + '\"' + localPerson.photo + '\"';
 
         VIDA_localDB.queryDB_insert('people', obj, function() {
-          // TODO: Translate
-          $cordovaToast.showShortBottom('Added ' + localPerson.given_name + ' locally!');
+          $cordovaToast.showShortBottom($filter('translate')('toast_added_person_locally') + localPerson.given_name);
           if (success)
             success();
         });
@@ -1088,6 +1251,77 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.changeShelter = function() {
       $scope.current_shelter = this.current_shelter;
+
+      $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
+    };
+
+    $scope.LocationDropdownDisabled = false;
+    $scope.previous_shelter_label = "None";
+
+    $scope.revertLocation = function() {
+      // Reset back to normal
+      $scope.LocationDropdownDisabled = false;
+      document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select" );
+      document.getElementById('shelter').disabled = false;
+      document.getElementById('shelter').selectedOptions[0].label = $scope.previous_shelter_label;
+    };
+
+    $scope.useLocation = function() {
+      $cordovaProgress.showSimpleWithLabel(true, "Getting location..");
+
+      var posOptions = {timeout: 20000, enableHighAccuracy: true};
+
+      $cordovaGeolocation.getCurrentPosition(posOptions).then(function(position){
+        console.log("Current position: " + position);
+
+        var prevLocation = false;
+        // Is there a previous location stored?
+        if ($scope.person.location.lat !== -1111 && $scope.person.location.long !== -1111) {
+          // Why bother asking if it's the same
+          if (!($scope.person.location.lat === position.coords.latitude &&
+                $scope.person.location.long === position.coords.longitude)) {
+            var options = {
+              title: $filter('translate', 'dialog_location_title'),
+              buttonLabels: [$filter('translate', 'dialog_location_prev_location'),
+                            $filter('translate', 'dialog_location_curr_location')],
+              androidEnableCancelButton: false,
+              winphoneEnableCancelButton: false
+            };
+
+            $cordovaActionSheet.show(options).then(function (btnIndex) {
+              if (btnIndex == 1) {
+                prevLocation = true;
+              }
+            });
+          }
+        }
+
+        // Gray out shelters section and fill with "Using Current Location"
+        $scope.LocationDropdownDisabled = true;
+        document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
+        document.getElementById('shelter').disabled = true;
+        // TODO TRANSLATE
+        if (prevLocation)
+          document.getElementById('shelter').selectedOptions[0].label = "Using Prev Location";
+        else {
+          $scope.person.location.lat = position.coords.latitude;
+          $scope.person.location.long = position.coords.longitude;
+          document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+        }
+
+        $cordovaProgress.hide();
+        //TODO TRANSLATE
+        $cordovaToast.showLongBottom("Location found! Using this location.");
+      }, function(error){
+        console.log("Problem getting location: " + error.message);
+
+        // Reset back to normal
+        $scope.revertLocation();
+
+        $cordovaProgress.hide();
+        //TODO TRANSLATE
+        $cordovaToast.showLongBottom("Could not find location. Please try again.");
+      });
     };
 
     // Used for getting shelter dropdowns before page is loaded
@@ -1140,7 +1374,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   //TODO: Add disconnected support to shelters
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter,
+.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation,
                                      networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile){
   console.log('---------------------------------- SettingsCtrl');
 
@@ -1155,7 +1389,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.saveServerIP = function(IP) {
       // TODO: Translate
-      $cordovaProgress.showSimpleWithLabel(true, "Saving", "Saving settings..");
+      $cordovaProgress.showSimpleWithLabel(true, $filter('translate', 'dialog_box_title_saving'),
+        $filter('translate', 'dialog_box_message_saving_settings'));
       networkService.setServerAddress(IP);
 
       VIDA_localDB.queryDB_update_settings(function() {
@@ -1201,7 +1436,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
   //TODO: copying for testing purposes, should move to uploadService?
-  $scope.uploadPerson = function(newPerson, isUpdating) {
+  $scope.uploadPersonCopy = function(newPerson, isUpdating) {
     if (!isUpdating) {
       // Upload person to fileService
       uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
@@ -1229,7 +1464,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       isDisconnected = $scope.b_disconnected;
 
       // refresh (since local ID in DB and server can differ)
-      peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery());
+      peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery(), function(){},
+        function() {
+          // Did not return correctly, could not contact server, etc. = reset list.
+          peopleService.resetPersonList();
+        });
     };
 
     $scope.testDeletedEntries = function() {
@@ -1274,7 +1513,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       peopleService.getAllPeopleWithReturn(function(peopleFromServer){
         for (var i = 0; i < peopleFromServer.length; i++){
-          if (peopleFromServer[i].pic_filename !== "") {
+          if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
             var uuid = peopleFromServer[i].uuid;
             var filename = peopleFromServer[i].pic_filename.split('.');
             var extension = filename[1];
@@ -1327,7 +1566,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       VIDA_localDB.queryDB_select('people', '*', function(results){
         for (var i = 0; i < results.length; i++){
-          if (Number(results[i].isDirty) === true){
+          if (Number(results[i].isDirty) == true){
             dirtyArr.push(results[i]);
           } else {
             cleanArr.push(results[i]);
@@ -1358,7 +1597,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                   // Upload updated person
                   isOnServer = true;
                   dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
-                  $scope.uploadPerson(dirtyArr[i], isOnServer);
+                  $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
 
                   // Update isDirty to 0
                   whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
@@ -1369,7 +1608,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               // Person is not in the server DB at all
               if (!isOnServer) {
                 // Upload person to server
-                $scope.uploadPerson(dirtyArr[i], isOnServer);
+                $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
 
                 // Update isDirty on localDB to 0
                 whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
@@ -1537,7 +1776,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         MapLayer = L.tileLayer(defaults.tileLayer, defaults.tileLayerOptions).addTo(thisMap);
       } else {
         // Disconnected Map
-        MapLayer = new L.TileLayer.MBTiles('', {maxZoom: 16}, mapDB).addTo(thisMap);
+        var mapOptions = {maxZoom: 16, attribution: 'Offline Map', tms: true};
+        MapLayer = new L.TileLayer.MBTiles('', mapOptions, mapDB).addTo(thisMap);
       }
 
     });
