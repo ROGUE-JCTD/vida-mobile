@@ -19,6 +19,13 @@ function fixUndefined(str){
   return str === undefined ? "" : str;
 }
 
+if (!String.prototype.startsWith) {
+  String.prototype.startsWith = function(searchString, position){
+    position = position || 0;
+    return this.substr(position, searchString.length) === searchString;
+  };
+}
+
 angular.module('vida.services', ['ngCordova', 'ngResource'])
 
 .factory('httpRequestInterceptor', function(networkService) {
@@ -60,7 +67,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
 .service('uploadService', function($http, networkService, optionService, $ionicPopup) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
-
     var photoBlob = dataURLtoBlob(photo);
     var formData = new FormData();
     formData.append("file", photoBlob, 'filename.jpg');
@@ -123,7 +129,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     // TODO: Don't build JSON by hand
     for (var i = 0; i < uploadFields.length; i++) {
-      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined) {
+      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined
+          && person[uploadFields[i]] !== "undefined") {
         if (i > 0 && i < uploadFields.length) {
           // Add ,
           if (hasItem)
@@ -164,6 +171,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         errorCallback();
       }
     });
+  };
+
+  this.convertPictureToBlob = function(newPhoto){
+    return dataURLtoBlob(newPhoto);
   };
 })
 
@@ -801,29 +812,41 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.getPersonalImage = function(pic_filename, success, error) {
+
       if (!isDisconnected) {
         // Get normal image from server
         return networkService.getFileServiceURL() + pic_filename + '/download/';
       } else {
-        // Get image from phone
-        var picture = pic_filename.split('.');
-        var thumbnail = picture[0] + '_thumb.' + picture[1];
-        var self = this;
+        if (pic_filename !== null && pic_filename !== undefined
+            && pic_filename !== "null") {
+          if (!pic_filename.startsWith('temp_picture')) {
+            // Get image from phone
+            var picture = pic_filename.split('.');
+            var thumbnail = picture[0] + '_thumb.' + picture[1];
+            var self = this;
 
-        // TODO: Promise doesn't resolve correctly, only direct sync (not a-sync) link works
-        // Check file system (
-        $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail).then(function(pass){
-          var URL = cordova.file.dataDirectory + 'Photos/' + thumbnail;
-          if (success)
-            success(URL);
-          //document.getElementById("this_person_picture").src = URL; /// Only sets first picture in list
-          return cordova.file.dataDirectory + 'Photos/' + thumbnail;
-        }, function(fail){
-          var placeholder = self.getPlaceholderImage();
-          if (error)
-            error(placeholder, fail);
-          return placeholder;
-        });
+            return cordova.file.dataDirectory + 'Photos/' + thumbnail;
+
+            // TODO: Promise doesn't resolve correctly, only direct sync (not a-sync) link works
+            /*// Check file system (
+            $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail).then(function (pass) {
+              var URL = cordova.file.dataDirectory + 'Photos/' + thumbnail;
+              if (success)
+                success(URL);
+              //document.getElementById("this_person_picture").src = URL; /// Only sets first picture in list
+              return cordova.file.dataDirectory + 'Photos/' + thumbnail;
+            }, function (fail) {
+              var placeholder = self.getPlaceholderImage();
+              if (error)
+                error(placeholder, fail);
+              return placeholder;
+            });*/
+          } else {
+            return cordova.file.dataDirectory + 'Photos/' + pic_filename;
+          }
+        } else {
+          return this.getPlaceholderImage();
+        }
       }
     };
 
@@ -976,10 +999,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'province_or_state',
       type: 'TEXT'
     }, {
-      column: 'geom',
+      column: 'photo',
       type: 'TEXT'
     }, {
-      column: 'personal_picture',
+      column: 'geom',
       type: 'TEXT'
     }];
 
@@ -987,7 +1010,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'pic_filename', 'province_or_state', 'geom'];
+    'description', 'pic_filename', 'province_or_state', 'photo', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
@@ -1326,27 +1349,31 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     self.queryDB_update = function(tableName, values, whereAt, afterQuery) {
       var query = "UPDATE " + tableName + " SET ";
 
-      var length = values.length;
-      for (var i = 0; i < length; i++) {
-         query += values[i].type + "=" + values[i].value;
+      if (values.length > 0) {
+        var length = values.length;
+        for (var i = 0; i < length; i++) {
+          query += values[i].type + "=" + values[i].value;
 
-        if (i < length - 1)
-          query += ", ";
-        else
-          query += " ";
+          if (i < length - 1)
+            query += ", ";
+          else
+            query += " ";
+        }
+
+        if (whereAt) {
+          query += "WHERE " + whereAt;
+        }
+
+        console.log(query);
+        DBHelper.query(query)
+          .then(function (result) {
+            console.log(result);
+            if (afterQuery)
+              afterQuery();
+          });
+      } else {
+
       }
-
-      if (whereAt) {
-        query += "WHERE " + whereAt;
-      }
-
-      console.log(query);
-      DBHelper.query(query)
-        .then(function (result) {
-          console.log(result);
-          if (afterQuery)
-            afterQuery();
-        });
     };
 
     self.queryDB_update_settings = function(success){

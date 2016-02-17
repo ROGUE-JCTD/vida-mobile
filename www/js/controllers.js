@@ -231,7 +231,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
                                          peopleService, networkService, $rootScope, shelterService, $cordovaProgress,
-                                         VIDA_localDB, optionService, uploadService){
+                                         VIDA_localDB, optionService, uploadService, $ionicPopup){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
@@ -318,16 +318,50 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     });
   };
 
-  var createPersonObj = function(ID, person) {
+  var createPersonObj_insert = function(ID, person) {
     var person_info_indexing = optionService.getPersonToDBInformation();
     var isDirty = 0; // Saving out last updated person - no need to be dirty
     var isDeleted = 0;
-    var obj = (ID).toString() + ", '" + peopleService.getRetrievedPersonByID().uuid + "', " + isDirty + ", " + isDeleted + ", ";
+    var obj = (ID).toString() + ", '" + person.uuid + "', " + isDirty + ", " + isDeleted + ", ";
     for (var k = 0; k < person_info_indexing.length; k++) {
-      obj += "'" + peopleService.getRetrievedPersonByID()[person_info_indexing[k]] + "'";
+      obj += "'" + person[person_info_indexing[k]] + "'";
       if (k < person_info_indexing.length - 1)
         obj += ", ";
     }
+
+    return obj;
+  };
+
+  var createPersonObj_update = function(ID, person) {
+    var person_info_indexing = optionService.getPersonToDBInformation();
+    var isDirty = 0; // Saving out last updated person - no need to be dirty
+    var deleted = 0;
+    var obj = [];
+    obj.push({
+      type: 'id',
+      value: "\'" + ID.toString() + "\'"
+    });
+    obj.push({
+      type: 'uuid',
+      value: "\'" + person.uuid + "\'"
+    });
+    obj.push({
+      type: 'isDirty',
+      value: "\'" + isDirty + "\'"
+    });
+    obj.push({
+      type: 'deleted',
+      value: "\'" + deleted + "\'"
+    });
+
+    for (var k = 0; k < person_info_indexing.length; k++) {
+      obj.push({
+        type: person_info_indexing[k],
+        value: "\'" + person[person_info_indexing[k]] + "\'"
+      });
+    }
+
+    return obj;
   };
 
   $scope.SaveOutPerson = function() {
@@ -344,14 +378,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // There should only be one person returned, so results[0] will always be valid (through UUID)
 
         // Update person
-        obj_toSaveOut = createPersonObj(results[0].id, peopleService.getRetrievedPersonByID());
+        var whereAt = 'uuid=\'' + peopleService.getRetrievedPersonByID().uuid + '\'';
+        obj_toSaveOut = createPersonObj_update(results[0].id, peopleService.getRetrievedPersonByID());
         VIDA_localDB.queryDB_update('people', obj_toSaveOut, whereAt);
       } else {
         // Seperate call to DB, this will get EVERYONE in list, as opposed to one person's UUID
         // This is done to create accurate ID (in DB) to insert into
         VIDA_localDB.queryDB_select('people', '*', function(results) {
           ID = results.length + 1;
-          obj_toSaveOut = createPersonObj(ID, peopleService.getRetrievedPersonByID());
+          obj_toSaveOut = createPersonObj_insert(ID, peopleService.getRetrievedPersonByID());
           VIDA_localDB.queryDB_insert('people', obj_toSaveOut);
         });
       }
@@ -484,13 +519,16 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           $scope.pictureTestSpinner--;
         });
       } else {
-        peopleService.getPersonalImage(person.pic_filename, function(URL){
+        var image = peopleService.getPersonalImage(person.pic_filename, function(URL){
           document.getElementById('personal_photo').src = URL;
           $scope.hasPlaceholderImage = false;
         }, function(placeholder, error){
           document.getElementById('personal_photo').src = placeholder;
           $scope.hasPlaceholderImage = true;
         });
+
+        if (image)
+          document.getElementById('personal_photo').src = image;
       }
     }
     else {
@@ -589,22 +627,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     // Reset back to normal
     $scope.LocationDropdownDisabled = false;
     document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select" );
-    document.getElementById('shelter').disabled = false;
-    document.getElementById('shelter').selectedOptions[0].label = $scope.previous_shelter_label;
 
-    var changed = false;
-    for (var i = 0; i < $scope.shelter_array.length; i++){
-      if ($scope.previous_shelter_label === $scope.shelter_array[i].name) {
-        changed = true;
-        $scope.current_shelter = $scope.shelter_array[i];
-        $scope.previous_shelter_label = $scope.shelter_array[i].name;
-        break;
+    var shelterElement = document.getElementById('shelter');
+    shelterElement.disabled = false;
+
+    for (var i = 0; i < shelterElement.options.length; i++) {
+      if ($scope.previous_shelter_label === shelterElement.options[i].innerText){ // checking innerText because that holds the original
+        shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // revert label back
+        shelterElement.selectedIndex = i;
       }
-    }
-
-    if (!changed){
-      $scope.current_shelter = $scope.shelter_array[0];
-      $scope.previous_shelter_label = $scope.shelter_array[0].name;
     }
   };
 
@@ -612,6 +643,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $cordovaProgress.showSimpleWithLabel(true, "Getting location..");
 
     var posOptions = {timeout: 20000, enableHighAccuracy: true};
+    document.getElementById('shelter').disabled = true;
 
     $cordovaGeolocation.getCurrentPosition(posOptions).then(function(position){
       console.log("Current position: " + position);
@@ -620,9 +652,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Gray out shelters section and fill with "Using Current Location"
       $scope.LocationDropdownDisabled = true;
       document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
-      document.getElementById('shelter').disabled = true;
       $scope.current_location.lat = position.coords.latitude;
       $scope.current_location.long = position.coords.longitude;
+      $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
       document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
 
       $cordovaProgress.hide();
@@ -652,6 +684,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.changeShelter = function() {
     $scope.current_shelter = this.current_shelter;
+
+    $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
   };
 
   $scope.setupSaveCancelButtons = function() {
@@ -914,13 +948,17 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     // Fix dropdown values (under the hood)
     $scope.current_gender = $scope.gender_options[0];
-    document.getElementById('gender').selectedOptions[0].label = $scope.gender_options[0].value;
+    document.getElementById('gender').selectedIndex = 0;
     $scope.current_nationality = $scope.nationality_options[0];
-    document.getElementById('nationality').selectedOptions[0].label = $scope.nationality_options[0].value;
+    document.getElementById('nationality').selectedIndex = 0;
     $scope.current_injury = $scope.injury_options[0];
-    document.getElementById('injury').selectedOptions[0].label = $scope.injury_options[0].value;
-    $scope.current_shelter = $scope.shelter_array[0];
-    document.getElementById('shelter').selectedOptions[0].label = $scope.shelter_array[0].value;
+    document.getElementById('injury').selectedIndex = 0;
+
+    $scope.revertLocation();
+    if ($scope.shelter_array) {
+      $scope.current_shelter = $scope.shelter_array[0];
+      document.getElementById('shelter').selectedIndex = 0;
+    }
   };
 
   // Startup
@@ -929,7 +967,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
-                                         $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService,
+                                         $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService, $cordovaFile,
                                           optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup, $cordovaGeolocation){
     $scope.person = {};
     $scope.person.photo = null;
@@ -1065,8 +1103,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               title: 'Disconnected',
               template: 'Since you are disconnected, the photo will be uploaded next time you sync.'
             }); // Debug
-            //TODO: ---^ That
-            $scope.uploadPerson(newPerson);
+            newPerson.pic_filename = 'temp_picture_' + newPerson.given_name + '.jpg';
+            var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
+            $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, photoFile, true).then(function() {
+              console.log('Wrote picture file to disk');
+            });
+            $scope.uploadPerson(newPerson); // will put into local DB
             $cordovaProgress.hide();
           }
         } else {
@@ -1092,7 +1134,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       });
     };
 
-    $scope.uploadPhoto = function(newPerson, success) {
+    $scope.uploadPhoto = function(newPerson, success, error) {
       uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
         // Success
         //$cordovaToast.showShortBottom($filter('translate')('dialog_photo_uploaded') + newPerson.given_name + '!');
@@ -1100,6 +1142,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         success();
       }, function () {
         // Error uploading photo
+        if (error)
+          error();
       });
     };
 
@@ -1155,15 +1199,17 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       // Fix dropdown values (under the hood)
       $scope.current_gender = $scope.gender_options[0];
-      document.getElementById('gender').selectedOptions[0].label = $scope.gender_options[0].value;
+      document.getElementById('gender').selectedIndex = 0;
       $scope.current_nationality = $scope.nationality_options[0];
-      document.getElementById('nationality').selectedOptions[0].label = $scope.nationality_options[0].value;
+      document.getElementById('nationality').selectedIndex = 0;
       $scope.current_injury = $scope.injury_options[0];
-      document.getElementById('injury').selectedOptions[0].label = $scope.injury_options[0].value;
+      document.getElementById('injury').selectedIndex = 0;
 
       $scope.revertLocation();
-      $scope.current_shelter = $scope.shelter_array[0];
-      document.getElementById('shelter').selectedOptions[0].label = $scope.shelter_array[0].value;
+      if ($scope.shelter_array) {
+        $scope.current_shelter = $scope.shelter_array[0];
+        document.getElementById('shelter').selectedIndex = 0;
+      }
     };
 
     $scope.addPersonToLocalDatabase = function(newPerson, success){
@@ -1176,14 +1222,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var obj = (ID).toString() + ", '" + localPerson.uuid + "', " + isDirty + ", " + isDeleted + ", ";
         var person_info_indexing = optionService.getPersonToDBInformation();
         for (var k = 0; k < person_info_indexing.length; k++) {
-          obj += "'" + localPerson[person_info_indexing[k]] + "'";
+          if (person_info_indexing[k] !== "photo") {
+            if (localPerson[person_info_indexing[k]] !== undefined)
+              obj += "'" + localPerson[person_info_indexing[k]] + "'";
+            else
+              obj += "''";
+          } else {
+            // Specific Photo Case
+            if (localPerson.photo !== undefined){
+              obj += "'" + localPerson.photo + "'";
+            }
+            // TODO write out to file
+            //if (localPerson.pic_filename) {
+            //  $cordovaFile.checkFile('Photos/', 'temp_picture_');
+            //}
+          }
 
           if (k < person_info_indexing.length - 1)
             obj += ", ";
         }
-
-        // Temp fix for personal_image
-        obj += ", " + '\"' + localPerson.photo + '\"';
 
         VIDA_localDB.queryDB_insert('people', obj, function() {
           $cordovaToast.showShortBottom($filter('translate')('toast_added_person_locally') + localPerson.given_name);
@@ -1262,14 +1319,24 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Reset back to normal
       $scope.LocationDropdownDisabled = false;
       document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select" );
-      document.getElementById('shelter').disabled = false;
-      document.getElementById('shelter').selectedOptions[0].label = $scope.previous_shelter_label;
+
+      var shelterElement = document.getElementById('shelter');
+      shelterElement.disabled = false;
+
+      for (var i = 0; i < shelterElement.options.length; i++) {
+        if ($scope.previous_shelter_label === shelterElement.options[i].innerText){ // checking innerText because that holds the original
+          shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // revert label back
+          shelterElement.selectedIndex = i;
+        }
+      }
     };
 
     $scope.useLocation = function() {
       $cordovaProgress.showSimpleWithLabel(true, "Getting location..");
 
       var posOptions = {timeout: 20000, enableHighAccuracy: true};
+      var shelterElement = document.getElementById('shelter');
+      shelterElement.disabled = true;
 
       $cordovaGeolocation.getCurrentPosition(posOptions).then(function(position){
         console.log("Current position: " + position);
@@ -1281,9 +1348,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           if (!($scope.person.location.lat === position.coords.latitude &&
                 $scope.person.location.long === position.coords.longitude)) {
             var options = {
-              title: $filter('translate', 'dialog_location_title'),
-              buttonLabels: [$filter('translate', 'dialog_location_prev_location'),
-                            $filter('translate', 'dialog_location_curr_location')],
+              title: $filter('translate')('dialog_location_title'),
+              buttonLabels: [$filter('translate')('dialog_location_prev_location'),
+                            $filter('translate')('dialog_location_curr_location')],
               androidEnableCancelButton: false,
               winphoneEnableCancelButton: false
             };
@@ -1299,15 +1366,16 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Gray out shelters section and fill with "Using Current Location"
         $scope.LocationDropdownDisabled = true;
         document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
-        document.getElementById('shelter').disabled = true;
+        $scope.previous_shelter_label = shelterElement.selectedOptions[0].label;
         // TODO TRANSLATE
         if (prevLocation)
-          document.getElementById('shelter').selectedOptions[0].label = "Using Prev Location";
+          shelterElement.selectedOptions[0].label = "Using Prev Location";
         else {
           $scope.person.location.lat = position.coords.latitude;
           $scope.person.location.long = position.coords.longitude;
-          document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+          shelterElement.selectedOptions[0].label = "Using Curr Location";
         }
+
 
         $cordovaProgress.hide();
         //TODO TRANSLATE
@@ -1388,9 +1456,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.saveServerIP = function(IP) {
-      // TODO: Translate
-      $cordovaProgress.showSimpleWithLabel(true, $filter('translate', 'dialog_box_title_saving'),
-        $filter('translate', 'dialog_box_message_saving_settings'));
+      $cordovaProgress.showSimpleWithLabelDetail(true, $filter('translate')('dialog_box_title_saving'),
+        $filter('translate')('dialog_box_message_saving_settings'));
       networkService.setServerAddress(IP);
 
       VIDA_localDB.queryDB_update_settings(function() {
@@ -1399,8 +1466,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.switchLanguage = function() {
-      // TODO: Translate
-      $cordovaProgress.showSimpleWithLabel(true, "Saving", "Saving settings..");
+      $cordovaProgress.showSimpleWithLabelDetail(true, $filter('translate')('dialog_box_title_saving'),
+        $filter('translate')('dialog_box_message_saving_settings'));
 
       if (this.current_language.value === "English")
         $translate.use('en');
@@ -1438,21 +1505,50 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   //TODO: copying for testing purposes, should move to uploadService?
   $scope.uploadPersonCopy = function(newPerson, isUpdating) {
     if (!isUpdating) {
-      // Upload person to fileService
-      uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
-        // Successful entirely
-        $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
-      }, function () {
-        // Error uploading person
-        console.log('error uploading person');
-      });
+      var uploadPersonFunction = function() {
+        // Upload person to fileService
+        uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
+          // Successful entirely
+          $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
+        }, function () {
+          // Error uploading person
+          console.log('error uploading person');
+        });
+      };
+
+      if (newPerson.photo !== undefined) {
+        // Upload photo
+        $scope.uploadPhotoCopy(newPerson, uploadPersonFunction, uploadPersonFunction);
+      } else
+        uploadPersonFunction();
+
     } else {
-      uploadService.updatePerson(newPerson, function() {
-        console.log("updatePerson - updated " + newPerson.given_name + " on server successfully!");
-      }, function() {
-        console.log("uploadPerson - updatePerson error");
-      });
+      var updatePersonFunction = function() {
+        uploadService.updatePerson(newPerson, function() {
+          console.log("updatePerson - updated " + newPerson.given_name + " on server successfully!");
+        }, function() {
+          console.log("uploadPerson - updatePerson error");
+        });
+      };
+
+      if (newPerson.photo !== undefined) {
+        // Upload photo (do regardless of fail/success)
+        $scope.uploadPhotoCopy(newPerson, updatePersonFunction, updatePersonFunction);
+      } else
+        updatePersonFunction();
     }
+  };
+
+  $scope.uploadPhotoCopy = function(newPerson, success, error) {
+    uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
+      // Success
+      newPerson.pic_filename = data.name;
+      success();
+    }, function () {
+      // Error uploading photo
+      if (error)
+        error();
+    });
   };
 
     $scope.changeDisconnected = function() {
@@ -1592,7 +1688,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               //    or see if there are in the DB at all
               for (var j = 0; j < allPeople.length; j++) {
                 if (dirtyArr[i].uuid == allPeople[j].uuid){
-                  // TODO: Check which one is 'newer'
+                  // See if it needs to be updated in any way
+
+                  // Regardless set isDirty/isDeleted to 0
+                  /*var values = {};
+                  values.push({
+                    type: 'isDirty',
+                    value: 0
+                  }, {
+                    type: 'isDeleted',
+                    value: 0
+                  });*/
+
+                  // TODO: Interpret created_by
+                  // if (allPeopleInDB[j].created_by > allPeople[i].created_by)
+                  //  uploadPerson(allPeople[i]);
+                  // else {
+                  //  TODO: All fields that are new, update them
+                  //  values.push(allNewValues);
+                  // }
+
+                  //  whereAt = 'uuid=\"' + allPeople[i].uuid +'\"';
+                  //  VIDA_localDB.queryDB_update('people', values, whereAt);
 
                   // Upload updated person
                   isOnServer = true;
@@ -1632,7 +1749,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
                 for (var j = 0; j < allPeopleInDB.length; j++) {
                   if (allPeopleInDB[j].uuid === allPeople[i].uuid) {
-                    //console.log("Found duplicate in database: " + allPeople[i]);
+                    // Found match
                     doContinue = true;
                     break;
                   }
@@ -1645,14 +1762,19 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                   var obj = (amountOfPeople).toString() + ", '" + allPeople[i].uuid + "', " + isDirty + ", " + isDeleted + ", ";
                   var person_info_indexing = optionService.getPersonToDBInformation();
                   for (var k = 0; k < person_info_indexing.length; k++) {
-                    obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
+                    if (person_info_indexing !== "photo") {
+                      obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
+                    } else {
+                      // Specific Photo Case
+                      // TODO
+                      //if (allPeople.photo !== undefined){
+                        obj += "''"; // + allPeople.photo + "'";
+                      //}
+                    }
 
                     if (k < person_info_indexing.length - 1)
                       obj += ", ";
                   }
-
-                  // TODO: Temp fix for personal_image
-                  obj += ", " + null;
 
                   VIDA_localDB.queryDB_insert('people', obj);
                   amountOfPeople++;
