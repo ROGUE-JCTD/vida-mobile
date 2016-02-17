@@ -56,6 +56,7 @@
     'person_injury_not_injured': 'Not Injured',
     'person_injury_moderate': 'Moderate',
     'person_injury_severe': 'Severe',
+    'person_injury_deceased': 'Deceased',
     'person_nationality': 'Nationality',
     'person_nationality_english': 'English',
     'person_nationality_african': 'African',

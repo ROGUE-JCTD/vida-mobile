@@ -887,6 +887,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       {
         "name": 'person_injury_severe',
         "value": "Severe"
+      },
+      {
+        "name": 'person_injury_deceased',
+        "value": "Deceased"
       }
     ];
 
