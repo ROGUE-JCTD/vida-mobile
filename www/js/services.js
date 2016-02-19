@@ -26,6 +26,12 @@ if (!String.prototype.startsWith) {
   };
 }
 
+if(!String.prototype.contains) {
+  String.prototype.contains = function(str, startIndex) {
+    return -1 !== String.prototype.indexOf.call(this, str, startIndex);
+  };
+}
+
 angular.module('vida.services', ['ngCordova', 'ngResource'])
 
 .factory('httpRequestInterceptor', function(networkService) {
@@ -98,14 +104,17 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var uploadFields = optionService.getPersonUploadInfo();
 
     for (var i = 0; i < uploadFields.length; i++) {
-      if (i > 0 && i < uploadFields.length) {
-        // Add ,
-        if (hasItem)
-          JSONPerson += ', ';
-      }
+      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined
+        && person[uploadFields[i]] !== "undefined") {
+        if (i > 0 && i < uploadFields.length) {
+          // Add ,
+          if (hasItem)
+            JSONPerson += ', ';
+        }
 
-      JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
-      hasItem = true;
+        JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
+        hasItem = true;
+      }
     }
 
     JSONPerson += '}';
@@ -650,6 +659,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       // Separate photo check (has different method)
       if (newPerson.photo !== undefined) {
+        var oldPictureFile = newPerson.pic_filename;
+
         // Photo has changed, upload it
         if (!isDisconnected) {
           uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
@@ -660,28 +671,47 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             putJSON += ' "pic_filename":"' + data.name + '"';
             hasItem = true;
 
-            finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+            newPerson.pic_filename = data.name;
+            var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
+            var picture = data.name.split('.');
+            var newFilename = picture[0] + '_thumb.' + picture[1];
+            $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newFilename, photoFile, true);
+
+            if (oldPictureFile !== undefined) {
+              if (!oldPictureFile.contains('_thumb')) {
+                picture = oldPictureFile.split('.');
+                oldPictureFile = picture[0] + '_thumb.' + picture[1];
+              }
+              $cordovaFile.removeFile(cordova.file.dataDirectory, 'Photos/' + oldPictureFile);
+            }
+
+            finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
           }, function () {
             // Error
-            finishHttpPut(hasItem, newPerson.id, putJSON, success, error);
+            finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
           });
         } else {
-          // Replace pic_filename_thumb with new picture (Same as write file)
-          if (newPerson.pic_filename) {
-            // Make filename
-            //var pic = newPerson.pic_filename.split('.');
-            //var thumbnail = pic[0] + '_thumb.' + pic[1];
-            //var picData = window.atob(newPerson.photo.split('base64,')[1]);
-
-            // Write out file
-            //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, picData, true);
-            //$cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + thumbnail, picData, true);
-          } else {
-            //TODO: Take care of edge case if someone didn't have a picture beforehand
-            // Generate filename (same way server would)
-
-            // Write out file
+          // See if an older picture needs to be removed
+          if (oldPictureFile) {
+            // Attempt to remove the old file
+            if (!oldPictureFile.contains('_thumb')) {
+              var picture = oldPictureFile.split('.');
+              oldPictureFile = picture[0] + '_thumb.' + picture[1];
+            }
+            $cordovaFile.removeFile(cordova.file.dataDirectory, 'Photos/' + oldPictureFile);
           }
+
+          // Save out picture (won't be hashed yet so save temporary picture name)
+          newPerson.pic_filename = 'temp_picture_' + newPerson.uuid + '.jpg';
+          var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
+          $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, photoFile, true);
+
+          // Successful
+          if (hasItem)
+            putJSON += ', ';
+
+          putJSON += ' "pic_filename":"' + newPerson.pic_filename + '"';
+          hasItem = true;
 
           finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
         }
@@ -705,36 +735,39 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               $cordovaToast.showShortBottom(errorMsg);
               error();
             });
-        } else {
-          // Use information and put into database for later upload
-          var DBInfo = optionService.getPersonToDBInformation();
-          var values = [];
-          var JSONForPut = JSON.parse(putJSON);
+        }
 
-          // Check which information needs to be updated
-          for (var i = 0; i < DBInfo.length; i++) {
-            if (JSONForPut[DBInfo[i]] !== undefined) {
-              values.push({
-                type: DBInfo[i],
-                value: "\"" + JSONForPut[DBInfo[i]] + "\""
-              });
-            }
-          }
+        // Update Database regardless
+        var DBInfo = optionService.getPersonToDBInformation();
+        var values = [];
+        var JSONForPut = JSON.parse(putJSON);
 
-          if (values.length > 0) {
-            // There is a change, mark the DB as dirty
+        // Check which information needs to be updated
+        for (var i = 0; i < DBInfo.length; i++) {
+          if (JSONForPut[DBInfo[i]] !== undefined) {
             values.push({
-              type: 'isDirty',
-              value: 1
+              type: DBInfo[i],
+              value: "\"" + JSONForPut[DBInfo[i]] + "\""
             });
-
-            // Update DB
-            VIDA_localDB.queryDB_update('people', values, 'uuid=\"' + newPerson.uuid + '\"');
           }
+        }
 
+        if (values.length > 0) {
+          // There is a change, mark the DB as dirty
+          values.push({
+            type: 'isDirty',
+            value: isDisconnected ? 1 : 0
+          });
+
+          // Update DB
+          VIDA_localDB.queryDB_update('people', values, 'uuid=\"' + newPerson.uuid + '\"', function() {
+            success();
+          });
+        } else {
           success();
         }
-      } else {
+
+        } else {
         success();
       }
     };
@@ -1053,6 +1086,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       };
 
       allOptions.push(option);
+
+      /*option = {
+        dropdown: 'status',
+        options: status_options
+      };
+
+      allOptions.push(option);*/
 
       return allOptions;
     };

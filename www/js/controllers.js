@@ -561,6 +561,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('injury');
     setupDropdown('nationality');
 
+    // TODO: Fix so it's always something
     $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
     if ($scope.shelter_array) {
       // Look at person and see what shelter they are assigned to
@@ -605,6 +606,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }]; // temp fix
       $scope.current_shelter = array[0];
       $scope.shelter_array = array;
+      person.geom = undefined;
     }
   };
 
@@ -749,8 +751,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     // specific cases
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
-    if (changedPerson.photo === peopleService.getPlaceholderImage())
-      changedPerson.photo = undefined;
+    if (changedPerson.photo === peopleService.getPlaceholderImage()) {
+      if (person.pic_filename) {
+        // Went from picture to no picture
+        changedPerson.photo = undefined; //TODO? is it worth it?
+      } else
+        changedPerson.photo = undefined;
+    }
 
     // all dropdowns (gender, injury, nationality, shelter_id)
     var dropdownOptions = optionService.getAllDropdownOptions();
@@ -883,7 +890,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       winphoneEnableCancelButton : true
     };
 
-    if ($scope.hasPlaceholderImage) {
+    if (!$scope.hasPlaceholderImage) {
       options.buttonLabels = [$filter('translate')('modal_picture_take_picture'),
         $filter('translate')('modal_picture_choose_from_library'),
         $filter('translate')('modal_picture_remove_picture')];
@@ -1032,7 +1039,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         var Photo;
         if ($scope.person.photo !== undefined) {
-          Photo = $scope.person.photo;
+          if ($scope.person.photo !== null)
+            Photo = $scope.person.photo;
+          else
+            Photo = undefined;
         }
 
         var Barcode;
@@ -1094,20 +1104,36 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         if (newPerson.photo) {
           if (!isDisconnected) {
             $scope.uploadPhoto(newPerson, function () {
-              // On successful upload of Photo, this assigns the photo to the person
+              // On successful upload of Photo, the photo hash is already assigned to newPerson.pic_filename
+
+              // Save out file as "origPicHash + '_thumb.' + ext" for later access
+              var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
+              var picture = newPerson.pic_filename.split('.');
+              var newFilename = picture[0] + '_thumb.' + picture[1];
+              $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newFilename, photoFile, true);
+
               $scope.uploadPerson(newPerson);
               $cordovaProgress.hide();
+            }, function(error) {
+              // Error uploading picture
+              $cordovaProgress.hide();
+              $ionicPopup.alert({
+                title: 'Error',
+                template: 'There was an error uploading this person\'s information. Please check your connection and try again.'
+              }); // TODO: Translate
+              console.log(error);
             });
           } else {
             $ionicPopup.alert({
               title: 'Disconnected',
               template: 'Since you are disconnected, the photo will be uploaded next time you sync.'
-            }); // Debug
-            newPerson.pic_filename = 'temp_picture_' + newPerson.given_name + '.jpg';
+            }); // TODO: Translate
+
+            // Save out picture (won't be hashed yet so save temporary picture name)
+            newPerson.pic_filename = 'temp_picture_' + newPerson.uuid + '.jpg';
             var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
-            $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, photoFile, true).then(function() {
-              console.log('Wrote picture file to disk');
-            });
+            $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, photoFile, true);
+
             $scope.uploadPerson(newPerson); // will put into local DB
             $cordovaProgress.hide();
           }
@@ -1140,10 +1166,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         //$cordovaToast.showShortBottom($filter('translate')('dialog_photo_uploaded') + newPerson.given_name + '!');
         newPerson.pic_filename = data.name;
         success();
-      }, function () {
+      }, function (error_status) {
         // Error uploading photo
         if (error)
-          error();
+          error(error_status);
       });
     };
 
@@ -1231,11 +1257,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             // Specific Photo Case
             if (localPerson.photo !== undefined){
               obj += "'" + localPerson.photo + "'";
-            }
-            // TODO write out to file
-            //if (localPerson.pic_filename) {
-            //  $cordovaFile.checkFile('Photos/', 'temp_picture_');
-            //}
+            } else
+              obj += "''";
           }
 
           if (k < person_info_indexing.length - 1)
@@ -1502,6 +1525,44 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       });
     };
 
+  var createPersonObj_update = function(ID, person) {
+    var person_info_indexing = optionService.getPersonToDBInformation();
+    var isDirty = 0; // Saving out last updated person - no need to be dirty
+    var deleted = 0;
+    var obj = [];
+    obj.push({
+      type: 'id',
+      value: "\'" + ID.toString() + "\'"
+    });
+    obj.push({
+      type: 'uuid',
+      value: "\'" + person.uuid + "\'"
+    });
+    obj.push({
+      type: 'isDirty',
+      value: "\'" + isDirty + "\'"
+    });
+    obj.push({
+      type: 'deleted',
+      value: "\'" + deleted + "\'"
+    });
+
+    for (var k = 0; k < person_info_indexing.length; k++) {
+      obj.push({
+        type: person_info_indexing[k],
+        value: "\'" + person[person_info_indexing[k]] + "\'"
+      });
+    }
+
+    return obj;
+  };
+
+  $scope.updatePersonLocalDatabase = function(newPerson){
+    var obj = createPersonObj_update(newPerson.id, newPerson);
+    var whereAt = "uuid=\'" + newPerson.uuid + "\'";
+    VIDA_localDB.queryDB_update('person', obj, whereAt);
+  };
+
   //TODO: copying for testing purposes, should move to uploadService?
   $scope.uploadPersonCopy = function(newPerson, isUpdating) {
     if (!isUpdating) {
@@ -1510,6 +1571,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
           // Successful entirely
           $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
+          $scope.updatePersonLocalDatabase(newPerson);
         }, function () {
           // Error uploading person
           console.log('error uploading person');
@@ -1517,8 +1579,23 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       };
 
       if (newPerson.photo !== undefined) {
-        // Upload photo
-        $scope.uploadPhotoCopy(newPerson, uploadPersonFunction, uploadPersonFunction);
+        if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
+          // Upload photo
+          $scope.uploadPhotoCopy(newPerson, function () {
+            // Picture uploaded successfully. Get rid of the old picture
+            $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/temp_picture_' + newPerson.uuid + '.jpg').then(
+              function () {
+                // Found old file
+                var picture = newPerson.pic_filename.split('.');
+                var newFilename = picture[0] + '_thumb.' + picture[1];
+                $cordovaFile.moveFile(cordova.file.dataDirectory, 'Photos/temp_picture_' + newPerson.uuid + '.jpg',
+                  cordova.file.dataDirectory, 'Photos/' + newFilename);
+              }
+            );
+            uploadPersonFunction();
+          }, uploadPersonFunction);
+        } else
+          uploadPersonFunction();
       } else
         uploadPersonFunction();
 
@@ -1526,6 +1603,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var updatePersonFunction = function() {
         uploadService.updatePerson(newPerson, function() {
           console.log("updatePerson - updated " + newPerson.given_name + " on server successfully!");
+          $scope.updatePersonLocalDatabase(newPerson);
         }, function() {
           console.log("uploadPerson - updatePerson error");
         });
@@ -1533,7 +1611,26 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       if (newPerson.photo !== undefined) {
         // Upload photo (do regardless of fail/success)
-        $scope.uploadPhotoCopy(newPerson, updatePersonFunction, updatePersonFunction);
+        if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
+          // Upload photo
+          $scope.uploadPhotoCopy(newPerson, function () {
+            // newPerson.pic_filename will now be replaced with new hashed filename
+
+            // Picture uploaded successfully. Get rid of the old picture
+            $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/temp_picture_' + newPerson.uuid + '.jpg').then(
+              function () {
+                // Found old file
+                var picture = newPerson.pic_filename.split('.');
+                var newFilename = picture[0] + '_thumb.' + picture[1];
+                // Make old picture the new filename
+                $cordovaFile.moveFile(cordova.file.dataDirectory, 'Photos/temp_picture_' + newPerson.uuid + '.jpg',
+                  cordova.file.dataDirectory, 'Photos/' + newFilename);
+              }
+            );
+            updatePersonFunction();
+          }, updatePersonFunction);
+        } else
+          updatePersonFunction();
       } else
         updatePersonFunction();
     }
@@ -1656,21 +1753,22 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var cleanArr = [];
       var dirtyArr = [];
 
-      // FIRST TASK: See if anything in the database needs to be synced
-      // TODO: Translate
-      $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
+      // Check to see if the server is available
+      if (!isDisconnected) {
 
-      VIDA_localDB.queryDB_select('people', '*', function(results){
-        for (var i = 0; i < results.length; i++){
-          if (Number(results[i].isDirty) == true){
-            dirtyArr.push(results[i]);
-          } else {
-            cleanArr.push(results[i]);
+        // TODO: Translate
+        $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
+
+        // FIRST TASK: See if anything in the database needs to be synced
+        VIDA_localDB.queryDB_select('people', '*', function(results){
+          for (var i = 0; i < results.length; i++){
+            if (Number(results[i].isDirty) == true){
+              dirtyArr.push(results[i]);
+            } else {
+              cleanArr.push(results[i]);
+            }
           }
-        }
 
-        // Check to see if the server is available
-        if (!isDisconnected) {
           peopleService.getAllPeopleWithReturn(function(allPeople){
             // Successful!
 
@@ -1791,12 +1889,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             $cordovaToast.showLongBottom(error);
             $cordovaProgress.hide();
           });
-        } else {
-          // TODO: Translate
-          $cordovaToast.showLongBottom('Not connected to the server!');
-          $cordovaProgress.hide();
-        }
-      });
+        });
+      } else {
+        // TODO: Translate
+        $cordovaToast.showLongBottom('Not connected to the server!');
+      }
     };
 })
 
