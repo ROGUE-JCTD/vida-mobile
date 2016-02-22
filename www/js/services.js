@@ -467,6 +467,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           var whereAt = {};
           whereAt.restriction = 'LIKE';
           whereAt.column = 'given_name';  // TODO: Make advanced searching
+          if (Number(query))
+            whereAt.column = 'barcode';
           whereAt.value = query;
           VIDA_localDB.queryDB_select('people', '*', function (results) {
             peopleInShelter = [];
