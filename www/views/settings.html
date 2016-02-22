@@ -7,9 +7,6 @@
 
         <button class="button button-positive button-block" ng-click="updateSyncDatabase()">Update/Sync Database</button>
 
-        <!-- Test button (Will be implemented to functionality) -->
-        <button class="button button-positive button-block" ng-click="downloadThumbnails()">Download Thumbnails</button>
-
         <label class="item item-input item-select">
           <span class="input-label">{{'settings_language' | translate}}</span>
           <select ng-init="current_language == current_language || language_options[0]" ng-change="switchLanguage()"

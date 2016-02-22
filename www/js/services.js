@@ -420,7 +420,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 })
 
 .service('peopleService', function($http, networkService, uploadService, VIDA_localDB, $cordovaToast,
-                                   optionService, $q, $cordovaFile, $ionicPopup) {
+                                   optionService, $q, $cordovaFile, $ionicPopup, $cordovaFileTransfer) {
     var peopleInShelter = [];
     var personByID = {};
     var testPhoto = {};
@@ -773,38 +773,29 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.downloadPersonalImage = function(filename, success, error) {
-      $http.get(networkService.getFileServiceURL() + filename + '/download/', networkService.getAuthenticationHeader()).then(function (xhr) {
-        if (xhr.status === 200) {
-          if (xhr.data != null){
-            if (!xhr.data.status) {
-              //TODO: This is downloading a broken image (see screenshot on desktop)
+      $cordovaFile.checkFile(cordova.file.dataDirectory + 'Photos/', filename).then(function() {
+        // Found file already
+        var downloaded_image = false;
+        success(downloaded_image);
 
-              /*var canvas = document.createElement('CANVAS');
-              var ctx = canvas.getContext('2d');
-              var dataURL;
-              canvas.height = 1024;
-              canvas.width = 1024;
-              ctx.drawImage(this, 0, 0);
-              dataURL = canvas.toDataURL(xhr.data);
-
-              var reader = new window.FileReader();
-              reader.readAsDataURL(new Blob([xhr.data]));
-
-              reader.onloadend = function () {
-                var start = reader.result.split(',');
-                var Base64Photo = "data:image/jpeg;base64," + start[1];
-                success(Base64Photo, filename);
-              };
-              */
-              success(xhr.data);
-            } else
-              error(xhr.data.status);
-          } else {
-            error(xhr.status);
-          }
-        } else {
-          error(xhr.status);
-        }
+        // TODO: Should the image be downloaded again? :(
+      }, function(err) {
+        if (err.message === "NOT_FOUND_ERR") {
+          $cordovaFileTransfer.download(networkService.getFileServiceURL() + filename + '/download/',
+            cordova.file.dataDirectory + 'Photos/' + filename,
+            {}, true).then(function (xhr) {
+            // Success
+            var downloaded_image = true;
+            success(downloaded_image);
+          }, function (err) {
+            // Error
+            error();
+          }, function (progress) {
+            // Progress (if i wanna keep track)
+            //var x = progress;
+          });
+        } else
+          error();
       });
     };
 
@@ -845,10 +836,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.getPersonalImage = function(pic_filename, success, error) {
-
       if (!isDisconnected) {
         // Get normal image from server
-        return networkService.getFileServiceURL() + pic_filename + '/download/';
+        if (pic_filename !== null && pic_filename !== "null")
+          return networkService.getFileServiceURL() + pic_filename + '/download/';
+        else
+          return this.getPlaceholderImage();
       } else {
         if (pic_filename !== null && pic_filename !== undefined
             && pic_filename !== "null") {
@@ -859,21 +852,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             var self = this;
 
             return cordova.file.dataDirectory + 'Photos/' + thumbnail;
-
-            // TODO: Promise doesn't resolve correctly, only direct sync (not a-sync) link works
-            /*// Check file system (
-            $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/' + thumbnail).then(function (pass) {
-              var URL = cordova.file.dataDirectory + 'Photos/' + thumbnail;
-              if (success)
-                success(URL);
-              //document.getElementById("this_person_picture").src = URL; /// Only sets first picture in list
-              return cordova.file.dataDirectory + 'Photos/' + thumbnail;
-            }, function (fail) {
-              var placeholder = self.getPlaceholderImage();
-              if (error)
-                error(placeholder, fail);
-              return placeholder;
-            });*/
           } else {
             return cordova.file.dataDirectory + 'Photos/' + pic_filename;
           }

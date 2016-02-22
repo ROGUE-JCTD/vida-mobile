@@ -1466,7 +1466,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation,
-                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile){
+                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q){
   console.log('---------------------------------- SettingsCtrl');
 
     $scope.networkAddr = networkService.getServerAddress();
@@ -1700,194 +1700,199 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         console.log("NONE connection");
     };
 
-    $scope.downloadThumbnails = function() {
-      var peopleIndex = 0;
-      $cordovaProgress.showSimpleWithLabelDetail(true, 'Downloading', 'Downloading thumbnails..');
+    $scope.downloadThumbnails = function(peopleFromServer) {
+      // This function will pull a picture down from the server and put it to disk
+      var promise = $q.defer();
+      var imagesDownloaded = 0, pIndex = 0;
 
-      peopleService.getAllPeopleWithReturn(function(peopleFromServer){
-        for (var i = 0; i < peopleFromServer.length; i++){
-          if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
-            var uuid = peopleFromServer[i].uuid;
-            var filename = peopleFromServer[i].pic_filename.split('.');
+      for (var i = 0; i < peopleFromServer.length; i++) {
+        if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
+          var thumbnail = peopleFromServer[i].pic_filename;
+
+          if (!thumbnail.contains('_thumb')) {
+            var filename = thumbnail.split('.');
             var extension = filename[1];
-            var thumbnail = filename[0] + '_thumb' + '.' + extension;
+            thumbnail = filename[0] + '_thumb' + '.' + extension;
+          }
 
-            // Attempt to download that picture
-            peopleService.downloadPersonalImage(thumbnail, function(pictureData_ToWrite, thumbnail_filename) {
-              // Convert picture to base64??
+          // Attempt to download that picture
+          peopleService.downloadPersonalImage(thumbnail, function (downloaded_image) {
+            // Successful
+            if (downloaded_image === true)
+              imagesDownloaded++;
 
-              // Put picture onto disk
-              $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + thumbnail_filename, pictureData_ToWrite, true).then(function(){
-                // Successful
-                peopleIndex++;
-                if (peopleIndex === peopleFromServer.length) {
-                  // Finished
-                  $cordovaProgress.hide();
-                }
-              }, function(error) {
-                console.log("writeFile error - " + error);
-                peopleIndex++;
-                if (peopleIndex === peopleFromServer.length) {
-                  // Finished
-                  $cordovaProgress.hide();
-                }
-              });
-            }, function(error){
-              // Not successful
-              peopleIndex++;
-              if (peopleIndex === peopleFromServer.length) {
-                // Finished
-                $cordovaProgress.hide();
-              }
-              console.log("PROBLEM");
-              console.log(error);
-            });
+            pIndex++;
+
+            if (pIndex === peopleFromServer.length) {
+              promise.resolve(imagesDownloaded);
+            }
+          }, function (error) {
+            // Not successful
+            console.log("PROBLEM");
+            console.log(error);
+            pIndex++;
+
+            if (pIndex === peopleFromServer.length) {
+              promise.resolve(imagesDownloaded);
+            }
+          });
+        } else {
+          // No picture on file
+          pIndex++;
+
+          if (pIndex === peopleFromServer.length) {
+            promise.resolve(imagesDownloaded);
           }
         }
-      }, function(error){
+      }
 
-      });
+      return promise.promise;
     };
 
     $scope.updateSyncDatabase = function() {
-      var cleanArr = [];
       var dirtyArr = [];
 
       // Check to see if the server is available
       if (!isDisconnected) {
 
         // TODO: Translate
-        $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
+        $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Checking if any updating is necessary..');
 
         // FIRST TASK: See if anything in the database needs to be synced
         VIDA_localDB.queryDB_select('people', '*', function(results){
           for (var i = 0; i < results.length; i++){
             if (Number(results[i].isDirty) == true){
               dirtyArr.push(results[i]);
-            } else {
-              cleanArr.push(results[i]);
             }
           }
 
           peopleService.getAllPeopleWithReturn(function(allPeople){
             // Successful!
 
-            // Type/Value can update any column with any info
-            var isDirtyForDB = [{
-              type: 'isDirty',
-              value: 0
-            }];
+            // Get all thumbnails
+            $cordovaProgress.hide();
+            $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Downloading Thumbnails..');
+            $scope.downloadThumbnails(allPeople).then(function(imagesDownloaded) {
+              // Type/Value can update any column with any info
+              var isDirtyForDB = [{
+                type: 'isDirty',
+                value: 0
+              }];
 
-            var isOnServer = false;
-            var whereAt = '';
-            for (var i = 0; i < dirtyArr.length; i++) {
+              $cordovaProgress.hide();
+              $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
+              var isOnServer = false;
+              var whereAt = '';
+              for (var i = 0; i < dirtyArr.length; i++) {
 
-              // For each person that needs to be *updated*, fix them in the DB,
-              //    or see if there are in the DB at all
-              for (var j = 0; j < allPeople.length; j++) {
-                if (dirtyArr[i].uuid == allPeople[j].uuid){
-                  // See if it needs to be updated in any way
+                // For each person that needs to be *updated*, fix them in the DB,
+                //    or see if there are in the DB at all
+                for (var j = 0; j < allPeople.length; j++) {
+                  if (dirtyArr[i].uuid == allPeople[j].uuid){
+                    // See if it needs to be updated in any way
 
-                  // Regardless set isDirty/isDeleted to 0
-                  /*var values = {};
-                  values.push({
-                    type: 'isDirty',
-                    value: 0
-                  }, {
-                    type: 'isDeleted',
-                    value: 0
-                  });*/
+                    // Regardless set isDirty/isDeleted to 0
+                    /*var values = {};
+                    values.push({
+                      type: 'isDirty',
+                      value: 0
+                    }, {
+                      type: 'isDeleted',
+                      value: 0
+                    });*/
 
-                  // TODO: Interpret created_by
-                  // if (allPeopleInDB[j].created_by > allPeople[i].created_by)
-                  //  uploadPerson(allPeople[i]);
-                  // else {
-                  //  TODO: All fields that are new, update them
-                  //  values.push(allNewValues);
-                  // }
+                    // TODO: Interpret created_by
+                    // if (allPeopleInDB[j].created_by > allPeople[i].created_by)
+                    //  uploadPerson(allPeople[i]);
+                    // else {
+                    //  TODO: All fields that are new, update them
+                    //  values.push(allNewValues);
+                    // }
 
-                  //  whereAt = 'uuid=\"' + allPeople[i].uuid +'\"';
-                  //  VIDA_localDB.queryDB_update('people', values, whereAt);
+                    //  whereAt = 'uuid=\"' + allPeople[i].uuid +'\"';
+                    //  VIDA_localDB.queryDB_update('people', values, whereAt);
 
-                  // Upload updated person
-                  isOnServer = true;
-                  dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
+                    // Upload updated person
+                    isOnServer = true;
+                    dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
+                    $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+
+                    // Update isDirty to 0
+                    whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
+                    VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
+                  }
+                }
+
+                // Person is not in the server DB at all
+                if (!isOnServer) {
+                  // Upload person to server
                   $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
 
-                  // Update isDirty to 0
+                  // Update isDirty on localDB to 0
                   whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
                   VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
                 }
               }
+              // END FIRST TASK
+              $cordovaProgress.hide();
 
-              // Person is not in the server DB at all
-              if (!isOnServer) {
-                // Upload person to server
-                $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+              // SECOND TASK: Find who isn't in the DB and add them to the current DB
+              // TODO: Translate
+              $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Pulling down any people who aren't in the database..");
+              var amountOfPeople = 0;
 
-                // Update isDirty on localDB to 0
-                whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
-                VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
-              }
-            }
-            // END FIRST TASK
-            $cordovaProgress.hide();
+              VIDA_localDB.queryDB_select('people', '*', function(allPeopleInDB) {
+                amountOfPeople = allPeopleInDB.length + 1; // + 1 to start at the next index
 
-            // SECOND TASK: Find who isn't in the DB and add them to the current DB
-            // TODO: Translate
-            $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Pulling down any people who aren't in the database..");
-            var amountOfPeople = 0;
+                // If someone isn't in the DB, insert them
+                for (var i = 0; i < allPeople.length; i++) {
+                  var doContinue = false;
 
-            VIDA_localDB.queryDB_select('people', '*', function(allPeopleInDB) {
-              amountOfPeople = allPeopleInDB.length + 1; // + 1 to start at the next index
-
-              // If someone isn't in the DB, insert them
-              for (var i = 0; i < allPeople.length; i++) {
-                var doContinue = false;
-
-                for (var j = 0; j < allPeopleInDB.length; j++) {
-                  if (allPeopleInDB[j].uuid === allPeople[i].uuid) {
-                    // Found match
-                    doContinue = true;
-                    break;
+                  for (var j = 0; j < allPeopleInDB.length; j++) {
+                    if (allPeopleInDB[j].uuid === allPeople[i].uuid) {
+                      // Found match
+                      doContinue = true;
+                      break;
+                    }
                   }
-                }
 
-                // If doContinue is false, they were never found in the DB. Insert them.
-                if (!doContinue) {
-                  var isDirty = 0;
-                  var isDeleted = 0;
-                  var obj = (amountOfPeople).toString() + ", '" + allPeople[i].uuid + "', " + isDirty + ", " + isDeleted + ", ";
-                  var person_info_indexing = optionService.getPersonToDBInformation();
-                  for (var k = 0; k < person_info_indexing.length; k++) {
-                    if (person_info_indexing !== "photo") {
-                      obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
-                    } else {
-                      // Specific Photo Case
-                      // TODO
-                      //if (allPeople.photo !== undefined){
-                        obj += "''"; // + allPeople.photo + "'";
-                      //}
+                  // If doContinue is false, they were never found in the DB. Insert them.
+                  if (!doContinue) {
+                    var isDirty = 0;
+                    var isDeleted = 0;
+                    var obj = (amountOfPeople).toString() + ", '" + allPeople[i].uuid + "', " + isDirty + ", " + isDeleted + ", ";
+                    var person_info_indexing = optionService.getPersonToDBInformation();
+                    for (var k = 0; k < person_info_indexing.length; k++) {
+                      if (person_info_indexing !== "photo") {
+                        obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
+                      } else {
+                        // Specific Photo Case
+                        // TODO
+                        //if (allPeople.photo !== undefined){
+                          obj += "''"; // + allPeople.photo + "'";
+                        //}
+                      }
+
+                      if (k < person_info_indexing.length - 1)
+                        obj += ", ";
                     }
 
-                    if (k < person_info_indexing.length - 1)
-                      obj += ", ";
+                    VIDA_localDB.queryDB_insert('people', obj);
+                    amountOfPeople++;
                   }
-
-                  VIDA_localDB.queryDB_insert('people', obj);
-                  amountOfPeople++;
                 }
-              }
 
-              // TODO: Translate
-              $cordovaToast.showLongBottom("Syncing complete!");
+                // TODO: Translate
+                $cordovaToast.showShortBottom("Syncing complete!");
+                $cordovaToast.showShortBottom("Thumbnails downloaded: " + imagesDownloaded);
+                $cordovaProgress.hide();
+              });
+              // END SECOND TASK
+
+            }, function(error) {
+              $cordovaToast.showLongBottom(error);
               $cordovaProgress.hide();
             });
-            // END SECOND TASK
-
-          }, function(error) {
-            $cordovaToast.showLongBottom(error);
-            $cordovaProgress.hide();
           });
         });
       } else {
