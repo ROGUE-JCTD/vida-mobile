@@ -2049,6 +2049,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       //   be the initialized URL-based map from Leaflet
       MapLayer = layer;
     });
+
+    // Port of Spain
+    var default_lon = -61.45;
+    var default_lat = 10.65;
+    var default_zoom = 11;
+
+    var latLng = {lat: default_lat, lon: default_lon};
+
+    thisMap.setView(latLng, default_zoom);
   });
   $scope.showAllSheltersOnMap();
 })

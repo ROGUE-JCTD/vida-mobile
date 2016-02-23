@@ -423,7 +423,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
                                    optionService, $q, $cordovaFile, $ionicPopup, $cordovaFileTransfer) {
     var peopleInShelter = [];
     var personByID = {};
-    var testPhoto = {};
     var storedSearchQuery = "";
 
     this.searchForPerson = function(URL, query, success, error) {
@@ -466,9 +465,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           // Search local database instead
           var whereAt = {};
           whereAt.restriction = 'LIKE';
-          whereAt.column = 'given_name';  // TODO: Make advanced searching
+          whereAt.column = 'given_name';
           if (Number(query))
-            whereAt.column = 'barcode';
+            whereAt.column = 'barcode'; // good enough
           whereAt.value = query;
           VIDA_localDB.queryDB_select('people', '*', function (results) {
             peopleInShelter = [];

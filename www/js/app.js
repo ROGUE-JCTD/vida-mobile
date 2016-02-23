@@ -74,24 +74,6 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         $cordovaSQLite.execute(db, query);
 
         mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
-        // Debug tests
-        /*var queries = [
-          'SELECT zoom_level FROM tiles',
-          'SELECT tile_column FROM tiles',
-          'SELECT tile_row FROM tiles',
-          'SELECT tile_data FROM tiles'
-        ];
-        for (var k = 0; k < queries.length; k++) {
-          console.log(queries[k]);
-          $cordovaSQLite.execute(mapDB, queries[k]).then(
-            function (result) {
-              //console.log(tx);
-              if (result.rows.length > 0) {
-                var item = result.rows.item(0);
-                console.log(item);
-              }
-            });
-        }*/
       }
 
       if (!(navigator.camera)){
