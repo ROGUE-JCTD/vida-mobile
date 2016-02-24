@@ -1015,6 +1015,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'province_or_state',
       type: 'TEXT'
     }, {
+      column: 'created_at',
+      type: 'TEXT'
+    }, {
       column: 'photo',
       type: 'TEXT'
     }, {
@@ -1026,7 +1029,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'pic_filename', 'province_or_state', 'photo', 'geom'];
+    'description', 'pic_filename', 'province_or_state', 'created_at', 'photo', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',

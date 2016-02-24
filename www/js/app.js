@@ -14,7 +14,7 @@ var isDisconnected = false; // Will store non-globally once fully working
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile, shelterService) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -74,6 +74,9 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         $cordovaSQLite.execute(db, query);
 
         mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
+
+        // Queue to get all shelters and store them in list
+        //shelterService.getAllShelters();
       }
 
       if (!(navigator.camera)){

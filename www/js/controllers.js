@@ -757,6 +757,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         changedPerson.photo = undefined; //TODO? is it worth it?
       } else
         changedPerson.photo = undefined;
+    } else if (changedPerson.photo.startsWith('file:///')) {
+      changedPerson.photo = undefined; // Using a file from on disk already
     }
 
     // all dropdowns (gender, injury, nationality, shelter_id)
@@ -790,6 +792,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     if (person.pic_filename)
       changedPerson.pic_filename = person.pic_filename;
+
+    changedPerson.created_at = new Date().toISOString();
 
     var geom = {};
     if (person.geom) {
@@ -1560,7 +1564,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.updatePersonLocalDatabase = function(newPerson){
     var obj = createPersonObj_update(newPerson.id, newPerson);
     var whereAt = "uuid=\'" + newPerson.uuid + "\'";
-    VIDA_localDB.queryDB_update('person', obj, whereAt);
+    VIDA_localDB.queryDB_update('people', obj, whereAt);
   };
 
   //TODO: copying for testing purposes, should move to uploadService?
@@ -1578,7 +1582,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         });
       };
 
-      if (newPerson.photo !== undefined) {
+      if (newPerson.photo !== undefined && newPerson.photo !== "undefined") {
         if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
           // Upload photo
           $scope.uploadPhotoCopy(newPerson, function () {
@@ -1609,7 +1613,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         });
       };
 
-      if (newPerson.photo !== undefined) {
+      if (newPerson.photo !== undefined && newPerson.photo !== "undefined") {
         // Upload photo (do regardless of fail/success)
         if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
           // Upload photo
@@ -1752,11 +1756,80 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.updateSyncDatabase = function() {
       var dirtyArr = [];
 
+      var determineNewerValue = function(_dateOne, _dateTwo){
+        var parseDate = function(str) {
+          var time = str.split('T');
+          var obj = {};
+          obj.date = {};
+          obj.time = {};
+
+          var ymd = time[0].split('-');
+          var hms = time[1].split(':');
+
+          obj.date = {
+            year: Number(ymd[0]), month: Number(ymd[1]), day: Number(ymd[2])
+          };
+          obj.time = {
+            hour: Number(hms[0]), min: Number(hms[1]), sec: Number(hms[2].split('Z')[0])
+          };
+          return obj;
+        };
+
+        var dateOne = parseDate(_dateOne);
+        var dateTwo = parseDate(_dateTwo);
+        var one = true, two = false;
+
+        //////////////////////
+        // -- Date comparison
+        // Year comparison
+        if (dateOne.date.year > dateTwo.date.year)
+          return one;
+        else if (dateTwo.date.year > dateOne.date.year)
+          return two;
+
+        // Month comparison - Made in same year
+        if (dateOne.date.month > dateTwo.date.month)
+          return one;
+        else if (dateTwo.date.month > dateOne.date.month)
+          return two;
+
+        // Day comparison - Made in same year/month
+        if (dateOne.date.day > dateTwo.date.day)
+          return one;
+        else if (dateTwo.date.day > dateOne.date.day)
+          return two;
+        //////////////////////
+
+        //////////////////////
+        // -- Time comparison
+        // Hour comparison - Was made the same day
+        if (dateOne.time.hour > dateTwo.time.hour)
+          return one;
+        else if (dateTwo.time.hour > dateOne.time.hour)
+          return two;
+
+        // Min comparison - Was made the same hour
+        if (dateOne.time.min > dateTwo.time.min)
+          return one;
+        else if (dateTwo.time.min > dateOne.time.min)
+          return two;
+
+        // Sec comparison - Was made the same minute
+        if (dateOne.time.sec > dateTwo.time.sec)
+          return one;
+        else if (dateTwo.time.sec > dateOne.time.sec)
+          return two;
+        //////////////////////
+
+        // If they are exactly the same, the first one will be returned
+        return one;
+      };
+
       // Check to see if the server is available
       if (!isDisconnected) {
 
         // TODO: Translate
-        $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Checking if any updating is necessary..');
+        $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Connecting to the server..');
 
         // FIRST TASK: See if anything in the database needs to be synced
         VIDA_localDB.queryDB_select('people', '*', function(results){
@@ -1778,6 +1851,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                 type: 'isDirty',
                 value: 0
               }];
+              /*, {
+                type: 'deleted',
+                value: 0 // TODO: When could this be a thing?
+              }];*/
 
               $cordovaProgress.hide();
               $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
@@ -1789,35 +1866,26 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                 //    or see if there are in the DB at all
                 for (var j = 0; j < allPeople.length; j++) {
                   if (dirtyArr[i].uuid == allPeople[j].uuid){
-                    // See if it needs to be updated in any way
-
-                    // Regardless set isDirty/isDeleted to 0
-                    /*var values = {};
-                    values.push({
-                      type: 'isDirty',
-                      value: 0
-                    }, {
-                      type: 'isDeleted',
-                      value: 0
-                    });*/
-
-                    // TODO: Interpret created_by
-                    // if (allPeopleInDB[j].created_by > allPeople[i].created_by)
-                    //  uploadPerson(allPeople[i]);
-                    // else {
-                    //  TODO: All fields that are new, update them
-                    //  values.push(allNewValues);
-                    // }
-
-                    //  whereAt = 'uuid=\"' + allPeople[i].uuid +'\"';
-                    //  VIDA_localDB.queryDB_update('people', values, whereAt);
-
-                    // Upload updated person
                     isOnServer = true;
-                    dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
-                    $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
 
-                    // Update isDirty to 0
+                    // See if it needs to be updated in any way
+                    var personOnDB_created = dirtyArr[i].created_at;
+                    var personOnServer_created = allPeople[j].created_at;
+
+                    // If true, first value is newer. If false, second value is newer.
+                    // If exact, it will upload the database version
+                    if (determineNewerValue(personOnDB_created, personOnServer_created)) {
+                      // Database version is newer, upload that to server
+                      dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
+                      $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+                    } else {
+                      // Server version is newer, don't upload, just update database
+                      var personToUpdate = allPeople[j];
+                      personToUpdate.id = dirtyArr[i].id; // Database ID needs to correlate
+                      $scope.updatePersonLocalDatabase(personToUpdate);
+                    }
+
+                    // Update isDirty to 0 regardless
                     whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
                     VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
                   }
@@ -1893,6 +1961,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               $cordovaToast.showLongBottom(error);
               $cordovaProgress.hide();
             });
+          }, function(error) {
+            $cordovaToast.showShortBottom(error);
+            $cordovaProgress.hide();
           });
         });
       } else {
