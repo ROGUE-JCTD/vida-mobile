@@ -466,8 +466,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           var whereAt = {};
           whereAt.restriction = 'LIKE';
           whereAt.column = 'given_name';
-          if (Number(query))
-            whereAt.column = 'barcode'; // good enough
+          if (Number(query)) {
+            whereAt.restriction = 'EXACT';
+            whereAt.column = 'barcode';
+          }
           whereAt.value = query;
           VIDA_localDB.queryDB_select('people', '*', function (results) {
             peopleInShelter = [];
@@ -868,85 +870,72 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   })
 
 .service('optionService', function() {
-    var gender_options = [
-      {
-        "name": 'person_not_specified',
-        "value": "Not Specified"
-      },
-      {
-        "name": 'person_gender_male',
-        "value": "Male"
-      },
-      {
-        "name": 'person_gender_female',
-        "value": "Female"
-      },
-      {
-        "name": 'person_gender_other',
-        "value": "Other"
-      }
-    ];
+    var gender_options = [{
+      "name": 'person_not_specified',
+      "value": "Not Specified"
+    }, {
+      "name": 'person_gender_male',
+      "value": "Male"
+    }, {
+      "name": 'person_gender_female',
+      "value": "Female"
+    }, {
+      "name": 'person_gender_other',
+      "value": "Other"
+    }];
 
-    var injury_options = [
-      {
-        "name": 'person_injury_not_injured',
-        "value": "Not Injured"
-      },
-      {
-        "name": 'person_injury_moderate',
-        "value": "Moderate"
-      },
-      {
-        "name": 'person_injury_severe',
-        "value": "Severe"
-      },
-      {
-        "name": 'person_injury_deceased',
-        "value": "Deceased"
-      }
-    ];
+    var injury_options = [{
+      "name": 'person_injury_not_injured',
+      "value": "Not Injured"
+    }, {
+      "name": 'person_injury_moderate',
+      "value": "Moderate"
+    }, {
+      "name": 'person_injury_severe',
+      "value": "Severe"
+    }];
 
-    var language_options = [
-      {
-        "name": 'settings_language_english',
-        "value": "English"
-      },
-      {
-        "name": 'settings_language_spanish',
-        "value": "Spanish"
-      }
-    ];
+    var language_options = [{
+      "name": 'settings_language_english',
+      "value": "English"
+    }, {
+      "name": 'settings_language_spanish',
+      "value": "Spanish"
+    }];
 
-    var nationality_options = [
-      {
-        "name": 'person_not_specified',
-        "value": "Not Specified"
-      },
-      {
-        "name": 'person_nationality_american_indian',
-        "value": "American Indian"
-      },
-      {
-        "name": 'person_nationality_asian',
-        "value": "Asian"
-      },
-      {
-        "name": 'person_nationality_african',
-        "value": "African American"
-      },
-      {
-        "name": 'person_nationality_hispanic_latino',
-        "value": "Hispanic/Latino"
-      },
-      {
-        "name": 'person_nationality_caucasian',
-        "value": "Caucasian/White"
-      },
-      {
-        "name": 'person_nationality_other',
-        "value": "Other"
-      }
-    ];
+    var nationality_options = [{
+      "name": 'person_not_specified',
+      "value": "Not Specified"
+    }, {
+      "name": 'person_nationality_american_indian',
+      "value": "American Indian"
+    }, {
+      "name": 'person_nationality_asian',
+      "value": "Asian"
+    }, {
+      "name": 'person_nationality_african',
+      "value": "African American"
+    }, {
+      "name": 'person_nationality_hispanic_latino',
+      "value": "Hispanic/Latino"
+    }, {
+      "name": 'person_nationality_caucasian',
+      "value": "Caucasian/White"
+    }, {
+      "name": 'person_nationality_other',
+      "value": "Other"
+    }];
+
+    var status_options = [{
+      "name": 'person_not_specified',
+      "value": 'Not Specified'
+    }, {
+      "name": 'person_status_displaced',
+      "value": 'Lost/Displaced'
+    }, {
+      "name": 'person_status_deceased',
+      "value": 'Deceased'
+    }];
 
     var people_table_values = [{
       column: 'id',
@@ -1009,6 +998,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'description',
       type: 'TEXT'
     }, {
+      column: 'status',
+      type: 'TEXT'
+    }, {
       column: 'pic_filename',
       type: 'TEXT'
     }, {
@@ -1029,7 +1021,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'pic_filename', 'province_or_state', 'created_at', 'photo', 'geom'];
+    'description', 'status', 'pic_filename', 'province_or_state', 'created_at', 'photo', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
@@ -1069,12 +1061,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       allOptions.push(option);
 
-      /*option = {
+      option = {
         dropdown: 'status',
         options: status_options
       };
 
-      allOptions.push(option);*/
+      allOptions.push(option);
 
       return allOptions;
     };
@@ -1093,6 +1085,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getNationalityOptions = function() {
       return nationality_options;
+    };
+
+    this.getStatusOptions = function() {
+      return status_options;
     };
 
     this.getDefaultConfigurations = function() {

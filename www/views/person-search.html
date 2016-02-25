@@ -7,7 +7,9 @@
       <div class="item item-input-inset">
         <label class="item-input-wrapper margin-right-8px" name="search-people">
           <div ng-if="searchRequestCounter <= 0">
+            <label ng-click="searchPerson(peopleService.getStoredSearchQuery())">
             <i class="icon ion-search placeholder-icon"></i>
+            </label>
           </div>
           <div ng-if="searchRequestCounter > 0">
             <ion-spinner icon="ripple"></ion-spinner>
@@ -29,9 +31,10 @@
                  err-src="{{peopleService.getPlaceholderImage()}}"
                  id="this_person_picture" ng-model="this_person.photo">
             <img ng-if="this_person.pic_filename === ''" ng-src="{{peopleService.getPlaceholderImage()}}">
-            <h2>{{this_person.given_name || Name}}</h2>
-            <p>{{'search_age' | translate}}: {{this_person.age || Age}}</p>
-            <p ng-if="this_person.score !== undefined">Score: {{this_person.score}}</p>
+            <h2>{{this_person.given_name || ""}}</h2>
+            <p>{{'search_age' | translate}}: {{this_person.age || ""}}</p>
+            <p ng-if="this_person.score !== undefined">{{'person_score' | translate}}: {{this_person.score}}</p>
+            <p ng-if="this_person.score === undefined">{{'person_status' | translate}}: {{this_person.status}}</p>
           </ion-item>
         </div>
       </ion-list>

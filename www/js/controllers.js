@@ -473,6 +473,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.gender_options = optionService.getGenderOptions();
   $scope.injury_options = optionService.getInjuryOptions();
   $scope.nationality_options = optionService.getNationalityOptions();
+  $scope.status_options = optionService.getStatusOptions();
 
   $scope.LocationDropdownDisabled = false;
   $scope.current_location = {};
@@ -560,6 +561,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('gender');
     setupDropdown('injury');
     setupDropdown('nationality');
+    setupDropdown('status');
 
     // TODO: Fix so it's always something
     $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
@@ -684,6 +686,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.current_nationality = this.current_nationality;
   };
 
+  $scope.changeStatus = function() {
+    $scope.current_status = this.current_status;
+  };
+
   $scope.changeShelter = function() {
     $scope.current_shelter = this.current_shelter;
 
@@ -729,6 +735,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     doc.injury              = injuryElement.options[injuryElement.selectedIndex].label;
     var nationalityElement  = document.getElementById('nationality');
     doc.nationality         = nationalityElement.options[nationalityElement.selectedIndex].label;
+    var statusElement       = document.getElementById('status');
+    doc.status              = statusElement.options[statusElement.selectedIndex].label;
     var shelterElement      = document.getElementById('shelter');
     doc.shelter_id          = $scope.shelter_array[shelterElement.selectedIndex].value;
 
@@ -751,14 +759,16 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     // specific cases
     changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
-    if (changedPerson.photo === peopleService.getPlaceholderImage()) {
-      if (person.pic_filename) {
-        // Went from picture to no picture
-        changedPerson.photo = undefined; //TODO? is it worth it?
-      } else
-        changedPerson.photo = undefined;
-    } else if (changedPerson.photo.startsWith('file:///')) {
-      changedPerson.photo = undefined; // Using a file from on disk already
+    if (changedPerson.photo !== undefined) {
+      if (changedPerson.photo === peopleService.getPlaceholderImage()) {
+        if (person.pic_filename) {
+          // Went from picture to no picture
+          changedPerson.photo = undefined; //TODO? is it worth it?
+        } else
+          changedPerson.photo = undefined;
+      } else if (changedPerson.photo.startsWith('file:///')) {
+        changedPerson.photo = undefined; // Using a file from on disk already
+      }
     }
 
     // all dropdowns (gender, injury, nationality, shelter_id)
@@ -831,42 +841,44 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving changes to " + person.given_name);
     $scope.saveChangesRequest++;
     peopleService.editPerson_saveChanges(changedPerson, function(success) {
-      // Success
-      $scope.saveChangesRequest--;
-      $cordovaProgress.hide();
-      // TODO: Translate
-      $cordovaProgress.showSimpleWithLabelDetail(true, "Complete", "Changes saved! Returning to details..");
-      peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function() {  // This will reload the person in details
-        var prevSearchQuery = peopleService.getStoredSearchQuery();
-        if (!isDisconnected) {
-          // Update current Shelter on detail page
-          var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
-          var wasSet = false;
-          for (var i = 1; i < $scope.shelter_array.length; i++) {
-            if ($scope.shelter_array[i].value === shelterID) {
-              shelterService.setCurrentShelter(shelter_array[i]);
-              shelterService.getAll();
-              wasSet = true;
-              break;
+      if (peopleService.getRetrievedPersonByID()) {
+        // Success
+        $scope.saveChangesRequest--;
+        $cordovaProgress.hide();
+        // TODO: Translate
+        $cordovaProgress.showSimpleWithLabelDetail(true, "Complete", "Changes saved! Returning to details..");
+        peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function () {  // This will reload the person in details
+          var prevSearchQuery = peopleService.getStoredSearchQuery();
+          if (!isDisconnected) {
+            // Update current Shelter on detail page
+            var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+            var wasSet = false;
+            for (var i = 1; i < $scope.shelter_array.length; i++) {
+              if ($scope.shelter_array[i].value === shelterID) {
+                shelterService.setCurrentShelter(shelter_array[i]);
+                shelterService.getAll();
+                wasSet = true;
+                break;
+              }
             }
+            if (!wasSet)
+              shelterService.setCurrentShelter('None');
           }
-          if (!wasSet)
-            shelterService.setCurrentShelter('None');
-        }
-        peopleService.searchForPerson(networkService.getSearchURL(), prevSearchQuery, function() {
-          // will successfully reload
-          $state.go('vida.person-search.person-detail');
-          $cordovaProgress.hide();
-        }, function() {
-          // will not successfully reload
-          $state.go('vida.person-search.person-detail');
-          $cordovaProgress.hide();
-          // TODO: Translate
-          $cordovaToast.showShortBottom('Something went wrong. Please check your connection.');
-        }); // This will reload search query
-      }, function() {
+          peopleService.searchForPerson(networkService.getSearchURL(), prevSearchQuery, function () {
+            // will successfully reload
+            $state.go('vida.person-search.person-detail');
+            $cordovaProgress.hide();
+          }, function () {
+            // will not successfully reload
+            $state.go('vida.person-search.person-detail');
+            $cordovaProgress.hide();
+            // TODO: Translate
+            $cordovaToast.showShortBottom('Something went wrong. Please check your connection.');
+          }); // This will reload search query
+        }, function () {
 
-      });
+        });
+      }
     }, function(error) {
       // Error
       //TODO: SHOW ERROR
@@ -964,6 +976,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     document.getElementById('nationality').selectedIndex = 0;
     $scope.current_injury = $scope.injury_options[0];
     document.getElementById('injury').selectedIndex = 0;
+    $scope.current_status = $scope.status_options[0];
+    document.getElementById('status').selectedIndex = 0;
 
     $scope.revertLocation();
     if ($scope.shelter_array) {
@@ -994,10 +1008,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.gender_options = optionService.getGenderOptions();
     $scope.injury_options = optionService.getInjuryOptions();
     $scope.nationality_options = optionService.getNationalityOptions();
+    $scope.status_options = optionService.getStatusOptions();
 
     $scope.current_gender = $scope.gender_options[0];
     $scope.current_injury = $scope.injury_options[0];
     $scope.current_nationality = $scope.nationality_options[0];
+    $scope.current_status = $scope.status_options[0];
 
     $cordovaProgress.hide();
 
@@ -1015,8 +1031,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.savePerson = function() {
       if ($scope.person.given_name !== undefined) {
 
-        var Status = "";
-
         var Gender;
         if ($scope.current_gender !== undefined) {
           if ($scope.current_gender.value !== $scope.gender_options[0].value)
@@ -1033,6 +1047,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         if ($scope.current_nationality !== undefined) {
           if ($scope.current_nationality.value !== $scope.nationality_options[0].value)
             Nationality = $scope.current_nationality.value;
+        }
+
+        var Status;
+        if ($scope.current_status !== undefined) {
+          if ($scope.current_status.value !== $scope.status_options[0].value)
+            Status = $scope.current_status.value;
         }
 
         var ShelterID;
@@ -1071,7 +1091,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.shelter_id          = ShelterID; // will always be defined
         newPerson.street_and_number   = fixUndefined($scope.person.street_and_number);
         newPerson.date_of_birth       = fixUndefined($scope.person.date_of_birth);
-        newPerson.status              = fixUndefined(Status);
+        newPerson.status              = Status;
         newPerson.phone_number        = fixUndefined($scope.person.phone_number);
         newPerson.injury              = Injury; // will always be defined
         newPerson.nationality         = Nationality; // will always be defined
@@ -1234,6 +1254,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       document.getElementById('nationality').selectedIndex = 0;
       $scope.current_injury = $scope.injury_options[0];
       document.getElementById('injury').selectedIndex = 0;
+      $scope.current_status = $scope.status_options[0];
+      document.getElementById('status').selectedIndex = 0;
 
       $scope.revertLocation();
       if ($scope.shelter_array) {
@@ -1331,6 +1353,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.changeNationality = function() {
       $scope.current_nationality = this.current_nationality;
+    };
+
+    $scope.changeStatus = function() {
+      $scope.current_status = this.current_status;
     };
 
     $scope.changeShelter = function() {
@@ -2065,6 +2091,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Add new layer to the map
       if (!isDisconnected) {
         // Connected Map
+        $scope.showAllSheltersOnMap(); // refresh shelters!
+
         // Add URL based layer to map
         var defaultDirective = angular.element(document.body).injector().get('leafletMapDefaults');
         var defaults = defaultDirective.getDefaults();

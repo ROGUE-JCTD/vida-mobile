@@ -51,10 +51,6 @@
           <span class="input-label">{{'person_neighborhood' | translate}}</span>
           <input id="neighborhood" type="text" placeholder="" ng-model="person.neighborhood">
         </label>
-        <label class="item item-input">
-          <span class="input-label">{{'person_description' | translate}}</span>
-          <input id="description" type="text" placeholder="" ng-model="person.description">
-        </label>
         <label class="item item-input item-select">
           <span class="input-label">{{'person_gender' | translate}}</span>
           <select id="gender" ng-init="current_gender == current_gender || gender_options[0]"
@@ -70,11 +66,22 @@
           </select>
         </label>
         <label class="item item-input item-select">
+          <span class="input-label">{{'person_status' | translate}}</span>
+          <select id="status" ng-init="current_status == current_status || status_options[0]"
+                  ng-model="current_status" ng-change="changeStatus()"
+                  ng-options="option.name | translate for option in status_options">
+          </select>
+        </label>
+        <label class="item item-input item-select">
           <span class="input-label">{{'person_injury' | translate}}</span>
           <select id="injury" ng-init="current_injury == current_injury || injury_options[0]"
                   ng-model="current_injury" ng-change="changeInjury()"
                   ng-options="option.name | translate for option in injury_options">
           </select>
+        </label>
+        <label class="item item-input">
+          <span class="input-label">{{'person_description' | translate}}</span>
+          <input id="description" type="text" placeholder="" ng-model="person.description">
         </label>
         <label class="item item-input">
           <span class="input-label">{{'person_phone_number' | translate}}</span>
