@@ -361,12 +361,103 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('shelterService', function($http, networkService, $resource, $q) {
+.service('shelterService', function($http, networkService, $resource, $q, VIDA_localDB) {
   var service = this;
   var shelters = [];
   var current_shelter = {};
   current_shelter.str = 'None';
   current_shelter.link = 'None';
+
+  this.addShelter = function(shelter, addToDatabase) {
+    for (var i = 0; i < shelters.length; i++){
+      if (shelters[i].value === shelter.uuid)
+        return;
+    }
+
+    // Made it through return, add to list
+    shelters.push(shelter);
+
+    // There will come a time where the None will try to pass and be part of the database.
+    //                            This will not be that time.
+    if (shelter.name === "None" || !addToDatabase)
+      return;
+
+    // Made it through, attempt to add shelter
+    var whereAt = {
+      restriction: 'EXACT',
+      column: 'uuid',
+      value: "\'" + shelter.uuid + "\'"
+    };
+    VIDA_localDB.queryDB_select('shelters', '*', function(result) {
+      if (result.length <= 0) {
+        var shelterObj = "\'" + shelter.name + "\', ";
+        shelterObj += "\'" + shelter.id + "\', ";
+        shelterObj += "\'" + shelter.uuid + "\', ";
+        shelterObj += "\'" + shelter.geom + "\'";
+        VIDA_localDB.queryDB_insert('shelters', shelterObj, function () {
+          // After inserting
+        });
+      }
+    }, whereAt);
+  };
+
+  this.clearShelters = function() {
+    shelters = [];
+  };
+
+  this.removeShelterByUUID = function(uuid) {
+    for (var i = 0; i < shelters.length; i++) {
+      if (shelters[i].value === uuid) {
+        shelters.splice(i, 1);
+
+        var whereAt = "uuid=\'" + uuid + "\'";
+        VIDA_localDB.queryDB_delete('shelters', whereAt);
+      }
+    }
+  };
+
+  this.getAllSheltersWithPromise = function() {
+    var q = $q.defer();
+
+    if (!isDisconnected) {
+      var array = [];
+      var auth = networkService.getUsernamePassword();
+
+      $.ajax({
+        type: 'GET',
+        xhrFields: {
+          withCredentials: true
+        },
+        url: networkService.getShelterURL(),
+        username: auth.username,
+        password: auth.password,
+        success: function (data) {
+          if (data.objects.length > 0) {
+            for (var i = 0; i < data.objects.length; i++) {
+              array.push({
+                name: data.objects[i].name,
+                value: data.objects[i].uuid,
+                id: data.objects[i].id,
+                geom: data.objects[i].geom
+              });
+            }
+          } else {
+            console.log('No shelters returned - check url: ' + networkService.getShelterURL() + ' or none are available');
+          }
+
+          q.resolve(array);
+        },
+        error: function (error) {
+          console.log('Error - retrieving all shelters failed');
+          q.reject(error);
+        }
+      });
+    } else {
+      q.reject();
+    }
+
+    return q.promise;
+  };
 
   this.getAll = function() {
     var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
@@ -405,6 +496,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       current_shelter.str = 'None';
       current_shelter.link = 'None';
     }
+  };
+
+  this.getAllLocalShelters = function() {
+    return shelters;
   };
 
   this.getLatLng = function(id) {
@@ -1017,6 +1112,20 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       type: 'TEXT'
     }];
 
+    var shelter_table_values = [{
+      column: 'name',
+      type: 'TEXT'
+    }, {
+      column: 'id', // used for accessing on server
+      type: 'TEXT'
+    }, {
+      column: 'uuid',
+      type: 'TEXT'
+    }, {
+      column: 'geom',
+      type: 'TEXT'
+    }];
+
     var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol',' language', 'workOffline'];
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
@@ -1097,6 +1206,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getDefaultPeopleTableValues = function() {
       return people_table_values;
+    };
+
+    this.getDefaultShelterTableValues = function() {
+      return shelter_table_values;
     };
 
     this.getPersonToDBInformation = function() {
@@ -1307,6 +1420,33 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       console.log("problem choosing database!! was the database chosen incorrectly? dbName: " + dbName);
     };
 
+    self.createTableIfNotExists = function(table, parameters) {
+      parameters = parameters || [];
+      var q = $q.defer();
+
+      var query = 'CREATE TABLE IF NOT EXISTS ' + table + ' (';
+
+      for (var i = 0; i < parameters.length; i++) {
+        query += parameters[i].column + ' ' + parameters[i].type;
+
+        if (i < parameters.length - 1)
+          query += ', ';
+      }
+
+      query += ')';
+
+      $cordovaSQLite.execute(db, query).then(
+        function(result){
+          q.resolve(result);
+        }, function(error){
+          console.log("Error with Creation of DB - " + error.message);
+          q.reject(error);
+        }
+      );
+
+      return q.promise;
+    };
+
     self.query = function(query, parameters) {
       parameters = parameters || [];
       var q = $q.defer();
@@ -1346,13 +1486,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 .factory('VIDA_localDB', function($cordovaSQLite, DBHelper, networkService){
     var self = this;
 
-    self.queryDB_createTable = function(tableName, values){
-      var query = "CREATE TABLE IF NOT EXISTS " + tableName + "(" + values + ")";
-      return DBHelper.query(query).then(function(result){
-        console.log(result);
-      });
-    };
-
     self.queryDB_select = function(tableName, columnName, afterQuery, where) {
       var query = "SELECT " + columnName + " FROM " + tableName;
       if (where) {
@@ -1366,6 +1499,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         .then(function(result){
           afterQuery(DBHelper.getAll(result));
         });
+    };
+
+    self.queryDB_delete = function(tableName, whereAt, afterQuery) {
+      var query = "DELETE FROM " + tableName + " WHERE " + whereAt;
+      return DBHelper.query(query).then(function(result){
+        if (afterQuery)
+          afterQuery(result);
+      });
     };
 
     self.queryDB_update = function(tableName, values, whereAt, afterQuery) {

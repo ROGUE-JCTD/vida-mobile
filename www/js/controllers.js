@@ -1,16 +1,15 @@
 angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.translate'])
 
 
-.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout, shelterService, $translate, VIDA_localDB, networkService) {
+.controller('AppCtrl', function($rootScope, $scope, $ionicModal, $timeout, shelterService, $translate, VIDA_localDB, networkService,
+                                $cordovaProgress, $ionicPopup, optionService, $ionicPlatform) {
   console.log('---------------------------------- AppCtrl');
   $translate.instant("title_search");
   console.log('---------------------------------- translate: ', $translate.instant("title_search"));
 
-
-
-    $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
+  $rootScope.$on('$stateChangeStart',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeStart to '+toState.to+'- fired when the transition begins. toState,toParams : \n',toState, toParams);
-    });
+  });
 
   $rootScope.$on('$stateChangeError',function(event, toState, toParams, fromState, fromParams){
     console.log('$stateChangeError - fired when an error occurs during transition.');
@@ -69,12 +68,51 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   // initialize once. we will only work with this created object from now on
   $rootScope.markers = {};
 
-  // Set values from DB on startup
-  VIDA_localDB.queryDB_select('configuration', 'settings', function (results) {
-    if (results.length > 0) {
-      var DBSettings = JSON.parse(results[0].settings);
-      networkService.SetConfigurationFromDB(DBSettings);
-    }
+  $ionicPlatform.ready(function() {
+
+    // Start up
+    var configsCompleted = 0, allConfigs = 2;
+    $cordovaProgress.showSimpleWithLabel(true, "Loading", "Loading configurations..");
+    var tryFinishConfig = function () {
+      configsCompleted++;
+      if (configsCompleted >= allConfigs)
+        $cordovaProgress.hide();
+    };
+
+    // Set configuration values from DB on startup
+    VIDA_localDB.queryDB_select('configuration', 'settings', function (results) {
+      if (results.length > 0) {
+        var DBSettings = JSON.parse(results[0].settings);
+        networkService.SetConfigurationFromDB(DBSettings);
+        tryFinishConfig();
+      } else {
+        var defaultSettings = optionService.getDefaultConfigurationsJSON();
+        VIDA_localDB.queryDB_insert('configuration', defaultSettings, function () {
+          tryFinishConfig();
+        }); // add default configuration row if doesn't exist
+      }
+    });
+
+    VIDA_localDB.queryDB_select('shelters', '*', function (results) {
+      shelterService.clearShelters();
+
+      // Add default shelter value
+      shelterService.addShelter({name: 'None', value: '', id: 0, geom: ''});
+
+      if (results.length > 0) {
+        // Add shelters to local list
+        for (var i = 0; i < results.length; i++) {
+          shelterService.addShelter(results[i]);
+        }
+      } else {
+        $ionicPopup.alert({
+          title: 'Update Shelters',
+          template: 'Be sure to update/sync with the server!'
+        });
+      }
+
+      tryFinishConfig();
+    });
   });
 })
 
@@ -231,7 +269,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
                                          peopleService, networkService, $rootScope, shelterService, $cordovaProgress,
-                                         VIDA_localDB, optionService, uploadService, $ionicPopup){
+                                         VIDA_localDB, optionService, uploadService){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
@@ -563,8 +601,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('nationality');
     setupDropdown('status');
 
-    // TODO: Fix so it's always something
-    $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
+    $scope.shelter_array = shelter_array;
     if ($scope.shelter_array) {
       // Look at person and see what shelter they are assigned to
       var isAssigned = false;
@@ -600,15 +637,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           $scope.current_shelter = $scope.shelter_array[0];
         }
       }
-    } else {
-      var array = [{
-        name: 'None',
-        value: '',
-        id: 0
-      }]; // temp fix
-      $scope.current_shelter = array[0];
-      $scope.shelter_array = array;
-      person.geom = undefined;
     }
   };
 
@@ -1495,8 +1523,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   //TODO: Add disconnected support to shelters
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation,
-                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q){
+.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation, $ionicPopup,
+                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService){
   console.log('---------------------------------- SettingsCtrl');
 
     $scope.networkAddr = networkService.getServerAddress();
@@ -1781,6 +1809,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.updateSyncDatabase = function() {
       var dirtyArr = [];
+      var peopleDownloaded = 0, peopleUploaded = 0, sheltersAdded = 0;
 
       var determineNewerValue = function(_dateOne, _dateTwo){
         var parseDate = function(str) {
@@ -1851,6 +1880,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         return one;
       };
 
+      var isShelterDifferent = function(shelterOne, shelterTwo) {
+        // setup easy way instead of inline
+        if (shelterOne.name !== shelterTwo.name)
+          return true;
+
+        if (shelterOne.geom !== shelterTwo.geom)
+          return true;
+
+        if (Number(shelterOne.id) !== Number(shelterTwo.id))
+          return true;
+
+        return false;
+      };
+
       // Check to see if the server is available
       if (!isDisconnected) {
 
@@ -1858,7 +1901,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Connecting to the server..');
 
         // FIRST TASK: See if anything in the database needs to be synced
-        VIDA_localDB.queryDB_select('people', '*', function(results){
+        VIDA_localDB.queryDB_select('people', '*', function(results) {
           for (var i = 0; i < results.length; i++){
             if (Number(results[i].isDirty) == true){
               dirtyArr.push(results[i]);
@@ -1867,9 +1910,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
           peopleService.getAllPeopleWithReturn(function(allPeople){
             // Successful!
+            $cordovaProgress.hide();
 
             // Get all thumbnails
-            $cordovaProgress.hide();
             $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Downloading Thumbnails..');
             $scope.downloadThumbnails(allPeople).then(function(imagesDownloaded) {
               // Type/Value can update any column with any info
@@ -1879,7 +1922,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               }];
               /*, {
                 type: 'deleted',
-                value: 0 // TODO: When could this be a thing?
+                value: 0 // When could this be a thing?
               }];*/
 
               $cordovaProgress.hide();
@@ -1896,7 +1939,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
                     // See if it needs to be updated in any way
                     var personOnDB_created = dirtyArr[i].created_at;
-                    var personOnServer_created = allPeople[j].created_at;
+                    var personOnServer_created = (allPeople[j].updated_at) ? allPeople[j].updated_at : allPeople[j].created_at;
 
                     // If true, first value is newer. If false, second value is newer.
                     // If exact, it will upload the database version
@@ -1921,6 +1964,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                 if (!isOnServer) {
                   // Upload person to server
                   $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+                  peopleUploaded++;
 
                   // Update isDirty on localDB to 0
                   whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
@@ -1973,16 +2017,61 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
                     VIDA_localDB.queryDB_insert('people', obj);
                     amountOfPeople++;
+                    peopleDownloaded++;
                   }
                 }
 
-                // TODO: Translate
-                $cordovaToast.showShortBottom("Syncing complete!");
-                $cordovaToast.showShortBottom("Thumbnails downloaded: " + imagesDownloaded);
+                // END SECOND TASK
                 $cordovaProgress.hide();
-              });
-              // END SECOND TASK
 
+                // THIRD TASK: Update shelter list
+                // TODO: Translate
+                $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Syncing with shelters on server..");
+                shelterService.getAllSheltersWithPromise().then(function(allShelters){
+
+                  // Loop through shelters.
+                  var localShelters = shelterService.getAllLocalShelters();
+
+                  for (var i = 0; i < allShelters.length; i++) {
+                    var foundShelterOnDB = false;
+                    allShelters[i].uuid = allShelters[i].value;  // Duct-tape fix
+
+                    for (var j = 1; j < localShelters.length; j++) { // Start at 1 because "None"
+                      if (localShelters[j].uuid === allShelters[i].value) {
+                        foundShelterOnDB = true;
+
+                        // If UUID matches, see if anything is different.
+                        //    If so, remove old and store new.
+                        if (isShelterDifferent(localShelters[j], allShelters[i])) {
+                          shelterService.removeShelterByUUID(localShelters[j].uuid);
+                          shelterService.addShelter(allShelters[i], true);
+                          sheltersAdded++;
+                        }
+
+                        break;
+                      }
+                    }
+
+                    // If UUID in database wasn't found, add as new shelter.
+                    if (!foundShelterOnDB) {
+                      shelterService.addShelter(allShelters[i], true);
+                      sheltersAdded++;
+                    }
+                  }
+
+                  // TODO: Translate
+                  $cordovaProgress.hide();
+                  $ionicPopup.alert({
+                    title: "Sync Complete!",
+                    cssClass: "text-center",
+                    template: "People uploaded: " + peopleUploaded + "<br>" +
+                    "People downloaded: " + peopleDownloaded + "<br>" +
+                    "Thumbnails downloaded: " + imagesDownloaded + "<br>" +
+                    "Shelters added: " + sheltersAdded + "<br>"
+                  });
+                  // END THIRD TASK
+                });
+              });
             }, function(error) {
               $cordovaToast.showLongBottom(error);
               $cordovaProgress.hide();

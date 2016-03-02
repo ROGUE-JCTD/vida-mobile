@@ -14,7 +14,7 @@ var isDisconnected = false; // Will store non-globally once fully working
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile, shelterService) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile, $ionicPopup) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -43,40 +43,25 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
         }
 
-        // TODO: This can all be done on initialization of the application
         db = $cordovaSQLite.openDB("localDB.db");
         DBHelper.addDB('localDB', db);
         DBHelper.setCurrentDB('localDB');
-        var query = 'CREATE TABLE IF NOT EXISTS configuration (settings TEXT)';
-        var querySelect = 'SELECT * FROM configuration';
-        var defaultSettings = optionService.getDefaultConfigurationsJSON();
-        var queryIns = 'INSERT INTO configuration VALUES (' + defaultSettings + ')';
-        $cordovaSQLite.execute(db, query);
-        $cordovaSQLite.execute(db, querySelect).then(function (result) {
-          if (result.rows.length <= 0) {
-            $cordovaSQLite.execute(db, queryIns); // add default configuration row if doesn't exist
-            console.log(queryIns);
-          }
-        });
+
+        // Create configuration table
+        var settings = [{column: 'settings', type: 'TEXT'}];
+        DBHelper.createTableIfNotExists('configuration', settings);
+
+        // Create shelters table
+        var shelterTableValues = optionService.getDefaultShelterTableValues();
+        DBHelper.createTableIfNotExists('shelters', shelterTableValues);
+
+        // Create people Table
+        var peopleTableValues = optionService.getDefaultPeopleTableValues();
+        DBHelper.createTableIfNotExists('people', peopleTableValues);
 
         // Create offline photo directory
         $cordovaFile.createDir(cordova.file.dataDirectory, 'Photos/', {create: true});
-
-        var peopleTableValues = optionService.getDefaultPeopleTableValues();
-        query = 'CREATE TABLE IF NOT EXISTS people (';
-        for (var i = 0; i < peopleTableValues.length; i++) {
-          query += peopleTableValues[i].column + ' ' + peopleTableValues[i].type;
-
-          if (i < peopleTableValues.length - 1)
-            query += ', ';
-        }
-        query += ')';
-        $cordovaSQLite.execute(db, query);
-
         mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
-
-        // Queue to get all shelters and store them in list
-        //shelterService.getAllShelters();
       }
 
       if (!(navigator.camera)){
@@ -91,61 +76,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 .config(function($stateProvider, $urlRouterProvider) {
 
     // Used for getting shelter dropdowns before page is loaded
-    var retrieveAllShelters = function(q, netServ, $cordovaProgress) {
-
-      if ($cordovaProgress)
-        $cordovaProgress.showSimpleWithLabelDetail(true, 'Loading Page Information', 'Retrieving list of all available shelters..');
-
-      var shelters = q.defer();
-      var array = [{
-        name: 'None',
-        value: '',
-        id: 0
-      }];
-
-      if (!isDisconnected) {
-        var auth = netServ.getUsernamePassword();
-
-        $.ajax({
-          type: 'GET',
-          xhrFields: {
-            withCredentials: true
-          },
-          url: netServ.getShelterURL(),
-          success: function (data) {
-            if (data.objects.length > 0) {
-              for (var i = 0; i < data.objects.length; i++) {
-                array.push({
-                  name: data.objects[i].name,
-                  value: data.objects[i].uuid,
-                  id: data.objects[i].id,
-                  geom: data.objects[i].geom
-                });
-              }
-            } else {
-              console.log('No shelters returned - check url: ' + netServ.getShelterURL() + ' or none are available');
-            }
-
-            if ($cordovaProgress)
-              $cordovaProgress.hide();
-            return shelters.resolve(array);
-          },
-          error: function () {
-            console.log('Error - retrieving all shelters failed');
-            //TODO: MAKE THIS PROBLEM KNOWN
-            if ($cordovaProgress)
-              $cordovaProgress.hide();
-            return shelters.resolve(array);
-          },
-          username: auth.username,
-          password: auth.password
-        });
-        return shelters.promise;
-      } else {
-        if ($cordovaProgress)
-          $cordovaProgress.hide();
-        return shelters.resolve(array);
-      }
+    var retrieveAllShelters = function(shelterService) {
+      return shelterService.getAllLocalShelters();
     };
 
   // Ionic uses AngularUI Router which uses the concept of states
@@ -178,8 +110,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       'view-person-create': {
         templateUrl: 'views/person-create.html',
         resolve: {
-          shelter_array : function($q, networkService, $cordovaProgress) {
-            return retrieveAllShelters($q, networkService, $cordovaProgress);
+          shelter_array : function(shelterService) {
+            return retrieveAllShelters(shelterService);
           }
         },
         controller: 'PersonCreateCtrl'
@@ -203,8 +135,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       'view-person-search@vida': {
         templateUrl: "views/person-detail.html",
         resolve: {
-          shelter_array : function($q, networkService) {
-            return retrieveAllShelters($q, networkService, false);
+          shelter_array : function(shelterService) {
+            return retrieveAllShelters(shelterService);
           }
         },
         controller: 'PersonDetailCtrl'
@@ -218,8 +150,8 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
       'view-person-search@vida': {
         templateUrl: "views/person-create.html",
         resolve: {
-          shelter_array : function($q, networkService) {
-            return retrieveAllShelters($q, networkService, false);
+          shelter_array : function(shelterService) {
+            return retrieveAllShelters(shelterService);
           }
         },
         controller: 'PersonDetailEditCtrl'
