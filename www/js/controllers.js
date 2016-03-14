@@ -72,7 +72,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     // Start up
     var configsCompleted = 0, allConfigs = 2;
-    $cordovaProgress.showSimpleWithLabel(true, "Loading", "Loading configurations..");
+    $cordovaProgress.showSimpleWithLabel(true, "Loading configurations..");
     var tryFinishConfig = function () {
       configsCompleted++;
       if (configsCompleted >= allConfigs)
@@ -97,17 +97,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       shelterService.clearShelters();
 
       // Add default shelter value
-      shelterService.addShelter({name: 'None', value: '', id: 0, geom: ''});
+      shelterService.addShelter({name: 'None', value: '', id: 0, geom: ''}, false);
 
       if (results.length > 0) {
         // Add shelters to local list
         for (var i = 0; i < results.length; i++) {
-          shelterService.addShelter(results[i]);
+          shelterService.addShelter(results[i], true);
         }
       } else {
+        // No shelters were found in the database.
+        // This is assuming they never sync'd up with the server.
         $ionicPopup.alert({
           title: 'Update Shelters',
-          template: 'Be sure to update/sync with the server!'
+          cssClass: "text-center",
+          template: 'Thank you for using VIDA!<br><br>To associate people with any shelters, go to Settings > Update/Sync!'
         });
       }
 
@@ -832,6 +835,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       changedPerson.pic_filename = person.pic_filename;
 
     changedPerson.created_at = new Date().toISOString();
+    changedPerson.created_by = networkService.getUsernamePassword().username;
 
     var geom = {};
     if (person.geom) {
@@ -1049,6 +1053,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.shelter_array = shelter_array; // setup through app.js - vida.person-create - resolve
     if ($scope.shelter_array) {
       $scope.current_shelter = $scope.shelter_array[0];
+      document.getElementById('shelter').selectedIndex = 0;
     }
 
     // Helper function
@@ -1124,6 +1129,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.injury              = Injury; // will always be defined
         newPerson.nationality         = Nationality; // will always be defined
         newPerson.uuid                = optionService.generate_uuid4();
+
+        newPerson.created_by          = networkService.getUsernamePassword().username;
 
         // This is here to store photo for upload
         newPerson.photo               = Photo;  // photo being undefined is checked
@@ -1763,45 +1770,50 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var promise = $q.defer();
       var imagesDownloaded = 0, pIndex = 0;
 
-      for (var i = 0; i < peopleFromServer.length; i++) {
-        if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
-          var thumbnail = peopleFromServer[i].pic_filename;
+      if (peopleFromServer.length > 0 ) {
+        for (var i = 0; i < peopleFromServer.length; i++) {
+          if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
+            var thumbnail = peopleFromServer[i].pic_filename;
 
-          if (!thumbnail.contains('_thumb')) {
-            var filename = thumbnail.split('.');
-            var extension = filename[1];
-            thumbnail = filename[0] + '_thumb' + '.' + extension;
-          }
+            if (!thumbnail.contains('_thumb')) {
+              var filename = thumbnail.split('.');
+              var extension = filename[1];
+              thumbnail = filename[0] + '_thumb' + '.' + extension;
+            }
 
-          // Attempt to download that picture
-          peopleService.downloadPersonalImage(thumbnail, function (downloaded_image) {
-            // Successful
-            if (downloaded_image === true)
-              imagesDownloaded++;
+            // Attempt to download that picture
+            peopleService.downloadPersonalImage(thumbnail, function (downloaded_image) {
+              // Successful
+              if (downloaded_image === true)
+                imagesDownloaded++;
 
+              pIndex++;
+
+              if (pIndex === peopleFromServer.length) {
+                promise.resolve(imagesDownloaded);
+              }
+            }, function (error) {
+              // Not successful
+              console.log("PROBLEM");
+              console.log(error);
+              pIndex++;
+
+              if (pIndex === peopleFromServer.length) {
+                promise.resolve(imagesDownloaded);
+              }
+            });
+          } else {
+            // No picture on file
             pIndex++;
 
             if (pIndex === peopleFromServer.length) {
               promise.resolve(imagesDownloaded);
             }
-          }, function (error) {
-            // Not successful
-            console.log("PROBLEM");
-            console.log(error);
-            pIndex++;
-
-            if (pIndex === peopleFromServer.length) {
-              promise.resolve(imagesDownloaded);
-            }
-          });
-        } else {
-          // No picture on file
-          pIndex++;
-
-          if (pIndex === peopleFromServer.length) {
-            promise.resolve(imagesDownloaded);
           }
         }
+      } else {
+        // No people on server just yet -- passthrough
+        promise.resolve(imagesDownloaded);
       }
 
       return promise.promise;
@@ -1974,9 +1986,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               // END FIRST TASK
               $cordovaProgress.hide();
 
-              // SECOND TASK: Find who isn't in the DB and add them to the current DB
+              // SECOND TASK: Find who isn't in the DB (newly downloaded from server) and add them to the current DB
               // TODO: Translate
-              $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Pulling down any people who aren't in the database..");
+              $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Adding any newly downloaded people to the database..");
               var amountOfPeople = 0;
 
               VIDA_localDB.queryDB_select('people', '*', function(allPeopleInDB) {

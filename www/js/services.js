@@ -130,7 +130,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 
   this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
-
     var JSONPerson = '{';
     var hasItem = false;
 
@@ -165,7 +164,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       if (err.error_message)
         callFailure('Person not uploaded! Error: ' + err.error_message);
       else
-        callFailure('Person not uploaded! Error: ' + err);
+        callFailure('Person not uploaded! Error: ' + "Could not connect to server!");
     });
   };
 
@@ -382,7 +381,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     if (shelter.name === "None" || !addToDatabase)
       return;
 
-    // Made it through, attempt to add shelter
+    // Made it through, attempt to add shelter to DB
     var whereAt = {
       restriction: 'EXACT',
       column: 'uuid',
@@ -1105,6 +1104,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'created_at',
       type: 'TEXT'
     }, {
+      column: 'created_by',
+      type: 'TEXT'
+    }, {
       column: 'photo',
       type: 'TEXT'
     }, {
@@ -1130,7 +1132,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'status', 'pic_filename', 'province_or_state', 'created_at', 'photo', 'geom'];
+    'description', 'status', 'pic_filename', 'province_or_state', 'created_at', 'created_by', 'photo', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
