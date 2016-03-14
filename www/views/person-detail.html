@@ -11,6 +11,7 @@
         <img ng-if="peopleService.getRetrievedPersonByID().pic_filename === ''" style="max-width: 400px; max-height: 500px;"
              ng-src="{{peopleService.getPlaceholderImage()}}">
         <h2>{{peopleService.getRetrievedPersonByID().given_name || ""}}</h2>
+        <b>{{'person_gender' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().gender || " "}}&nbsp;</p>
         <b>{{'person_family_name' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().family_name || " "}}&nbsp;</p>
         <b>{{'person_fathers_given_name' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().fathers_given_name || " "}}&nbsp;</p>
         <b>{{'person_mothers_given_name' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().mothers_given_name || " "}}&nbsp;</p>
@@ -19,12 +20,13 @@
         <b>{{'person_street_and_number' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().street_and_number || " "}}&nbsp;</p>
         <b>{{'person_city' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().city || " "}}&nbsp;</p>
         <b>{{'person_neighborhood' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().neighborhood || " "}}&nbsp;</p>
-        <b>{{'person_gender' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().gender || " "}}&nbsp;</p>
         <b>{{'person_nationality' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().nationality || " "}}&nbsp;</p>
         <b>{{'person_status' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().status || " "}}&nbsp;</p>
         <b>{{'person_injury' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().injury || " "}}&nbsp;</p>
         <b>{{'person_description' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().description || " "}}&nbsp;</p>
+        <b>{{'person_phone_number' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().phone_number || " "}}&nbsp;</p>
         <b>{{'person_barcode' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().barcode || " "}}&nbsp;</p>
+        <b>{{'person_created_by' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().created_by || " "}}&nbsp;</p>
         <div id="shelterID" ng-if="peopleService.getRetrievedPersonByID().shelter_id !== null">
           <b>{{'person_current_shelter' | translate}}:</b><p>{{shelterService.getCurrentShelter().str}} &nbsp;<a ng-if="shelterService.getCurrentShelter().link !== 'None'"
                                                                                                                  class="icon ion-chevron-right trigger"

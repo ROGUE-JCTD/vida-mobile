@@ -19,6 +19,13 @@
           <span class="input-label">{{'person_given_name' | translate}}</span>
           <input id="given_name" type="text" placeholder="" ng-model="person.given_name">
         </label>
+        <label class="item item-input item-select">
+          <span class="input-label">{{'person_gender' | translate}}</span>
+          <select id="gender" ng-init="current_gender == current_gender || gender_options[0]"
+                  ng-model="current_gender" ng-change="changeGender()"
+                  ng-options="option.name | translate for option in gender_options">
+          </select>
+        </label>
         <label class="item item-input">
           <span class="input-label">{{'person_family_name' | translate}}</span>
           <input id="family_name" type="text" placeholder="" ng-model="person.family_name">
@@ -50,13 +57,6 @@
         <label class="item item-input">
           <span class="input-label">{{'person_neighborhood' | translate}}</span>
           <input id="neighborhood" type="text" placeholder="" ng-model="person.neighborhood">
-        </label>
-        <label class="item item-input item-select">
-          <span class="input-label">{{'person_gender' | translate}}</span>
-          <select id="gender" ng-init="current_gender == current_gender || gender_options[0]"
-                  ng-model="current_gender" ng-change="changeGender()"
-                  ng-options="option.name | translate for option in gender_options">
-          </select>
         </label>
         <label class="item item-input item-select">
           <span class="input-label">{{'person_nationality' | translate}}</span>

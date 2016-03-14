@@ -71,6 +71,7 @@
     'person_nationality_caucasian': 'Caucasian/White',
     'person_nationality_other': 'Other',
     'person_phone_number': 'Numero de telefono',
+    'person_created_by': 'Creado por',
     'person_barcode': 'Codigo de Barras',
     'person_current_shelter': 'Refugio',
     'button_save': 'Guardar',
