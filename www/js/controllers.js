@@ -193,22 +193,32 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.changeWindow = function(url) {
+      //TODO: Translate
+      $cordovaProgress.showSimpleWithLabel(true, "Loading..");
+
       if (!isDisconnected) {
         var IDOfPerson = url.split('/');
 
         peopleService.testPersonForNull(IDOfPerson[4], function () {
           $location.path(url);
+          $cordovaProgress.hide();
         }, function () {
+          $cordovaProgress.hide();
           $cordovaProgress.showSimpleWithLabelDetail("Not Found", "Person not found on server! Removing from list..");
           peopleService.removePersonFromList(IDOfPerson[4]);
           peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery(), function() {
             $cordovaProgress.hide();
-          }, function(err){
+          }, function(error){
             $cordovaProgress.hide();
           });
+
+        }, function(err) {
+          $cordovaProgress.hide();
+          $cordovaToast.showLongBottom($filter('translate')('error_search_person_error') + err);
         });
       } else {
         $location.path(url);
+        $cordovaProgress.hide();
       }
     };
 

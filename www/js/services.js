@@ -671,7 +671,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       peopleInShelter = [];
     };
 
-    this.testPersonForNull = function(ID, isNotNull, isNull){
+    this.testPersonForNull = function(ID, isNotNull, isNull, error){
       $http.get(networkService.getPeopleURL() + ID + "/", networkService.getAuthenticationHeader()).then(function successCallback(xhr) {
         if (xhr.status === 200) {
           if (xhr.data !== null){
@@ -683,9 +683,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           isNull();
         }
       }, function errorCallback(xhr){
-        // This could be dangerous
-        //if (xhr.status === 404)
-        //  isNull();
+        // TODO: Translate
+        if (xhr.status === 404)
+          error("Not Found");
+        else if (xhr.status === 500)
+          error("Internal Server Error");
+        else
+          error("Undefined Error");
       });
     };
 

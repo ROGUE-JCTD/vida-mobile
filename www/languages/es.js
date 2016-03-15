@@ -91,6 +91,7 @@
     'error_connecting_server': 'A problem occurred when connecting to the server. Status: ',
     'error_no_results': 'No results found.',
     'error_couldnt_get_results': 'Could not get results. Please try again.',
+    'error_search_person_error': 'Could not load person details. Error: ',
     'error_upload_person_failed': 'Uploading person failed. Please check your internet connection.',
     'error_uploading_person': 'Error uploading person: ',
     'loading_face_search': 'Loading Best Possible Matches..',
