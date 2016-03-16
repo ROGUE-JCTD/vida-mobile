@@ -832,8 +832,24 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               success();
             } else {
               error();
-            }}, function(errorMsg){
-              $cordovaToast.showShortBottom(errorMsg);
+            }}, function(error){
+            if (error.data)
+              $cordovaToast.showShortBottom(error.data.error_message);
+            else {
+              if (error.status) {
+                // TODO: Translate
+                if (error.status === 404) {
+                  $cordovaToast.showShortBottom("Error not found. Please try again");
+                } else if (error.status == 500) {
+                  $cordovaToast.showShortBottom("Internal server error. Please try again.");
+                } else {
+                  $cordovaToast.showShortBottom("Undefined Error. Please try again.");
+                }
+              } else {
+                $cordovaToast.showShortBottom(error);
+              }
+            }
+
               error();
             });
         }
