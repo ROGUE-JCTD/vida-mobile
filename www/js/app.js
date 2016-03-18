@@ -61,7 +61,24 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
         // Create offline photo directory
         $cordovaFile.createDir(cordova.file.dataDirectory, 'Photos/', {create: true});
-        mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
+        //mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
+        mapDB = $cordovaSQLite.openDB("osm_va.mbtiles");
+
+        // test retrieving 0,0,0 from the tileset to make sure sqlite plugin is functioning
+        mapDB.transaction(function(tx){
+          tx.executeSql("SELECT * FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?;", [0, 0, 0],
+            function (tx, res) {
+              if (res.rows.length > 0) {
+                console.log("----[ tile entry found for 0,0,0: ", res.rows.item(0));
+              } else {
+                console.log("====[ Error: tile entry NOT found for 0,0,0");
+              }
+            }, function (er) {
+              console.log('error with executeSql', er);
+            });
+        });
+
+
       }
 
       if (!(navigator.camera)){
