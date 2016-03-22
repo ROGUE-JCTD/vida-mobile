@@ -1191,6 +1191,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                 template: 'There was an error uploading this person\'s information. Please check your connection and try again.'
               }); // TODO: Translate
               console.log(error);
+
+              // Attempt to upload person
+              $scope.uploadPerson(newPerson);
             });
           } else {
             $ionicPopup.alert({
@@ -1244,13 +1247,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.uploadPerson = function(newPerson) {
       if (!isDisconnected) {
-        // Upload person to fileService
+        $scope.addPersonToLocalDatabase(newPerson, function() {
+          // Upload person to fileService
         uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
           // Successful entirely
           $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
-          $scope.addPersonToLocalDatabase(newPerson, function() {
-            $scope.clearAllFields(); // Only on success
-          });
+          $scope.clearAllFields(); // Only on success
+        });
         }, function (error) {
           // Error uploading person
           if (error)
@@ -1731,7 +1734,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       isDisconnected = $scope.b_disconnected;
 
-      // refresh (since local ID in DB and server can differ)
+      networkService.setDisconnected($scope.b_disconnected);
+      VIDA_localDB.queryDB_update_settings();
+
+        // refresh (since local ID in DB and server can differ)
       peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery(), function(){},
         function() {
           // Did not return correctly, could not contact server, etc. = reset list.
@@ -2054,30 +2060,39 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                   // Loop through shelters.
                   var localShelters = shelterService.getAllLocalShelters();
 
-                  for (var i = 0; i < allShelters.length; i++) {
-                    var foundShelterOnDB = false;
-                    allShelters[i].uuid = allShelters[i].value;  // Duct-tape fix
-
-                    for (var j = 1; j < localShelters.length; j++) { // Start at 1 because "None"
-                      if (localShelters[j].uuid === allShelters[i].value) {
-                        foundShelterOnDB = true;
-
-                        // If UUID matches, see if anything is different.
-                        //    If so, remove old and store new.
-                        if (isShelterDifferent(localShelters[j], allShelters[i])) {
-                          shelterService.removeShelterByUUID(localShelters[j].uuid);
-                          shelterService.addShelter(allShelters[i], true);
-                          sheltersAdded++;
-                        }
-
-                        break;
+                  if (allShelters.length <= 0) {
+                    // No shelters on server. Check for any shelters on local DB
+                    if (localShelters.length > 1) { // None is technically a shelter
+                      for (var l = 1; l < localShelters.length; l++) {
+                        shelterService.removeShelterByUUID(localShelters[l].uuid);
                       }
                     }
+                  } else {
+                    for (var i = 0; i < allShelters.length; i++) {
+                      var foundShelterOnDB = false;
+                      allShelters[i].uuid = allShelters[i].value;  // Duct-tape fix
 
-                    // If UUID in database wasn't found, add as new shelter.
-                    if (!foundShelterOnDB) {
-                      shelterService.addShelter(allShelters[i], true);
-                      sheltersAdded++;
+                      for (var j = 1; j < localShelters.length; j++) { // Start at 1 because "None"
+                        if (localShelters[j].uuid === allShelters[i].value) {
+                          foundShelterOnDB = true;
+
+                          // If UUID matches, see if anything is different.
+                          //    If so, remove old and store new.
+                          if (isShelterDifferent(localShelters[j], allShelters[i])) {
+                            shelterService.removeShelterByUUID(localShelters[j].uuid);
+                            shelterService.addShelter(allShelters[i], true);
+                            sheltersAdded++;
+                          }
+
+                          break;
+                        }
+                      }
+
+                      // If UUID in database wasn't found, add as new shelter.
+                      if (!foundShelterOnDB) {
+                        shelterService.addShelter(allShelters[i], true);
+                        sheltersAdded++;
+                      }
                     }
                   }
 

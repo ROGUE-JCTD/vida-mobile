@@ -406,9 +406,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.removeShelterByUUID = function(uuid) {
     for (var i = 0; i < shelters.length; i++) {
-      if (shelters[i].value === uuid) {
+      if ((shelters[i].uuid === uuid) || (shelters[i].value === uuid)) {
         shelters.splice(i, 1);
-
         var whereAt = "uuid=\'" + uuid + "\'";
         VIDA_localDB.queryDB_delete('shelters', whereAt);
       }
@@ -1336,6 +1335,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       else
         $translate.use('en');
       self.configuration.workOffline = (DBSettings.configuration.workOffline === 'true');
+      isDisconnected = self.configuration.workOffline;
 
       self.setServerAddress(DBSettings.configuration.serverURL);
     };
@@ -1376,6 +1376,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.setLanguage = function(current_language){
       this.configuration.language = current_language;
+    };
+
+    this.setDisconnected = function(current_disconnect_status) {
+      this.configuration.workOffline = current_disconnect_status;
     };
 
     this.getUsernamePassword = function() {
