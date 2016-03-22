@@ -2278,7 +2278,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     // Port of Spain
     var default_lon = -61.45;
     var default_lat = 10.65;
-    var default_zoom = 11;
+    var default_zoom = 0;
 
     var latLng = {lat: default_lat, lon: default_lon};
 

@@ -97,27 +97,20 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     });
   };
 
-  this.updatePerson = function(person, callSuccess, callFailure){
-    var JSONPerson = '{';
+  this.updatePerson = function( person, callSuccess, callFailure ) {
+    var JSONPerson = { };
     var hasItem = false;
 
-    var uploadFields = optionService.getPersonUploadInfo();
+    var uploadFields = optionService.getPersonUploadInfo( );
 
-    for (var i = 0; i < uploadFields.length; i++) {
-      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined
-        && person[uploadFields[i]] !== "undefined") {
-        if (i > 0 && i < uploadFields.length) {
-          // Add ,
-          if (hasItem)
-            JSONPerson += ', ';
-        }
-
-        JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
-        hasItem = true;
+    for( var i = 0; i < uploadFields.length; i++ ) {
+      if( person[ uploadFields[ i ] ] !== "" && person[ uploadFields[ i ] ] !== undefined
+        && person[ uploadFields[ i ] ] !== "undefined" ) {
+        JSONPerson.uploadFields[ i ] = fixUndefined( person[ uploadFields[ i ] ] );
       }
     }
-
-    JSONPerson += '}';
+    
+    JSON.stringify( JSONPerson );
 
     $http.put(networkService.getPeopleURL() + person.id + '/', JSONPerson,
       networkService.getAuthenticationHeader()).then(function (xhr) {
@@ -129,28 +122,18 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     });
   };
 
-  this.uploadPersonToUrl = function(person, uploadUrl, callSuccess, callFailure) {
-    var JSONPerson = '{';
-    var hasItem = false;
-
-    var uploadFields = optionService.getPersonUploadInfo();
-
-    // TODO: Don't build JSON by hand
-    for (var i = 0; i < uploadFields.length; i++) {
-      if (person[uploadFields[i]] !== "" && person[uploadFields[i]] !== undefined
-          && person[uploadFields[i]] !== "undefined") {
-        if (i > 0 && i < uploadFields.length) {
-          // Add ,
-          if (hasItem)
-            JSONPerson += ', ';
-        }
-
-        JSONPerson += '"' + uploadFields[i] + '":"' + fixUndefined(person[uploadFields[i]]) + '"';
-        hasItem = true;
+  this.uploadPersonToUrl = function( person, uploadUrl, callSuccess, callFailure ) {
+    var JSONPerson = { };
+    var uploadFields = optionService.getPersonUploadInfo( );
+    
+    for( var i = 0; i < uploadFields.length; i++ ) {
+      if( person[ uploadFields[ i ] ] !== "" && person[ uploadFields[ i ] ] !== undefined 
+          && person[ uploadFields[ i ] ] !== "undefined" ) {
+        JSONPerson.uploadFields[ i ] = fixUndefined( person[ uploadFields[ i ] ] );
       }
     }
-
-    JSONPerson += '}';
+    
+    JSON.stringify( JSONPerson );
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
@@ -737,22 +720,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       });
     };
 
-    this.editPerson_saveChanges = function(newPerson, success, error){
-      // TODO: Don't build JSON by hand
-      var putJSON = '{';
+    this.editPerson_saveChanges = function( newPerson, success, error ) {
+      var putJSON = { };
       var hasItem = false;
 
-      var changeList = optionService.getPersonToDBInformation();
+      var changeList = optionService.getPersonToDBInformation( );
 
-      for (var i = 0; i < changeList.length; i++) {
-        if (newPerson[changeList[i]] !== undefined) {
-          // Add ,
-          if (i !== 0) {
-            if (hasItem)
-              putJSON += ', ';
-          }
-
-          putJSON += '"' + changeList[i] + '":"' + newPerson[changeList[i]] + '"';
+      for( var i = 0; i < changeList.length; i++ ) {
+        if( newPerson[ changeList[ i ] ] !== undefined ) {
+          putJSON.changeList[ i ] = newPerson[ changeList[ i ] ];
           hasItem = true;
         }
       }
@@ -764,11 +740,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         // Photo has changed, upload it
         if (!isDisconnected) {
           uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
-            // Successful
-            if (hasItem)
-              putJSON += ', ';
-
-            putJSON += ' "pic_filename":"' + data.name + '"';
+            putJSON.pic_filename = data.name;
             hasItem = true;
 
             newPerson.pic_filename = data.name;
@@ -806,11 +778,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           var photoFile = uploadService.convertPictureToBlob(newPerson.photo);
           $cordovaFile.writeFile(cordova.file.dataDirectory, 'Photos/' + newPerson.pic_filename, photoFile, true);
 
-          // Successful
-          if (hasItem)
-            putJSON += ', ';
-
-          putJSON += ' "pic_filename":"' + newPerson.pic_filename + '"';
+          putJSON.pic_filename = newPerson.pic_filename;
           hasItem = true;
 
           finishHttpPut(hasItem, newPerson.id, putJSON, success, error, newPerson);
@@ -822,7 +790,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var finishHttpPut = function(hasItem, id, putJSON, success, error, newPerson) {
       // Put into it's own function to not have gross copy+paste everywhere
-      putJSON += '}';
+      JSON.stringify( putJSON );
 
       if (hasItem === true) {
         if (!isDisconnected) {
@@ -1255,16 +1223,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return camera_options;
     };
 
-    this.getDefaultConfigurationsJSON = function() {
-      // TODO: Don't build JSON by hand
+    this.getDefaultConfigurationsJSON = function( ) {
       var configs = settings_and_configurations;
-      var JSONObject = "'{\"configuration\":{";
-      for (var i = 0; i < configs.length; i++){
-        JSONObject += '\"' + configs[i] + '\":\"' + default_configurations.configuration[configs[i]] + '\"';
-        if (i !== configs.length - 1)
-          JSONObject += ", ";
+      var JSONObject = { configuration: { } };
+      
+      for( var i = 0; i < configs.length; i++ ) {
+        JSONObject.configuration.configs[ i ] = default_configurations.configuration[ configs[ i ] ];
       }
-      JSONObject += "}}'";
+      
+      JSON.stringify( JSONObject );
       return JSONObject;
     };
 
@@ -1565,24 +1532,25 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       }
     };
 
-    self.queryDB_update_settings = function(success){
-      // TODO: Don't build JSON by hand
-      var fields = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
-      var currentConfiguration = networkService.getConfiguration();
-      var JSONObject = "'{\"configuration\":{";
-      for (var i = 0; i < fields.length; i++){
-        JSONObject += '\"' + fields[i] + '\":\"' + currentConfiguration[fields[i]] + '\"';
-        if (i !== fields.length - 1)
-          JSONObject += ", ";
-      }
-      JSONObject += "}}'";
+    self.queryDB_update_settings = function( success ) {
+      var fields = [ 'serverURL', 'username', 'password', 'protocol', 'language', 'workOffline' ];
+      var currentConfiguration = networkService.getConfiguration( );
+      var JSONObject = { configuration: { } };
+      
+      for( var i = 0; i < fields.length; i++ )
+        JSONObject.configuration.fields[ i ] = currentConfiguration[ fields[ i ] ];
+      
+      JSON.stringify( JSONObject );
+      
       var query = "UPDATE configuration SET settings=" + JSONObject;
-      console.log(query);
-      DBHelper.query(query).then(function(result){
-        console.log(result);
-        if (success)
-          success();
-      });
+      console.log( query );
+      
+      DBHelper.query( query ).then( function( result ) {
+        console.log( result );
+        
+        if( success )
+          success( );
+      } );
     };
 
     self.queryDB_insert = function(tableName, JSONObject, success) {
