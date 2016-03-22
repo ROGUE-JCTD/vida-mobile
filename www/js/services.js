@@ -106,13 +106,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     for( var i = 0; i < uploadFields.length; i++ ) {
       if( person[ uploadFields[ i ] ] !== "" && person[ uploadFields[ i ] ] !== undefined
         && person[ uploadFields[ i ] ] !== "undefined" ) {
-        JSONPerson.uploadFields[ i ] = fixUndefined( person[ uploadFields[ i ] ] );
+        JSONPerson[uploadFields[ i ]] = fixUndefined( person[ uploadFields[ i ] ] );
       }
     }
     
-    JSON.stringify( JSONPerson );
+    JSONPerson = JSON.stringify( JSONPerson );
 
-    $http.put(networkService.getPeopleURL() + person.id + '/', JSONPerson,
+    $http.put(networkService.getPeopleURL() + person.id + '/', "\'" + JSONPerson + "\'",
       networkService.getAuthenticationHeader()).then(function (xhr) {
       if (xhr.status === 204) {
         callSuccess();
@@ -129,11 +129,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     for( var i = 0; i < uploadFields.length; i++ ) {
       if( person[ uploadFields[ i ] ] !== "" && person[ uploadFields[ i ] ] !== undefined 
           && person[ uploadFields[ i ] ] !== "undefined" ) {
-        JSONPerson.uploadFields[ i ] = fixUndefined( person[ uploadFields[ i ] ] );
+        JSONPerson[uploadFields[ i ]] = fixUndefined( person[ uploadFields[ i ] ] );
       }
     }
     
-    JSON.stringify( JSONPerson );
+    JSONPerson = JSON.stringify( JSONPerson );
 
     $http.post(uploadUrl, JSONPerson, {
       transformRequest: angular.identity,
@@ -790,7 +790,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var finishHttpPut = function(hasItem, id, putJSON, success, error, newPerson) {
       // Put into it's own function to not have gross copy+paste everywhere
-      JSON.stringify( putJSON );
+      putJSON = JSON.stringify( putJSON );
 
       if (hasItem === true) {
         if (!isDisconnected) {
@@ -1115,7 +1115,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       type: 'TEXT'
     }];
 
-    var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol',' language', 'workOffline'];
+    var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
@@ -1225,13 +1225,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getDefaultConfigurationsJSON = function( ) {
       var configs = settings_and_configurations;
-      var JSONObject = { configuration: { } };
+      var JSONObject = { configuration: {}};
       
       for( var i = 0; i < configs.length; i++ ) {
-        JSONObject.configuration.configs[ i ] = default_configurations.configuration[ configs[ i ] ];
+        JSONObject.configuration[configs[i]] = default_configurations.configuration[configs[i]];
       }
       
-      JSON.stringify( JSONObject );
+      JSONObject = JSON.stringify( JSONObject );
       return JSONObject;
     };
 
@@ -1301,7 +1301,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         $translate.use('es');
       else
         $translate.use('en');
-      self.configuration.workOffline = (DBSettings.configuration.workOffline === 'true');
+      self.configuration.workOffline = DBSettings.configuration.workOffline;
       isDisconnected = self.configuration.workOffline;
 
       self.setServerAddress(DBSettings.configuration.serverURL);
@@ -1538,11 +1538,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       var JSONObject = { configuration: { } };
       
       for( var i = 0; i < fields.length; i++ )
-        JSONObject.configuration.fields[ i ] = currentConfiguration[ fields[ i ] ];
+        JSONObject.configuration[fields[ i ]] = currentConfiguration[ fields[ i ] ];
       
-      JSON.stringify( JSONObject );
+      JSONObject = JSON.stringify( JSONObject );
       
-      var query = "UPDATE configuration SET settings=" + JSONObject;
+      var query = "UPDATE configuration SET settings=\'" + JSONObject + "\'";
       console.log( query );
       
       DBHelper.query( query ).then( function( result ) {
@@ -1553,8 +1553,19 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       } );
     };
 
-    self.queryDB_insert = function(tableName, JSONObject, success) {
-      var query = "INSERT INTO " + tableName + " VALUES (" + JSONObject + ")";
+    self.queryDB_insert_JSON = function(tableName, JSONObject, success) {
+      var query = "INSERT INTO " + tableName + " VALUES ('" + JSONObject + "')";
+      console.log(query);
+      DBHelper.query(query)
+        .then(function (result) {
+          console.log(result);
+          if (success)
+            success();
+        });
+    };
+
+    self.queryDB_insert = function(tableName, Obj, success) {
+      var query = "INSERT INTO " + tableName + " VALUES (" + Obj + ")";
       console.log(query);
       DBHelper.query(query)
         .then(function (result) {

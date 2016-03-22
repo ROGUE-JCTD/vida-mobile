@@ -87,7 +87,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         tryFinishConfig();
       } else {
         var defaultSettings = optionService.getDefaultConfigurationsJSON();
-        VIDA_localDB.queryDB_insert('configuration', defaultSettings, function () {
+        VIDA_localDB.queryDB_insert_JSON('configuration', defaultSettings, function () {
           tryFinishConfig();
         }); // add default configuration row if doesn't exist
       }
