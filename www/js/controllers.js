@@ -1544,7 +1544,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation, $ionicPopup,
-                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService){
+                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService, $rootScope){
   console.log('---------------------------------- SettingsCtrl');
 
     $scope.networkAddr = networkService.getServerAddress();
@@ -1736,6 +1736,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       networkService.setDisconnected($scope.b_disconnected);
       VIDA_localDB.queryDB_update_settings();
+
+      $rootScope.$broadcast('connectionStatusChanged', $scope.b_disconnected);
 
         // refresh (since local ID in DB and server can differ)
       peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery(), function(){},
@@ -2096,6 +2098,22 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                     }
                   }
 
+                  // Check to see if any local shelters should be removed
+                  for (var j = 1; j < localShelters.length; j++ ) {
+                    var foundShelterOnServer = false;
+
+                    for (var k = 0; k < allShelters.length; k++ ) {
+                      if (localShelters[j].uuid === allShelters[k].uuid) {
+                        foundShelterOnServer = true;
+                      }
+                    }
+
+                    if (!foundShelterOnServer) {
+                      // Remove Shelter from local DB
+                      shelterService.removeShelterByUUID(localShelters[j].uuid);
+                    }
+                  }
+
                   // TODO: Translate
                   $cordovaProgress.hide();
                   $ionicPopup.alert({
@@ -2209,6 +2227,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   var MapLayer = {};
   var leafletDirective = angular.element(document.body).injector().get('leafletData');
 
+  $rootScope.$on('connectionStatusChanged', function() {
+    $scope.refreshShelterMap();
+  });
+
+  $scope.refreshShelterMap = function() {
+    $scope.checkDisconnected();     // Gets online/offline map
+    $scope.showAllSheltersOnMap();  // Gets and stores shelters
+  };
+
   $scope.checkDisconnected = function() {
     leafletDirective.getMap().then(function (thisMap) {
       // Remove previous layer (Connected Layer or Disconnected Layer)
@@ -2254,6 +2281,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var lng = parseFloat(tokens[0]);
         var lat = parseFloat(tokens[1]);
         var coord = shelterService.getLatLng(shelter.id);
+        if (coord.lat === -1111 && coord.lng === -1111)
+          coord.lat = lat; coord.lng = lng;
         var detailUrl = '#/vida/shelter-search/shelter-detail/' + shelter.id;
 
         $rootScope.markers["shelter_" + shelter.id] = {
@@ -2291,6 +2320,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getById($stateParams.shelterId));
     $scope.shelter = shelterService.getById($stateParams.shelterId);
     $scope.latlng = shelterService.getLatLng($stateParams.shelterId);
+    if ($scope.latlng.lat === -1111 && $scope.latlng.lng === -1111) {
+      // Shelter is not on server, it's only on the database. Get correct geom
+      var shelters = shelterService.getAllLocalShelters();
+      for (var i = 0; i < shelters.length; i++) {
+        if (shelters[i].id === $stateParams.shelterId){
+          var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+          var coordinateString = shelters[i].geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+          var tokens = coordinateString.split(' ');
+          var lng = parseFloat(tokens[0]);
+          var lat = parseFloat(tokens[1]);
+          $scope.latlng = {lat: lat, lng: lng};
+        }
+      }
+    }
 
     $rootScope.buttonBack = function() {
       // Put edit/delete buttons back

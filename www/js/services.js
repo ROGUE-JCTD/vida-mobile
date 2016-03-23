@@ -441,21 +441,31 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 
   this.getAll = function() {
-    var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
-      query: {
-        method: 'GET',
-        isArray: true,
-        transformResponse: $http.defaults.transformResponse.concat([
-          function (data, headersGetter) {
-            shelters = data.objects;
-            console.log('----[ transformResponse data: ', data);
-            return data.objects;
-          }
-        ])
-      }
-    });
+    if (!isDisconnected) {
+      var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
+        query: {
+          method: 'GET',
+          isArray: true,
+          transformResponse: $http.defaults.transformResponse.concat([
+            function (data, headersGetter) {
+              shelters = data.objects;
+              console.log('----[ transformResponse data: ', data);
+              return data.objects;
+            }
+          ])
+        }
+      });
 
-    return shelter.query().$promise;
+      return shelter.query().$promise;
+    } else {
+      var deferred = $q.defer();
+
+      VIDA_localDB.queryDB_select('shelters', '*', function(allShelters) {
+        deferred.resolve(allShelters);
+      });
+
+      return deferred.promise;
+    }
   };
 
   this.getById = function(id) {
@@ -485,6 +495,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.getLatLng = function(id) {
     var shelter = service.getById(id);
+    if (shelter === undefined)
+      return {lat: -1111, lng: -1111}; // Not on the server, only in the database
     // look for 'point' in wkt and get the pair of numbers in the string after it
     var trimParens = /^\s*\(?(.*?)\)?\s*$/;
     var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
