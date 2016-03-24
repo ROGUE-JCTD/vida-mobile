@@ -343,7 +343,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('shelterService', function($http, networkService, $resource, $q, VIDA_localDB) {
+.service('shelterService', function($http, networkService, $resource, $q, VIDA_localDB, optionService) {
   var service = this;
   var shelters = [];
   var current_shelter = {};
@@ -417,7 +417,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             for (var i = 0; i < data.objects.length; i++) {
               array.push({
                 name: data.objects[i].name,
-                value: data.objects[i].uuid,
+                uuid: data.objects[i].uuid,
                 id: data.objects[i].id,
                 geom: data.objects[i].geom
               });
@@ -441,6 +441,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 
   this.getAll = function() {
+    var allShelters = [];
+
     if (!isDisconnected) {
       var shelter = $resource(networkService.getShelterURL() + ':id', {}, {
         query: {
@@ -448,9 +450,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
           isArray: true,
           transformResponse: $http.defaults.transformResponse.concat([
             function (data, headersGetter) {
-              shelters = data.objects;
+              allShelters.push(optionService.getDefaultShelterData());
+              for (var i = 0; i < data.objects.length; i++)
+                allShelters.push(data.objects[i]);
               console.log('----[ transformResponse data: ', data);
-              return data.objects;
+              return allShelters;
             }
           ])
         }
@@ -460,7 +464,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     } else {
       var deferred = $q.defer();
 
-      VIDA_localDB.queryDB_select('shelters', '*', function(allShelters) {
+      VIDA_localDB.queryDB_select('shelters', '*', function(allSheltersFromDB) {
+        allShelters.push(optionService.getDefaultShelterData());
+        for (var i = 0; i < allSheltersFromDB.length; i++)
+          allShelters.push(allSheltersFromDB[i]);
         deferred.resolve(allShelters);
       });
 
@@ -1128,6 +1135,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       type: 'TEXT'
     }];
 
+    var default_shelter = {name: 'None', uuid: '', id: 0, geom: ''};
+
     var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
@@ -1180,6 +1189,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       allOptions.push(option);
 
       return allOptions;
+    };
+
+    this.getDefaultShelterData = function() {
+      return default_shelter;
     };
 
     this.getGenderOptions = function() {

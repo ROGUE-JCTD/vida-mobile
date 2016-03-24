@@ -97,7 +97,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       shelterService.clearShelters();
 
       // Add default shelter value
-      shelterService.addShelter({name: 'None', value: '', id: 0, geom: ''}, false);
+      shelterService.addShelter(optionService.getDefaultShelterData(), false);
 
       if (results.length > 0) {
         // Add shelters to local list
@@ -298,7 +298,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // If shelter_array is valid, the first item in the array will be "None".
       // Starting at 1 to skip that.
       for (var i = 1; i < shelter_array.length; i++) {
-        if (shelter_array[i].value === shelterID) {
+        if (shelter_array[i].uuid === shelterID) {
           shelterService.setCurrentShelter(shelter_array[i]);
           shelterService.getAll();
           wasSet = true;
@@ -619,7 +619,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Look at person and see what shelter they are assigned to
       var isAssigned = false;
       for (var j = 1; j < shelter_array.length; j++) {
-        if (person.shelter_id === shelter_array[j].value) {
+        if (person.shelter_id === shelter_array[j].uuid) {
           $scope.current_shelter = $scope.shelter_array[j];
           $scope.previous_shelter_label = $scope.shelter_array[j].name;
           isAssigned = true;
@@ -779,7 +779,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     var statusElement       = document.getElementById('status');
     doc.status              = statusElement.options[statusElement.selectedIndex].label;
     var shelterElement      = document.getElementById('shelter');
-    doc.shelter_id          = $scope.shelter_array[shelterElement.selectedIndex].value;
+    doc.shelter_id          = $scope.shelter_array[shelterElement.selectedIndex].uuid;
 
     doc.photo               = document.getElementById('personal_photo').src;
   };
@@ -824,6 +824,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       documentValue = documentValues[dropdownOptions[j].dropdown];
       originalDropdownValue = dropdownOptions[j].options[0].value;
 
+
       changedPerson[dropdownOptions[j].dropdown] =
         ((originalPersonValue !== documentValue) &&
         documentValue !== originalDropdownValue)
@@ -845,7 +846,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       changedPerson.pic_filename = person.pic_filename;
 
     changedPerson.created_at = new Date().toISOString();
-    changedPerson.created_by = networkService.getUsernamePassword().username;
+    //changedPerson.created_by = networkService.getUsernamePassword().username;
 
     var geom = {};
     if (person.geom) {
@@ -896,7 +897,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
             var wasSet = false;
             for (var i = 1; i < $scope.shelter_array.length; i++) {
-              if ($scope.shelter_array[i].value === shelterID) {
+              if ($scope.shelter_array[i].uuid === shelterID) {
                 shelterService.setCurrentShelter(shelter_array[i]);
                 shelterService.getAll();
                 wasSet = true;
@@ -1100,8 +1101,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         var ShelterID;
         if ($scope.current_shelter !== undefined) {
-          if ($scope.current_shelter.value !== $scope.shelter_array[0].value)
-            ShelterID = $scope.current_shelter.value;
+          if ($scope.current_shelter.uuid !== $scope.shelter_array[0].uuid)
+            ShelterID = $scope.current_shelter.uuid;
         }
 
         var Photo;
@@ -1324,9 +1325,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         for (var k = 0; k < person_info_indexing.length; k++) {
           if (person_info_indexing[k] !== "photo") {
             if (localPerson[person_info_indexing[k]] !== undefined)
-              obj += "'" + localPerson[person_info_indexing[k]] + "'";
+              obj += "\"" + localPerson[person_info_indexing[k]] + "\"";
             else
-              obj += "''";
+              obj += "\"\"";
           } else {
             // Specific Photo Case
             if (localPerson.photo !== undefined){
@@ -1496,11 +1497,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     // Used for getting shelter dropdowns before page is loaded
     $scope.refreshShelters = function() {
       var shelters = $q.defer();
-      var array = [{
-        name: 'None',
-        value: '',
-        id: 0
-      }];
+      var array = [optionService.getDefaultShelterData()];
       var auth = networkService.getUsernamePassword();
 
       $.ajax({
@@ -1515,7 +1512,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               array.push({
                 name: data.objects[i].name,
                 value: data.objects[i].uuid,
-                id: data.objects[i].id
+                id: data.objects[i].id,
+                geom: data.objects[i].geom
               });
             }
             $scope.shelter_array = array;
@@ -2072,10 +2070,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                   } else {
                     for (var i = 0; i < allShelters.length; i++) {
                       var foundShelterOnDB = false;
-                      allShelters[i].uuid = allShelters[i].value;  // Duct-tape fix
 
                       for (var j = 1; j < localShelters.length; j++) { // Start at 1 because "None"
-                        if (localShelters[j].uuid === allShelters[i].value) {
+                        if (localShelters[j].uuid === allShelters[i].uuid) {
                           foundShelterOnDB = true;
 
                           // If UUID matches, see if anything is different.
@@ -2271,7 +2268,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }
 
       console.log("---- got all shelters: ", shelters);
-      for (var i = 0; i < shelters.length; i++) {
+      for (var i = 1; i < shelters.length; i++) { // Starting at 1 because "None"
         var shelter = shelters[i];
 
         // look for 'point' in wkt and get the pair of numbers in the string after it
