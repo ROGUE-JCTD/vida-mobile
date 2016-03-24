@@ -740,7 +740,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       for( var i = 0; i < changeList.length; i++ ) {
         if( newPerson[ changeList[ i ] ] !== undefined ) {
-          putJSON.changeList[ i ] = newPerson[ changeList[ i ] ];
+          putJSON[changeList[ i ]] = newPerson[ changeList[ i ] ];
           hasItem = true;
         }
       }
@@ -811,24 +811,25 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               success();
             } else {
               error();
-            }}, function(error){
-            if (error.data)
-              $cordovaToast.showShortBottom(error.data.error_message);
+            }}, function(httpErr){
+            console.log(httpErr);
+            if (httpErr.data)
+              $cordovaToast.showShortBottom(httpErr.data.error_message);
             else {
-              if (error.status) {
+              if (httpErr.status) {
                 // TODO: Translate
-                if (error.status === 404) {
+                if (httpErr.status === 404) {
                   $cordovaToast.showShortBottom("Error not found. Please try again");
-                } else if (error.status == 500) {
+                } else if (httpErr.status == 500) {
                   $cordovaToast.showShortBottom("Internal server error. Please try again.");
                 } else {
                   $cordovaToast.showShortBottom("Undefined Error. Please try again.");
                 }
               } else {
-                $cordovaToast.showShortBottom(error);
+                $cordovaToast.showShortBottom(httpErr);
               }
             }
-
+            if (error)
               error();
             });
         }
@@ -1000,14 +1001,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       "name": 'person_not_specified',
       "value": "Not Specified"
     }, {
+      "name": 'person_nationality_african',
+      "value": "African American"
+    }, {
       "name": 'person_nationality_american_indian',
       "value": "American Indian"
     }, {
       "name": 'person_nationality_asian',
       "value": "Asian"
-    }, {
-      "name": 'person_nationality_african',
-      "value": "African American"
     }, {
       "name": 'person_nationality_hispanic_latino',
       "value": "Hispanic/Latino"

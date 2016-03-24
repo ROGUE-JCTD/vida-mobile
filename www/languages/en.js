@@ -65,7 +65,7 @@
     'person_injury_deceased': 'Deceased',
     'person_nationality': 'Nationality',
     'person_nationality_english': 'English',
-    'person_nationality_african': 'African',
+    'person_nationality_african': 'African American',
     'person_nationality_asian': 'Asian',
     'person_nationality_american_indian': 'American Indian',
     'person_nationality_hispanic_latino': 'Hispanic/Latino',
