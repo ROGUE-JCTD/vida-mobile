@@ -389,10 +389,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     var deleted = 0;
     var obj = [];
     obj.push({
-      type: 'id',
-      value: "\'" + ID.toString() + "\'"
-    });
-    obj.push({
       type: 'uuid',
       value: "\'" + person.uuid + "\'"
     });
@@ -1606,10 +1602,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     var isDirty = 0; // Saving out last updated person - no need to be dirty
     var deleted = 0;
     var obj = [];
-    obj.push({
-      type: 'id',
-      value: "\'" + ID.toString() + "\'"
-    });
     obj.push({
       type: 'uuid',
       value: "\'" + person.uuid + "\'"

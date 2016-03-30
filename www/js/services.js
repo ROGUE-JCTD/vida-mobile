@@ -112,7 +112,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     
     JSONPerson = JSON.stringify( JSONPerson );
 
-    $http.put(networkService.getPeopleURL() + person.id + '/', "\'" + JSONPerson + "\'",
+    $http.put(networkService.getPeopleURL() + person.id + '/', JSONPerson,
       networkService.getAuthenticationHeader()).then(function (xhr) {
       if (xhr.status === 204) {
         callSuccess();
