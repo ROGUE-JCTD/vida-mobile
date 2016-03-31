@@ -47,7 +47,7 @@ ionic plugin add https://github.com/wildabeast/BarcodeScanner.git
 ionic plugin add cordova-plugin-dialogs
 ionic plugin add https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git
 ionic plugin add https://github.com/EddyVerbruggen/Toast-PhoneGap-Plugin.git
-ionic plugin add https://github.com/litehelpers/Cordova-sqlite-storage.git
+ionic plugin add cordova-sqlite-storage@0.7.14
 ionic plugin add https://github.com/an-rahulpandey/cordova-plugin-dbcopy.git
 ionic plugin add https://github.com/pbernasconi/cordova-progressIndicator.git
 ionic plugin add cordova-plugin-network-information

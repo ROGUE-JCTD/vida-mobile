@@ -514,7 +514,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, $cordovaToast,
+.service('peopleService', function($http, networkService, uploadService, VIDA_localDB, $cordovaToast, $filter,
                                    optionService, $q, $cordovaFile, $ionicPopup, $cordovaFileTransfer) {
     var peopleInShelter = [];
     var personByID = {};
@@ -530,16 +530,21 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               if (xhr.data !== null) {
                 peopleInShelter = [];    // Reset list, is safe
 
-                for (var i = 0; i < xhr.data.objects.length; i++) {
-                  var personOnServer = xhr.data.objects[i];
-                  var newPerson = {};
+                if (xhr.data.objects.length > 0) {
 
-                  newPerson.given_name = personOnServer.given_name;
-                  newPerson.status = 'On Server';
-                  newPerson.id = personOnServer.id;
-                  newPerson.score = undefined;
+                  for (var i = 0; i < xhr.data.objects.length; i++) {
+                    var personOnServer = xhr.data.objects[i];
+                    var newPerson = {};
 
-                  peopleInShelter.push(xhr.data.objects[i]);
+                    newPerson.given_name = personOnServer.given_name;
+                    newPerson.status = personOnServer.status;
+                    newPerson.id = personOnServer.id;
+                    newPerson.score = undefined;
+
+                    peopleInShelter.push(xhr.data.objects[i]);
+                  }
+                } else {
+                  $cordovaToast.showLongBottom($filter('translate')('error_no_results'));
                 }
 
                 if (success)
