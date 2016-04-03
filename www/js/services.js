@@ -515,7 +515,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 })
 
 .service('peopleService', function($http, networkService, uploadService, VIDA_localDB, $cordovaToast, $filter,
-                                   optionService, $q, $cordovaFile, $ionicPopup, $cordovaFileTransfer) {
+                                   optionService, $q, $cordovaFile, $ionicPopup, $cordovaFileTransfer, $rootScope) {
     var peopleInShelter = [];
     var personByID = {};
     var storedSearchQuery = "";
@@ -863,10 +863,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
         if (values.length > 0) {
           // There is a change, mark the DB as dirty
+          var isDirty = isDisconnected ? 1 : 0; // If they are online, it doesn't need to be updated
+
           values.push({
             type: 'isDirty',
-            value: isDisconnected ? 1 : 0
+            value: isDirty
           });
+
+          if (isDirty) {
+            $rootScope.$broadcast('databaseUpdateSyncStatus');
+          }
 
           // Update DB
           VIDA_localDB.queryDB_update('people', values, 'uuid=\"' + newPerson.uuid + '\"', function() {

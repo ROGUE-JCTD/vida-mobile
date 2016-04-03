@@ -80,6 +80,7 @@
     'button_logout': 'Log out',
     'button_request_account': 'Or request an account',
     'button_shelter_search': 'Back to Shelter Map',
+    'button_update_database': 'Update/Sync Database',
     'search_searchfield': 'Search',
     'search_age': 'Age',
     'settings_cache_photos': 'Cache Photos',

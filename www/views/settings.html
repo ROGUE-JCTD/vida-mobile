@@ -5,7 +5,7 @@
         <ion-toggle id="disconnected_switch" ng-model="b_disconnected" ng-change="changeDisconnected()"
                     toggle-class="toggle-positive">Disconnected Mode</ion-toggle>
 
-        <button class="button button-positive button-block" ng-click="updateSyncDatabase()">Update/Sync Database</button>
+        <button class="button button-positive button-block" ng-click="updateSyncDatabase()">{{button_update_database_str}}</button>
 
         <label class="item item-input item-select">
           <span class="input-label">{{'settings_language' | translate}}</span>

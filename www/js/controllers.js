@@ -911,8 +911,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             // will not successfully reload
             $state.go('vida.person-search.person-detail');
             $cordovaProgress.hide();
+
             // TODO: Translate
-            $cordovaToast.showShortBottom('Something went wrong. Please check your connection.');
+            $cordovaToast.showShortBottom('Something went with retrieving updated person. Please check your connection.');
           }); // This will reload search query
         }, function () {
 
@@ -1030,7 +1031,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $cordovaProgress.hide();
 })
 
-.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal,
+.controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal, $rootScope,
                                          $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService, $cordovaFile,
                                           optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup, $cordovaGeolocation){
     $scope.person = {};
@@ -1336,6 +1337,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             obj += ", ";
         }
 
+        if (isDirty) {
+          // Was disconnected, needs to be updated
+          $rootScope.$broadcast('databaseUpdateSyncStatus');
+        }
+
         VIDA_localDB.queryDB_insert('people', obj, function() {
           $cordovaToast.showShortBottom($filter('translate')('toast_added_person_locally') + localPerson.given_name);
           if (success)
@@ -1541,8 +1547,48 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                                      networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService, $rootScope){
   console.log('---------------------------------- SettingsCtrl');
 
-    $scope.networkAddr = networkService.getServerAddress();
-    $scope.b_disconnected = isDisconnected;
+  $scope.networkAddr = networkService.getServerAddress();
+  $scope.b_disconnected = isDisconnected;
+  $scope.button_update_database_str = $filter('translate')('button_update_database');
+  $scope.updatable_entries = 0;
+
+    $rootScope.$on('databaseUpdateSyncStatus', function () {
+      $scope.checkAllDirtyEntries().then(function(allDirtyEntries) {
+        $scope.updateSyncButton(allDirtyEntries.length);
+      });
+    });
+
+    $scope.resetSyncButton = function() {
+      $scope.updatable_entries = 0;
+      $scope.button_update_database_str = $filter('translate')('button_update_database');
+    };
+
+    $scope.updateSyncButton = function(num_entries) {
+      $scope.updatable_entries = num_entries;
+
+      if (num_entries > 0) {
+        $scope.button_update_database_str = $filter('translate')('button_update_database') + ": " + num_entries;
+      }
+    };
+
+    $scope.checkAllDirtyEntries = function() {
+      var prom = $q.defer();
+
+      var where = {};
+      where.restriction = 'EXACT';
+      where.column = 'isDirty';
+      where.value = 1;
+      VIDA_localDB.queryDB_select('people', '*', function(results){
+        // Could just return results[i]?
+        var allPeople = [];
+        for (var i = 0; i < results.length; i++) {
+          allPeople.push(results[i]);
+        }
+        prom.resolve(allPeople);
+      }, where);
+
+      return prom.promise;
+    };
 
   // Functions
     $scope.logout = function(url) {
@@ -1579,6 +1625,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     // Init
+    $cordovaProgress.showSimpleWithLabel(true, 'Loading settings..');
+
+    $scope.checkAllDirtyEntries().then(function(allDirtyEntries) {
+      $scope.updateSyncButton(allDirtyEntries.length);
+      $cordovaProgress.hide();
+    });
+
     $scope.language_options = optionService.getLanguageOptions();
 
     for(var i = 0; i < $scope.language_options.length; i++){
@@ -2104,6 +2157,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                   }
 
                   // TODO: Translate
+                  $scope.resetSyncButton();
                   $cordovaProgress.hide();
                   $ionicPopup.alert({
                     title: "Sync Complete!",
