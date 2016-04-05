@@ -950,6 +950,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return peopleInShelter;
     };
 
+    this.getAllPeopleInDatabase = function() {
+      var prom = $q.defer();
+
+      VIDA_localDB.queryDB_select('people', '*', function(allPeople){
+        prom.resolve(allPeople);
+      });
+
+      return prom.promise;
+    };
+
     this.getPersonalImage = function(pic_filename, success, error) {
       if (!isDisconnected) {
         // Get normal image from server
@@ -961,13 +971,18 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         if (pic_filename !== null && pic_filename !== undefined
             && pic_filename !== "null") {
           if (!pic_filename.startsWith('temp_picture')) {
-            // Get image from phone
-            var picture = pic_filename.split('.');
-            var thumbnail = picture[0] + '_thumb.' + picture[1];
-            var self = this;
-
-            return cordova.file.dataDirectory + 'Photos/' + thumbnail;
+            // If it has _thumb, use it. If it doesn't, see if it can find the thumbnail version.
+            if (pic_filename.contains('_thumb')) {
+              // Get image from phone
+              return cordova.file.dataDirectory + 'Photos/' + pic_filename;
+            } else {
+              // Find the thumbnail version
+              var pic = pic_filename.split('.');
+              var thumb = pic[0] + '_thumb.' + pic[1];
+              return cordova.file.dataDirectory + 'Photos/' + thumb;
+            }
           } else {
+            // Is temp_picture
             return cordova.file.dataDirectory + 'Photos/' + pic_filename;
           }
         } else {
@@ -1339,7 +1354,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       else
         $translate.use('en');
       self.configuration.workOffline = DBSettings.configuration.workOffline;
-      isDisconnected = self.configuration.workOffline;
+      isDisconnected = (self.configuration.workOffline === "true");
 
       self.setServerAddress(DBSettings.configuration.serverURL);
     };

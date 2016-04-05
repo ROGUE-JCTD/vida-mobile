@@ -1831,51 +1831,68 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var promise = $q.defer();
       var imagesDownloaded = 0, pIndex = 0;
 
-      if (peopleFromServer.length > 0 ) {
-        for (var i = 0; i < peopleFromServer.length; i++) {
-          if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
-            var thumbnail = peopleFromServer[i].pic_filename;
+      peopleService.getAllPeopleInDatabase().then(function(peopleInDatabase) {
+        if (peopleFromServer.length > 0 ) {
+          for (var i = 0; i < peopleFromServer.length; i++) {
+            if (peopleFromServer[i].pic_filename !== "" && peopleFromServer[i].pic_filename !== null) {
+              var thumbnail = peopleFromServer[i].pic_filename;
 
-            if (!thumbnail.contains('_thumb')) {
-              var filename = thumbnail.split('.');
-              var extension = filename[1];
-              thumbnail = filename[0] + '_thumb' + '.' + extension;
-            }
+              if (!thumbnail.contains('_thumb')) {
+                var filename = thumbnail.split('.');
+                var extension = filename[1];
+                thumbnail = filename[0] + '_thumb.' + extension;
+              }
 
-            // Attempt to download that picture
-            peopleService.downloadPersonalImage(thumbnail, function (downloaded_image) {
-              // Successful
-              if (downloaded_image === true)
-                imagesDownloaded++;
+              // Attempt to download that picture
+              peopleService.downloadPersonalImage(thumbnail, function (downloaded_image) {
+                // Successful
+                if (downloaded_image === true) {
+                  imagesDownloaded++;
 
+                  // Update pic_filename on database to view new* picture offline
+                  // Problem: i falls out of scope
+                  // *had picture previously, and is now a different picture
+                  /*for (var p = 0; p < peopleInDatabase.length; p++) {
+                    if (peopleInDatabase[p].uuid === peopleFromServer[i].uuid) {
+                      var values = [{
+                        type: 'pic_filename',
+                        value: thumbnail
+                      }];
+                      var whereAt = 'uuid=\"' + peopleInDatabase[p].uuid + '\"';
+                      VIDA_localDB.queryDB_update('people', values, whereAt);
+                    }
+                  }*/
+                }
+
+                pIndex++;
+
+                if (pIndex === peopleFromServer.length) {
+                  promise.resolve(imagesDownloaded);
+                }
+              }, function (error) {
+                // Not successful
+                console.log("PROBLEM");
+                console.log(error);
+                pIndex++;
+
+                if (pIndex === peopleFromServer.length) {
+                  promise.resolve(imagesDownloaded);
+                }
+              });
+            } else {
+              // No picture on file
               pIndex++;
 
               if (pIndex === peopleFromServer.length) {
                 promise.resolve(imagesDownloaded);
               }
-            }, function (error) {
-              // Not successful
-              console.log("PROBLEM");
-              console.log(error);
-              pIndex++;
-
-              if (pIndex === peopleFromServer.length) {
-                promise.resolve(imagesDownloaded);
-              }
-            });
-          } else {
-            // No picture on file
-            pIndex++;
-
-            if (pIndex === peopleFromServer.length) {
-              promise.resolve(imagesDownloaded);
             }
           }
+        } else {
+          // No people on server just yet -- passthrough
+          promise.resolve(imagesDownloaded);
         }
-      } else {
-        // No people on server just yet -- passthrough
-        promise.resolve(imagesDownloaded);
-      }
+      });
 
       return promise.promise;
     };
@@ -1985,116 +2002,112 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             // Successful!
             $cordovaProgress.hide();
 
-            // Get all thumbnails
-            $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Downloading Thumbnails..');
-            $scope.downloadThumbnails(allPeople).then(function(imagesDownloaded) {
-              // Type/Value can update any column with any info
-              var isDirtyForDB = [{
-                type: 'isDirty',
-                value: 0
-              }];
-              /*, {
-                type: 'deleted',
-                value: 0 // When could this be a thing?
-              }];*/
+            $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
+            var isOnServer = false;
+            var whereAt = '';
+            // Type/Value can update any column with any info
+            var isDirtyForDB = [{
+              type: 'isDirty',
+              value: 0
+            }];
+            for (var i = 0; i < dirtyArr.length; i++) {
 
-              $cordovaProgress.hide();
-              $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Syncing entries in database with server..');
-              var isOnServer = false;
-              var whereAt = '';
-              for (var i = 0; i < dirtyArr.length; i++) {
+              // For each person that needs to be *updated*, fix them in the DB,
+              //    or see if there are in the DB at all
+              for (var j = 0; j < allPeople.length; j++) {
+                if (dirtyArr[i].uuid == allPeople[j].uuid){
+                  isOnServer = true;
 
-                // For each person that needs to be *updated*, fix them in the DB,
-                //    or see if there are in the DB at all
-                for (var j = 0; j < allPeople.length; j++) {
-                  if (dirtyArr[i].uuid == allPeople[j].uuid){
-                    isOnServer = true;
+                  // See if it needs to be updated in any way
+                  var personOnDB_created = dirtyArr[i].created_at;
+                  var personOnServer_created = (allPeople[j].updated_at) ? allPeople[j].updated_at : allPeople[j].created_at;
 
-                    // See if it needs to be updated in any way
-                    var personOnDB_created = dirtyArr[i].created_at;
-                    var personOnServer_created = (allPeople[j].updated_at) ? allPeople[j].updated_at : allPeople[j].created_at;
-
-                    // If true, first value is newer. If false, second value is newer.
-                    // If exact, it will upload the database version
-                    if (determineNewerValue(personOnDB_created, personOnServer_created)) {
-                      // Database version is newer, upload that to server
-                      dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
-                      $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
-                    } else {
-                      // Server version is newer, don't upload, just update database
-                      var personToUpdate = allPeople[j];
-                      personToUpdate.id = dirtyArr[i].id; // Database ID needs to correlate
-                      $scope.updatePersonLocalDatabase(personToUpdate);
-                    }
-
-                    // Update isDirty to 0 regardless
-                    whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
-                    VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
+                  // If true, first value is newer. If false, second value is newer.
+                  // If exact, it will upload the database version
+                  if (determineNewerValue(personOnDB_created, personOnServer_created)) {
+                    // Database version is newer, upload that to server
+                    dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
+                    $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+                  } else {
+                    // Server version is newer, don't upload, just update database
+                    var personToUpdate = allPeople[j];
+                    personToUpdate.id = dirtyArr[i].id; // Database ID needs to correlate
+                    $scope.updatePersonLocalDatabase(personToUpdate);
                   }
-                }
 
-                // Person is not in the server DB at all
-                if (!isOnServer) {
-                  // Upload person to server
-                  $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
-                  peopleUploaded++;
-
-                  // Update isDirty on localDB to 0
+                  // Update isDirty to 0 regardless
                   whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
                   VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
                 }
               }
-              // END FIRST TASK
-              $cordovaProgress.hide();
 
-              // SECOND TASK: Find who isn't in the DB (newly downloaded from server) and add them to the current DB
-              // TODO: Translate
-              $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Adding any newly downloaded people to the database..");
-              var amountOfPeople = 0;
+              // Person is not in the server DB at all
+              if (!isOnServer) {
+                // Upload person to server
+                $scope.uploadPersonCopy(dirtyArr[i], isOnServer);
+                peopleUploaded++;
 
-              VIDA_localDB.queryDB_select('people', '*', function(allPeopleInDB) {
-                amountOfPeople = allPeopleInDB.length + 1; // + 1 to start at the next index
+                // Update isDirty on localDB to 0
+                whereAt = 'uuid=\"' + dirtyArr[i].uuid +'\"';
+                VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
+              }
+            }
+            // END FIRST TASK
+            $cordovaProgress.hide();
 
-                // If someone isn't in the DB, insert them
-                for (var i = 0; i < allPeople.length; i++) {
-                  var doContinue = false;
+            // SECOND TASK: Find who isn't in the DB (newly downloaded from server) and add them to the current DB
+            // TODO: Translate
+            $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Adding any newly downloaded people to the database..");
+            var amountOfPeople = 0;
 
-                  for (var j = 0; j < allPeopleInDB.length; j++) {
-                    if (allPeopleInDB[j].uuid === allPeople[i].uuid) {
-                      // Found match
-                      doContinue = true;
-                      break;
-                    }
-                  }
+            VIDA_localDB.queryDB_select('people', '*', function(allPeopleInDB) {
+              amountOfPeople = allPeopleInDB.length + 1; // + 1 to start at the next index
 
-                  // If doContinue is false, they were never found in the DB. Insert them.
-                  if (!doContinue) {
-                    var isDirty = 0;
-                    var isDeleted = 0;
-                    var obj = (amountOfPeople).toString() + ", '" + allPeople[i].uuid + "', " + isDirty + ", " + isDeleted + ", ";
-                    var person_info_indexing = optionService.getPersonToDBInformation();
-                    for (var k = 0; k < person_info_indexing.length; k++) {
-                      if (person_info_indexing !== "photo") {
-                        obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
-                      } else {
-                        // Specific Photo Case
-                        // TODO
-                        //if (allPeople.photo !== undefined){
-                          obj += "''"; // + allPeople.photo + "'";
-                        //}
-                      }
+              // If someone isn't in the DB, insert them
+              for (var i = 0; i < allPeople.length; i++) {
+                var doContinue = false;
 
-                      if (k < person_info_indexing.length - 1)
-                        obj += ", ";
-                    }
-
-                    VIDA_localDB.queryDB_insert('people', obj);
-                    amountOfPeople++;
-                    peopleDownloaded++;
+                for (var j = 0; j < allPeopleInDB.length; j++) {
+                  if (allPeopleInDB[j].uuid === allPeople[i].uuid) {
+                    // Found match
+                    doContinue = true;
+                    break;
                   }
                 }
 
-                // END SECOND TASK
+                // If doContinue is false, they were never found in the DB. Insert them.
+                if (!doContinue) {
+                  var isDirty = 0;
+                  var isDeleted = 0;
+                  var obj = (amountOfPeople).toString() + ", '" + allPeople[i].uuid + "', " + isDirty + ", " + isDeleted + ", ";
+                  var person_info_indexing = optionService.getPersonToDBInformation();
+                  for (var k = 0; k < person_info_indexing.length; k++) {
+                    if (person_info_indexing !== "photo") {
+                      obj += "'" + allPeople[i][person_info_indexing[k]] + "'";
+                    } else {
+                      // Specific Photo Case
+                      // TODO
+                      //if (allPeople.photo !== undefined){
+                        obj += "''"; // + allPeople.photo + "'";
+                      //}
+                    }
+
+                    if (k < person_info_indexing.length - 1)
+                      obj += ", ";
+                  }
+
+                  VIDA_localDB.queryDB_insert('people', obj);
+                  amountOfPeople++;
+                  peopleDownloaded++;
+                }
+              }
+
+              // END SECOND TASK
+              $cordovaProgress.hide();
+
+              // Get all thumbnails
+              $cordovaProgress.showSimpleWithLabelDetail(true, 'Syncing', 'Downloading Thumbnails..');
+              $scope.downloadThumbnails(allPeople).then(function(imagesDownloaded) {
                 $cordovaProgress.hide();
 
                 // THIRD TASK: Update shelter list
