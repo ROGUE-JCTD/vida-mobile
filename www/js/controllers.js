@@ -860,7 +860,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Check for possible new location
         if (geom.lat !== $scope.current_location.lat &&
           geom.long !== $scope.current_location.long)
-          changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.lat + " " + $scope.current_location.long + ")";
+          changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
       } else {
         // Use possibly new shelter location
         if (person.geom !== $scope.current_shelter.geom)
@@ -872,7 +872,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       // Check for possible new location
       if (geom.lat !== $scope.current_location.lat &&
         geom.long !== $scope.current_location.long)
-        changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.lat + " " + $scope.current_location.long + ")";
+        changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
     }
 
     // Show loading dialog
@@ -1146,7 +1146,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Find Geom for person
         if ($scope.LocationDropdownDisabled === true) {
           // Using current location
-          newPerson.geom = "SRID=4326;POINT (" + $scope.person.location.lat + " " + $scope.person.location.long + ")";
+          newPerson.geom = "SRID=4326;POINT (" + $scope.person.location.long + " " + $scope.person.location.lat + ")";
         } else {
           if (newPerson.shelter_id !== undefined) {
             newPerson.geom = $scope.current_shelter.geom;
