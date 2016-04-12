@@ -520,6 +520,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var personByID = {};
     var storedSearchQuery = "";
 
+    this.refreshSearchQuery = function(success, error) {
+      this.searchForPerson(networkService.getPeopleURL(), storedSearchQuery, success, error);
+    };
+
     this.searchForPerson = function(URL, query, success, error) {
       if (query !== '') {
         if (!isDisconnected) {
@@ -1354,7 +1358,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       else
         $translate.use('en');
       self.configuration.workOffline = DBSettings.configuration.workOffline;
-      isDisconnected = (self.configuration.workOffline === "true");
+      isDisconnected = (self.configuration.workOffline === true);
 
       self.setServerAddress(DBSettings.configuration.serverURL);
     };
@@ -1551,6 +1555,15 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       return DBHelper.query(query).then(function(result){
         if (afterQuery)
           afterQuery(result);
+      });
+    };
+
+    // PLEASE ONLY USE IF ABSOLUTELY NECESSARY
+    self.queryDB_deleteAllEntries = function(tableName, afterQuery) {
+      var query = "DELETE FROM " + tableName;
+      return DBHelper.query(query).then(function(){
+        if (afterQuery)
+          afterQuery();
       });
     };
 

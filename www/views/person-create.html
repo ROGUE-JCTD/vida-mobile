@@ -1,6 +1,9 @@
 <ion-view title="{{createTabTitle | translate}}">
   <ion-pane>
     <ion-content padding="true" class="has-header">
+      <div ng-if="checkDisconnected()" class="text-center">
+        <h6 style="margin-top: 2px; margin-bottom: 2px">*Disconnected Creation*</h6>
+      </div>
       <form>
         <button ng-click="showCameraModal()" class="button icon ion-camera"></button>
         <button ng-click="showClearAllModal()" style="float: right" class="text-right button icon ion-backspace"></button>
