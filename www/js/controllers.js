@@ -411,35 +411,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     return obj;
   };
 
-  $scope.SaveOutPerson = function() {
-    var ID = 0;
-    var obj_toSaveOut = {};
-
-    // See if person is in DB, if they are: update them. else: insert them.
-    var whereAt = {};
-    whereAt.restriction = 'EXACT';
-    whereAt.column = 'uuid';
-    whereAt.value = '\"' + peopleService.getRetrievedPersonByID().uuid + '\"';
-    VIDA_localDB.queryDB_select('people', '*', function(results) {
-      if (results.length > 0) {
-        // There should only be one person returned, so results[0] will always be valid (through UUID)
-
-        // Update person
-        var whereAt = 'uuid=\'' + peopleService.getRetrievedPersonByID().uuid + '\'';
-        obj_toSaveOut = createPersonObj_update(results[0].id, peopleService.getRetrievedPersonByID());
-        VIDA_localDB.queryDB_update('people', obj_toSaveOut, whereAt);
-      } else {
-        // Seperate call to DB, this will get EVERYONE in list, as opposed to one person's UUID
-        // This is done to create accurate ID (in DB) to insert into
-        VIDA_localDB.queryDB_select('people', '*', function(results) {
-          ID = results.length + 1;
-          obj_toSaveOut = createPersonObj_insert(ID, peopleService.getRetrievedPersonByID());
-          VIDA_localDB.queryDB_insert('people', obj_toSaveOut);
-        });
-      }
-    }, whereAt);
-  };
-
   // Initial Commands
   // TODO: Translate
   $cordovaProgress.showSimpleWithLabelDetail(true, "Loading", "Loading details..");
