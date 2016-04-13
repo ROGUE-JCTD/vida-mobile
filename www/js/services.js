@@ -708,44 +708,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       for (var i = 0; i < peopleArr.length; i++){
         var newPerson = peopleArr[i];
-        newPerson.score = scoreArr[i][1].toFixed(5);
+        newPerson.score = scoreArr[i][1].toFixed(7);
         peopleInShelter.push(peopleArr[i]);
       }
-    };
-
-    this.updateAllPeople = function(URL, success) {
-      $http.get(URL + "?limit=" + networkService.getPersonRetrievalLimit(), networkService.getAuthenticationHeader()).then(function(xhr) {
-        if (xhr.status === 200) {
-          if (xhr.data !== null) {
-            peopleInShelter = [];
-
-            for (var i = 0; i < xhr.data.objects.length; i++) {
-              var personOnServer = xhr.data.objects[i];
-
-              // Check for duplicates (only names - then ID so far)
-              var duplicate = false;
-              for (var j = 0; j < peopleInShelter.length; j++) {
-                if (peopleInShelter[j].given_name === personOnServer.given_name){
-                  if (peopleInShelter[j].id === personOnServer.id){
-                    duplicate = true;
-                    break;
-                  }
-                }
-              }
-
-              if (!duplicate) {
-                personOnServer.status = "On Server";  //TEMPORARY
-                personOnServer.photo = {};
-
-                peopleInShelter.push(personOnServer);
-              }
-            }
-
-            if (success)
-              success();
-          }
-        }
-      });
     };
 
     this.editPerson_saveChanges = function( newPerson, success, error ) {
@@ -874,12 +839,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             value: isDirty
           });
 
-          if (isDirty) {
-            $rootScope.$broadcast('databaseUpdateSyncStatus');
-          }
-
           // Update DB
           VIDA_localDB.queryDB_update('people', values, 'uuid=\"' + newPerson.uuid + '\"', function() {
+
+            // Check for dirty after DB update is complete. (So isDirty will be correctly updated)
+            if (isDirty) {
+              $rootScope.$broadcast('databaseUpdateSyncStatus');
+            }
+
             success();
           });
         } else {
@@ -896,8 +863,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         // Found file already
         var downloaded_image = false;
         success(downloaded_image);
-
-        // TODO: Should the image be downloaded again? :(
       }, function(err) {
         if (err.message === "NOT_FOUND_ERR") {
           $cordovaFileTransfer.download(networkService.getFileServiceURL() + filename + '/download/',
@@ -919,8 +884,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     };
 
     this.getAllPeopleWithReturn = function(success, error) {
-      //var promise = $q.defer();
-
       $http.get(networkService.getPeopleURL() + "?limit=" + networkService.getPersonRetrievalLimit(), networkService.getAuthenticationHeader()).then(
         function successCallback(xhr) {
         if (xhr.status === 200) {
@@ -931,7 +894,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               temp_peopleInShelter.push(xhr.data.objects[i]);
             }
 
-            //console.log("Get all people retrieval completed!");
             success(temp_peopleInShelter);
           } else {
             // TODO: Translate
@@ -972,6 +934,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         else
           return this.getPlaceholderImage();
       } else {
+        // This is a pretty disgusting null/undefined check
         if (pic_filename !== null && pic_filename !== undefined
             && pic_filename !== "null") {
           if (!pic_filename.startsWith('temp_picture')) {

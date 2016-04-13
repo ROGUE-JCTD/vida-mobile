@@ -133,27 +133,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       return isDisconnected;
     };
 
-    // TODO: Infinite Scrolling - not finished
-    ////////////
-    $scope.loadMorePeople = function() {
-      console.log("doesn't get into this function yet");
-
-      $scope.totalDisplayed += 20;
-
-      if ($scope.totalDisplayed >= $scope.allPeopleInShelter.length)
-        $scope.totalDisplayed = $scope.allPeopleInShelter.length;
-
-      $scope.$broadcast('scroll.infiniteScrollComplete');
-    };
-
-    $scope.moreDataCanBeLoaded = function() {
-      if ($scope.allPeopleInShelter.length > 0)
-        return $scope.totalDisplayed < $scope.allPeopleInShelter.length;
-
-      return false;
-    };
-    ////////////
-
     $scope.scanBarcode = function() {
       $cordovaBarcodeScanner.scan().then(function(barcodeData){
         if (barcodeData.cancelled === false) {
@@ -273,8 +252,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Hide loading dialog
         $cordovaProgress.hide();
       });
-
-      //peopleService.downloadPhotos(); //testing
     };
 
     console.log('---------------------------------- PersonSearchCtrl');
@@ -367,48 +344,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         backButton[i].setAttribute('style', 'display: none;');   // Remove button
       }
     });
-  };
-
-  var createPersonObj_insert = function(ID, person) {
-    var person_info_indexing = optionService.getPersonToDBInformation();
-    var isDirty = 0; // Saving out last updated person - no need to be dirty
-    var isDeleted = 0;
-    var obj = (ID).toString() + ", '" + person.uuid + "', " + isDirty + ", " + isDeleted + ", ";
-    for (var k = 0; k < person_info_indexing.length; k++) {
-      obj += "'" + person[person_info_indexing[k]] + "'";
-      if (k < person_info_indexing.length - 1)
-        obj += ", ";
-    }
-
-    return obj;
-  };
-
-  var createPersonObj_update = function(ID, person) {
-    var person_info_indexing = optionService.getPersonToDBInformation();
-    var isDirty = 0; // Saving out last updated person - no need to be dirty
-    var deleted = 0;
-    var obj = [];
-    obj.push({
-      type: 'uuid',
-      value: "\'" + person.uuid + "\'"
-    });
-    obj.push({
-      type: 'isDirty',
-      value: "\'" + isDirty + "\'"
-    });
-    obj.push({
-      type: 'deleted',
-      value: "\'" + deleted + "\'"
-    });
-
-    for (var k = 0; k < person_info_indexing.length; k++) {
-      obj.push({
-        type: person_info_indexing[k],
-        value: "\'" + person[person_info_indexing[k]] + "\'"
-      });
-    }
-
-    return obj;
   };
 
   // Initial Commands
@@ -1133,18 +1068,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           }
         }
 
-        // Check for duplicates based on UUID
-        /*var duplicate = false;
-        var peopleInShelter = peopleService.getPeopleInShelter();
-        for (var i = 0; i < peopleInShelter.length; i++) {
-          if (peopleInShelter[i].uuid === newPerson.uuid) {
-            duplicate = true;
-            break;
-          }
-        }*/
-
-        $cordovaProgress.showSimpleWithLabelDetail(true, $filter('translate')('dialog_box_title_saving')
-                          ,$filter('translate')('dialog_box_message_uploading') + newPerson.given_name);
+        $cordovaProgress.showSimpleWithLabelDetail(true, $filter('translate')('dialog_box_title_saving'),
+          $filter('translate')('dialog_box_message_uploading') + newPerson.given_name);
 
         if (newPerson.photo) {
           if (!isDisconnected) {
@@ -1315,21 +1240,17 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             obj += ", ";
         }
 
-        if (isDirty) {
-          // Was disconnected, needs to be updated
-          $rootScope.$broadcast('databaseUpdateSyncStatus');
-        }
-
         VIDA_localDB.queryDB_insert('people', obj, function() {
+          if (isDirty) {
+            // Was disconnected, needs to be updated
+            $rootScope.$broadcast('databaseUpdateSyncStatus');
+          }
+
           $cordovaToast.showShortBottom($filter('translate')('toast_added_person_locally') + localPerson.given_name);
           if (success)
             success();
         });
       });
-    };
-
-    $scope.updateListOfPeople = function(success) {
-      peopleService.updateAllPeople(networkService.getPeopleURL(), success);
     };
 
     $scope.showCameraModal = function() {
@@ -1515,12 +1436,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
-.controller('ShelterSearchCtrl', function($scope, $location, $http){
-  console.log('---------------------------------- ShelterSearchCtrl');
-
-  //TODO: Add disconnected support to shelters
-})
-
 .controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation, $ionicPopup,
                                      networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService, $rootScope){
   console.log('---------------------------------- SettingsCtrl');
@@ -1568,7 +1483,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       return prom.promise;
     };
 
-  // Functions
+    // Functions
     $scope.logout = function(url) {
       // Can go directly to '/login'
       $location.path(url);
@@ -1599,32 +1514,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       VIDA_localDB.queryDB_update_settings(function() {
         $cordovaProgress.hide();
-      });
-    };
-
-    // Init
-    $cordovaProgress.showSimpleWithLabel(true, 'Loading settings..');
-
-    $scope.checkAllDirtyEntries().then(function(allDirtyEntries) {
-      $scope.updateSyncButton(allDirtyEntries.length);
-      $cordovaProgress.hide();
-    });
-
-    $scope.language_options = optionService.getLanguageOptions();
-
-    for(var i = 0; i < $scope.language_options.length; i++){
-      if ($scope.language_options[i].value === networkService.getConfiguration().language){
-        $scope.current_language = $scope.language_options[i];
-      }
-    }
-
-    if ($scope.current_language === undefined)
-      $scope.current_language = $scope.language_options[0];
-
-    // Test Show From DB
-    $scope.show_configuration_from_db = function() {
-      VIDA_localDB.queryDB_select('configuration', 'settings', function(results){
-        console.log(results);
       });
     };
 
@@ -1684,8 +1573,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     VIDA_localDB.queryDB_update('people', obj, whereAt);
   };
 
-  //TODO: copying for testing purposes, should move to uploadService?
-  $scope.uploadPersonCopy = function(newPerson, isUpdating, afterUpload) {
+  $scope.uploadPerson_UpdateSync = function(newPerson, isUpdating, afterUpload) {
     if (!isUpdating) {
       var uploadPersonFunction = function() {
         // Upload person to fileService
@@ -1694,7 +1582,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
           if (afterUpload)
             afterUpload();
-          //$scope.updatePersonLocalDatabase(newPerson);
         }, function () {
           // Error uploading person
           console.log('error uploading person');
@@ -1704,7 +1591,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       if (newPerson.photo !== undefined && newPerson.photo !== "undefined") {
         if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
           // Upload photo
-          $scope.uploadPhotoCopy(newPerson, function () {
+          $scope.uploadPhoto_UpdateSync(newPerson, function () {
             // Picture uploaded successfully. Get rid of the old picture
             $cordovaFile.checkFile(cordova.file.dataDirectory, 'Photos/temp_picture_' + newPerson.uuid + '.jpg').then(
               function () {
@@ -1738,7 +1625,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Upload photo (do regardless of fail/success)
         if (newPerson.photo !== peopleService.getPlaceholderImage() && newPerson.photo !== "") {
           // Upload photo
-          $scope.uploadPhotoCopy(newPerson, function () {
+          $scope.uploadPhoto_UpdateSync(newPerson, function () {
             // newPerson.pic_filename will now be replaced with new hashed filename
 
             // Picture uploaded successfully. Get rid of the old picture
@@ -1761,7 +1648,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     }
   };
 
-  $scope.uploadPhotoCopy = function(newPerson, success, error) {
+  $scope.uploadPhoto_UpdateSync = function(newPerson, success, error) {
     uploadService.uploadPhotoToUrl(newPerson.photo, networkService.getFileServiceURL(), function (data) {
       // Success
       newPerson.pic_filename = data.name;
@@ -1792,42 +1679,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           // Did not return correctly, could not contact server, etc. = reset list.
           peopleService.resetPersonList();
         });
-    };
-
-    $scope.testDeletedEntries = function() {
-      var where = {};
-      where.restriction = 'EXACT';
-      where.column = 'deleted';
-      where.value = 1;
-      VIDA_localDB.queryDB_select('people', '*', function(results){
-        var allPeople = [];
-        for (var i = 0; i < results.length; i++) {
-          allPeople.push(results[i]);
-        }
-        console.log("All people marked as deleted: ");
-        console.log(allPeople);
-      }, where);
-    };
-
-    $scope.testNetwork = function() {
-      var myNetwork = $cordovaNetwork.getNetwork();
-      console.log(myNetwork);
-      console.log('isDisconnected: ' + isDisconnected);
-
-      if (myNetwork == Connection.UNKNOWN)
-        console.log("UNKNOWN connection");
-      else if (myNetwork == Connection.ETHERNET)
-        console.log("ETHERNET connection");
-      else if (myNetwork == Connection.WIFI)
-        console.log("WIFI connection");
-      else if (myNetwork == Connection.CELL_2G)
-        console.log("CELL_2G connection");
-      else if (myNetwork == Connection.CELL_3G)
-        console.log("CELL_3G connection");
-      else if (myNetwork == Connection.CELL_4G)
-        console.log("CELL_4G connection");
-      else if (myNetwork == Connection.NONE)
-        console.log("NONE connection");
     };
 
     $scope.downloadThumbnails = function(peopleFromServer) {
@@ -2008,7 +1859,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
                   // Assume database version is newer, upload that to server
                   dirtyArr[i].id = allPeople[j].id; // ID from DB won't correlate with ID from Server
-                  $scope.uploadPersonCopy(dirtyArr[i], isOnServer, function () {
+                  $scope.uploadPerson_UpdateSync(dirtyArr[i], isOnServer, function () {
                     peopleUpdated++; // used to track at the end
                     numPeopleUploaded++;
 
@@ -2048,7 +1899,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               // Person is not in the server DB at all
               if (!isOnServer) {
                 // Upload person to server
-                $scope.uploadPersonCopy(dirtyArr[i], isOnServer, function () {
+                $scope.uploadPerson_UpdateSync(dirtyArr[i], isOnServer, function () {
                   peopleUploaded++; // used to track at the end
                   numPeopleUploaded++;
 
@@ -2236,6 +2087,25 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         $cordovaProgress.hide();
       }
     };
+
+  // Init of Settings
+  $cordovaProgress.showSimpleWithLabel(true, 'Loading settings..');
+
+  $scope.checkAllDirtyEntries().then(function(allDirtyEntries) {
+    $scope.updateSyncButton(allDirtyEntries.length);
+    $cordovaProgress.hide();
+  });
+
+  $scope.language_options = optionService.getLanguageOptions();
+
+  for(var i = 0; i < $scope.language_options.length; i++){
+    if ($scope.language_options[i].value === networkService.getConfiguration().language){
+      $scope.current_language = $scope.language_options[i];
+    }
+  }
+
+  if ($scope.current_language === undefined)
+    $scope.current_language = $scope.language_options[0];
 })
 
 .controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast, VIDA_localDB,
@@ -2278,7 +2148,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.login = function(url) {
     // Request authorization
     if (($scope.credentials.username) && ($scope.credentials.password)) {
-
       $scope.loginRequest++;
       doLogin($scope.credentials,
       function() {
@@ -2305,14 +2174,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 })
 
-.controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location, $http,
-                                   $cordovaCamera, $cordovaActionSheet, $ionicModal){
+.controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location){
   $scope.changeWindow = function(url) {
     $location.path(url);
   };
 })
 
-.controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService, $cordovaSQLite) {
+.controller('ShelterSearchCtrl', function ($rootScope, $scope, $state, shelterService) {
   console.log("---- ShelterSearchCtrl");
 
   // Used as a single reference to which current MapLayer is being used.

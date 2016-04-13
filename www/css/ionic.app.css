@@ -7702,3 +7702,7 @@ a.button {
 
 .margin-right-8px {
   margin-right: 8px; }
+
+.grayout {
+  opacity: 0.6; /* Real browsers */
+  filter: alpha(opacity = 60); /* MSIE */  }
