@@ -64,6 +64,14 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         //mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
         mapDB = $cordovaSQLite.openDB("osm_va.mbtiles");
 
+        var showErrorOfflineMap = function() {
+          $ionicPopup.alert({
+            title: 'Disconnected Map',
+            cssClass: "text-center",
+            template: 'Unfortunately the disconnected map is not available.<br>Please contact admin for details.'
+          });
+        };
+
         // test retrieving 0,0,0 from the tileset to make sure sqlite plugin is functioning
         mapDB.transaction(function(tx){
           tx.executeSql("SELECT * FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?;", [0, 0, 0],
@@ -72,9 +80,11 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
                 console.log("----[ tile entry found for 0,0,0: ", res.rows.item(0));
               } else {
                 console.log("====[ Error: tile entry NOT found for 0,0,0");
+                showErrorOfflineMap();
               }
             }, function (er) {
               console.log('error with executeSql', er);
+              showErrorOfflineMap();
             });
         });
 
