@@ -84,6 +84,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       if (results.length > 0) {
         var DBSettings = JSON.parse(results[0].settings);
         networkService.SetConfigurationFromDB(DBSettings);
+        $rootScope.$broadcast('connectionStatusChanged', isDisconnected);
         tryFinishConfig();
       } else {
         var defaultSettings = optionService.getDefaultConfigurationsJSON();
