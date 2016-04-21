@@ -43,7 +43,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           alert("window.cordova.plugins.Keyboard: " + window.cordova.plugins.Keyboard);
         }
 
-        db = $cordovaSQLite.openDB("localDB.db");
+        db = $cordovaSQLite.openDB({name: "localDB.db", location: 'default'});
         DBHelper.addDB('localDB', db);
         DBHelper.setCurrentDB('localDB');
 
@@ -61,34 +61,38 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
         // Create offline photo directory
         $cordovaFile.createDir(cordova.file.dataDirectory, 'Photos/', {create: true});
-        //mapDB = $cordovaSQLite.openDB("mbTilesdb.mbtiles");
-        mapDB = $cordovaSQLite.openDB("osm_va.mbtiles");
 
-        var showErrorOfflineMap = function() {
-          $ionicPopup.alert({
-            title: 'Disconnected Map',
-            cssClass: "text-center",
-            template: 'Unfortunately the disconnected map is not available.<br>Please contact admin for details.'
-          });
-        };
+        // File plugin, check to see if its at destination
+        // if not at destination, move osm_va over to it
+        var dbName = "osm_va.mbtiles";
+        var dbLocation = cordova.file.applicationStorageDirectory;
+        if (ionic.Platform.isAndroid())
+          dbLocation += 'databases/';
 
-        // test retrieving 0,0,0 from the tileset to make sure sqlite plugin is functioning
-        mapDB.transaction(function(tx){
-          tx.executeSql("SELECT * FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?;", [0, 0, 0],
-            function (tx, res) {
-              if (res.rows.length > 0) {
-                console.log("----[ tile entry found for 0,0,0: ", res.rows.item(0));
-              } else {
-                console.log("====[ Error: tile entry NOT found for 0,0,0");
-                showErrorOfflineMap();
-              }
-            }, function (er) {
-              console.log('error with executeSql', er);
-              showErrorOfflineMap();
+        $cordovaFile.checkFile(dbLocation, dbName).then(function() {
+          console.log("Found map in DB Location");
+          // Found file
+          mapDB = $cordovaSQLite.openDB({name: dbName, location: 'default'});
+        }, function(err) {
+          if (err.message === "NOT_FOUND_ERR") {
+            $cordovaFile.checkFile(cordova.file.applicationDirectory + "www/databases/", dbName).then(function() {
+              // Found file
+              // Move osm_va.db to dbLocation
+              $cordovaFile.copyFile(cordova.file.applicationDirectory + "www/databases/", dbName,
+                dbLocation, dbName).then(function() {
+                console.log("Found map in new DB Location");
+                // Done and done
+                mapDB = $cordovaSQLite.openDB({name: dbName, location: 'default'});
+              }, function(error) {
+                console.error("There was an error copying the database: " + error);
+              });
+            }, function(error) {
+              console.error("There was an error finding the original map DB: " + error);
             });
+          } else {
+            console.error("There was an error finding the database: " + err);
+          }
         });
-
-
       }
 
       if (!(navigator.camera)){
