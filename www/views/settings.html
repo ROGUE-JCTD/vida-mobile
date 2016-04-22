@@ -20,6 +20,12 @@
             <input type="text" placeholder="" ng-model-options='{debounce: 1500}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
           </label>
         </div>
+        <br>
+        <div class="text-center">
+          <b>Logged in as:</b>
+          <p>{{networkService.getUsernamePassword().username || "Not Logged In"}}</p>
+        </div>
+        <br>
         <button class="button button-positive button-block" ng-click="logout('/login')">{{'button_logout' | translate}}</button>
       </form>
     </ion-content>

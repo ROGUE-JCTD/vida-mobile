@@ -65,7 +65,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 }])
 
-.service('uploadService', function($http, networkService, optionService, $ionicPopup) {
+.service('uploadService', function($http, networkService, optionService, $ionicPopup, $filter) {
   this.uploadPhotoToUrl = function(photo, uploadUrl, callSuccess, callFailure) {
     var photoBlob = dataURLtoBlob(photo);
     var formData = new FormData();
@@ -133,14 +133,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       headers: {
         'Authorization': networkService.getAuthenticationHeader().headers.Authorization
       }
-    }).success(function() {
+    }).then(function() {
       callSuccess();
-    }).error(function(err) {
+    }, function(err) {
       //TODO: Translate
       if (err.error_message)
         callFailure('Person not uploaded! Error: ' + err.error_message);
+      else if (err.statusText)
+        callFailure('Person not uploaded! Error: ' + err.statusText);
       else
-        callFailure('Person not uploaded! Error: ' + "Could not connect to server!");
+        callFailure('Person not uploaded! Error: ' + "Undefined - check connection to server");
     });
   };
 
@@ -148,13 +150,19 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     $http.delete(networkService.getPeopleURL() + person.id + '/', {
       headers: {
       'Authorization': networkService.getAuthenticationHeader().headers.Authorization
-    }}).then(function(xhr){
-      if (xhr.status === 204) {
-        successCallback();
-      } else {
-        errorCallback();
-      }
-    });
+    }}).then(function(xhr) {
+        if (xhr.status === 204) {
+          successCallback();
+        } else {
+          errorCallback(xhr.status);
+        }
+      }, function(error) {
+      if (error) {
+        if (error.statusText)
+          errorCallback($filter('translate')('error_uploading_person') + error.statusText);
+        else
+          errorCallback($filter('translate')('error_uploading_person') + error);
+      }});
   };
 
   this.convertPictureToBlob = function(newPhoto){
@@ -824,6 +832,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             console.log(httpErr);
             if (httpErr.data)
               $cordovaToast.showShortBottom(httpErr.data.error_message);
+            else if (httpErr.statusText) {
+              $cordovaToast.showLongBottom("Error - " + httpErr.statusText);
+            }
             else {
               if (httpErr.status) {
                 // TODO: Translate
@@ -934,9 +945,14 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
             error("Could not reach the server!");
         }
       }, function errorCallback(err){
+        var Str = "Could not contact the server. Please try again.";
         // TODO: Translate
-        if (error)
-          error("Could not contact the server. Please try again.");
+        if (error) {
+          if (err.statusText)
+            Str += " Status: " + err.statusText;
+
+          error(Str);
+        }
       });
     };
 

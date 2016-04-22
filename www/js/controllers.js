@@ -111,7 +111,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         $ionicPopup.alert({
           title: 'Update Shelters',
           cssClass: "text-center",
-          template: 'Thank you for using VIDA!<br><br>To associate people with any shelters, go to Settings > Update/Sync!'
+          template: 'Thank you for using VIDA!<br><br>' +
+          'On the Settings tab, you can use the "Sync" button to get all the latest shelters and people!'
         });
       }
 
@@ -260,7 +261,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonDetailCtrl', function($scope, $location, $http, $stateParams, $state, $filter, shelter_array,
                                          peopleService, networkService, $rootScope, shelterService, $cordovaProgress,
-                                         VIDA_localDB, optionService, uploadService){
+                                         VIDA_localDB, optionService, uploadService, $cordovaToast){
   console.log('---------------------------------- PersonDetailCtrl');
   $scope.searchPersonRequest = 0;
   $scope.peopleService = peopleService;
@@ -454,7 +455,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         uploadService.deletePerson(peopleService.getRetrievedPersonByID(), function(success) {
           console.log("Deleted person successfully!");
         }, function(error) {
-          console.log("Something went wrong with deleting person..");
+          $cordovaToast.showLongBottom(error);
+          console.log(error);
         });
 
         // Second pass, mark as deleted on the server
@@ -1224,15 +1226,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           // Upload person to fileService
         uploadService.uploadPersonToUrl(newPerson, networkService.getAuthenticationURL(), function () {
           // Successful entirely
-          $cordovaToast.showShortBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
+          $cordovaToast.showLongBottom(newPerson.given_name + $filter('translate')('dialog_person_uploaded'));
           $scope.clearAllFields(); // Only on success
+        }, function(error) {
+          $cordovaToast.showLongBottom(error);
+
+          // Remove locally
+          VIDA_localDB.queryDB_delete('people', "uuid=\"" + newPerson.uuid + "\"");
+
         });
-        }, function (error) {
-          // Error uploading person
-          if (error)
-            $cordovaToast.showShortBottom($filter('translate')('error_uploading_person') + error);
-          else
-            $cordovaToast.showShortBottom($filter('translate')('error_upload_person_failed'));
         });
       } else {
         // Add person to local database (Creation)
@@ -1514,6 +1516,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.networkAddr = networkService.getServerAddress();
   $scope.b_disconnected = isDisconnected;
+  $scope.networkService = networkService;
   $scope.button_update_database_str = $filter('translate')('button_update_database');
   $scope.updatable_entries = 0;
 
@@ -1739,6 +1742,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         $scope.b_disconnected = false;
 
       isDisconnected = $scope.b_disconnected;
+
+      if ($scope.b_disconnected) {
+        // Will check local shelters
+        if (shelterService.getAll().then(function(shelters) {
+          if (shelters.length < 2) { // This means they only have "None" locally
+            $ionicPopup.alert({
+              title: 'Going Disconnected',
+              cssClass: "text-center",
+              template: 'If you plan on using VIDA disconnected, make sure you sync ' +
+              'up to the server to have all the latest information!'
+            });
+          }
+        }));
+      }
 
       networkService.setDisconnected($scope.b_disconnected);
       VIDA_localDB.queryDB_update_settings();

@@ -79,7 +79,7 @@
     'button_logout': 'Cerrar sesion',
     'button_request_account': 'O solicitar una cuenta',
     'button_shelter_search': 'Back to Shelter Map',
-    'button_update_database': 'Update/Sync Database',
+    'button_update_database': 'Sync People/Shelters',
     'search_searchfield': 'Buscar',
     'search_age': 'Anos',
     'settings_cache_photos': 'Cache Fotos',
