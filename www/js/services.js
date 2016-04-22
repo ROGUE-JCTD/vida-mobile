@@ -342,6 +342,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   var current_shelter = {};
   current_shelter.str = 'None';
   current_shelter.link = 'None';
+  var is_updating_shelter = true;
 
   this.addShelter = function(shelter, addToDatabase) {
     for (var i = 0; i < shelters.length; i++){
@@ -468,11 +469,31 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }
   };
 
+  this.getIsUpdatingShelter = function() {
+    return is_updating_shelter;
+  };
+
+  this.setIsUpdatingShelter = function(boolean) {
+    is_updating_shelter = boolean;
+  };
+
+
+  this.getByUUID = function(uuid) {
+    for(var i = 0; i < shelters.length; i++) {
+      if (shelters[i].uuid === uuid)
+        return shelters[i];
+    }
+
+    return undefined;
+  };
+
   this.getById = function(id) {
     for(var i = 0; i < shelters.length; i++) {
       if (shelters[i].id == id)
         return shelters[i];
     }
+
+    return undefined;
   };
 
   this.getCurrentShelter = function() {

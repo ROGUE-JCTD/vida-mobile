@@ -27,8 +27,8 @@
         <b>{{'person_phone_number' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().phone_number || " "}}&nbsp;</p>
         <b>{{'person_barcode' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().barcode || " "}}&nbsp;</p>
         <b>{{'person_created_by' | translate}}:</b><p>{{peopleService.getRetrievedPersonByID().created_by.username || " "}}&nbsp;</p>
-        <div id="shelterID" ng-if="peopleService.getRetrievedPersonByID().shelter_id !== null">
-          <b>{{'person_current_shelter' | translate}}:</b><p>{{shelterService.getCurrentShelter().str}} &nbsp;<a ng-if="shelterService.getCurrentShelter().link !== 'None'"
+        <div id="shelterID" ng-if="checkLocationWithUUID(peopleService.getRetrievedPersonByID().shelter_id, peopleService.getRetrievedPersonByID().geom)">
+          <b>{{'person_current_shelter' | translate}}:</b><p>{{getLocationStr()}} &nbsp;<a ng-if="shelterService.getCurrentShelter().link !== 'None'"
                                                                                                                  class="icon ion-chevron-right trigger"
                                                                                                                  ng-click="goToShelterDetail()"
                                                                                                                  href="{{shelterService.getCurrentShelter().link}}"></a></p>

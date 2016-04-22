@@ -73,7 +73,7 @@
     'person_phone_number': 'Numero de telefono',
     'person_created_by': 'Creado por',
     'person_barcode': 'Codigo de Barras',
-    'person_current_shelter': 'Refugio',
+    'person_current_shelter': 'Location',
     'button_save': 'Guardar',
     'button_login': 'Iniciar sesion',
     'button_logout': 'Cerrar sesion',

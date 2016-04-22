@@ -267,11 +267,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.networkService = networkService;
   $scope.shelterService = shelterService;
   $scope.personPhoto = null;
+  $scope.hasLocation = false;
   $scope.isDisconnected = isDisconnected; // used for saving locally button
 
-  $scope.setupShelterButton = function() {
+  $scope.setupShelterButton = function(shelterID) {
     if (shelter_array) {
-      var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
       var wasSet = false;
       // If shelter_array is valid, the first item in the array will be "None".
       // Starting at 1 to skip that.
@@ -288,6 +288,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     } else {
       shelterService.setCurrentShelter('None');
     }
+
+    shelterService.setIsUpdatingShelter(true);
   };
 
   $scope.goToShelterDetail = function() {
@@ -355,7 +357,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     function() {
       // Success
       $scope.searchPersonRequest--;
-      $scope.setupShelterButton();
       $cordovaProgress.hide();
     }, function(error){
       // Error
@@ -363,6 +364,62 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $cordovaProgress.hide();
     });
   $scope.searchPersonRequest++;
+
+
+  $scope.checkLocationWithUUID = function(shelter_uuid, person_geom) {
+    // Shelter to display?
+    if (shelter_uuid != null && shelter_uuid != "None") {
+      $scope.hasLocation = true;
+      var shelter = shelterService.getByUUID(shelter_uuid);
+      $scope.locationString = shelter.name;
+      if (shelterService.getIsUpdatingShelter()) {
+        $scope.setupShelterButton(shelter.uuid);
+        shelterService.setIsUpdatingShelter(false);
+      }
+      return true;
+    } else {
+      shelterService.setCurrentShelter('None');
+    }
+
+    // If not, see if Geom can be displayed
+    if (person_geom) {
+      var split_geom = person_geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this
+      var personLocation = {};
+      personLocation.lat = split_geom[0];
+      personLocation.long = split_geom[1];
+
+      // Is there a Geom to display?
+      var hasGeom_NotZero = true;
+
+      // if both are 0.000, there is no Geom
+      var lat = Number(Number(personLocation.lat).toFixed(3));
+      var long = Number(Number(personLocation.long).toFixed(3));
+      if (lat === 0.000 && long === 0.000)
+        hasGeom_NotZero = false;
+
+      if (hasGeom_NotZero) {
+        $scope.hasLocation = true;
+        $scope.locationString = "Lat: " + Number(personLocation.lat).toFixed(5) + ",  " +
+          "Long: " +  Number(personLocation.long).toFixed(5);
+        return true;
+      }
+    }
+
+    $scope.hasLocation = false;
+    $scope.locationString = "None";
+    return true;
+
+    // If we return false, the Location section will not show up
+    // This is made this way because it will only update this once, on start up of the page
+  };
+
+  $scope.getLocationStr = function() {
+    if ($scope.hasLocation) {
+      return $scope.locationString;
+    } else {
+      return "None";
+    }
+  };
 
   // Functions
   $rootScope.buttonPersonEdit = function() {
@@ -813,6 +870,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             }
             if (!wasSet)
               shelterService.setCurrentShelter('None');
+            shelterService.setIsUpdatingShelter(true);
           }
           peopleService.searchForPerson(networkService.getSearchURL(), prevSearchQuery, function () {
             // will successfully reload

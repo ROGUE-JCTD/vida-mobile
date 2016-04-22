@@ -74,7 +74,7 @@
     'person_phone_number': 'Phone Number',
     'person_created_by': 'Created By',
     'person_barcode': 'Barcode',
-    'person_current_shelter': 'Shelter',
+    'person_current_shelter': 'Location',
     'button_save': 'Save',
     'button_login': 'Log in',
     'button_logout': 'Log out',
