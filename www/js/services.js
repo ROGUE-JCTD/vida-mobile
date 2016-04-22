@@ -8,12 +8,6 @@ function dataURLtoBlob(dataURI) {
   return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
 }
 
-function b64EncodeUnicode(str) {
-  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-    return String.fromCharCode('0x' + p1);
-  }));
-}
-
 // Helper function
 function fixUndefined(str){
   return str === undefined ? "" : str;
@@ -99,7 +93,6 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.updatePerson = function( person, callSuccess, callFailure ) {
     var JSONPerson = { };
-    var hasItem = false;
 
     var uploadFields = optionService.getPersonUploadInfo( );
 

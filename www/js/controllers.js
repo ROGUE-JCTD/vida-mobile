@@ -1873,24 +1873,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                     }
                   });
 
-                  // See if it needs to be updated in any way
-                  //var personOnDB_created = dirtyArr[i].created_at;
-                  //var personOnServer_created = (allPeople[j].updated_at) ? allPeople[j].updated_at : allPeople[j].created_at;
-
-                  // If true, first value is newer. If false, second value is newer.
-                  // If exact, it will upload the database version
-                  //if (determineNewerValue(personOnDB_created, personOnServer_created)) {
-
-                  //} else {
-                  // Server version is newer, don't upload, just update database
-
-                  // Now deprecated since all entries will be redownloaded
-
-                  //var personToUpdate = allPeople[j];
-                  //personToUpdate.id = dirtyArr[i].id; // Database ID needs to correlate
-                  //$scope.updatePersonLocalDatabase(personToUpdate);
-                  //}
-
                   // Update isDirty to 0 regardless (needed?)
                   whereAt = 'uuid=\"' + dirtyArr[i].uuid + '\"';
                   VIDA_localDB.queryDB_update('people', isDirtyForDB, whereAt);
