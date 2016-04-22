@@ -20,7 +20,6 @@
             <input type="text" placeholder="" ng-model-options='{debounce: 1500}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
           </label>
         </div>
-        <br>
         <div class="text-center">
           <b>Logged in as:</b>
           <p>{{networkService.getUsernamePassword().username || "Not Logged In"}}</p>
