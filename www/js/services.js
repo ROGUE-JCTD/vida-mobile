@@ -343,6 +343,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   current_shelter.str = 'None';
   current_shelter.link = 'None';
   var is_updating_shelter = true;
+  var came_from_details = false;
 
   this.addShelter = function(shelter, addToDatabase) {
     for (var i = 0; i < shelters.length; i++){
@@ -469,6 +470,16 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }
   };
 
+  //////////
+  // Last minute way of dealing with these issues
+  this.getIfCameFromDetails = function() {
+    return came_from_details;
+  };
+
+  this.setIfCameFromDetails = function(boolean) {
+    came_from_details = boolean;
+  };
+
   this.getIsUpdatingShelter = function() {
     return is_updating_shelter;
   };
@@ -476,6 +487,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   this.setIsUpdatingShelter = function(boolean) {
     is_updating_shelter = boolean;
   };
+  //////////
 
 
   this.getByUUID = function(uuid) {
@@ -503,9 +515,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   this.setCurrentShelter = function(shelter){
     if (shelter !== 'None') {
       current_shelter.str = shelter.name;
+      current_shelter.uuid = shelter.uuid;
       current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter.id;
     } else {
       current_shelter.str = 'None';
+      current_shelter.uuid = 'None'
       current_shelter.link = 'None';
     }
   };

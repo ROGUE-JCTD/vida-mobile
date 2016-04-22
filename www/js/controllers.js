@@ -270,6 +270,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.hasLocation = false;
   $scope.isDisconnected = isDisconnected; // used for saving locally button
 
+  // Try and update shelter on entering details
+  shelterService.setIsUpdatingShelter(true);
+
   $scope.setupShelterButton = function(shelterID) {
     if (shelter_array) {
       var wasSet = false;
@@ -293,6 +296,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   };
 
   $scope.goToShelterDetail = function() {
+    shelterService.setIfCameFromDetails(true);
+
+    for (var i = 1; i < shelter_array.length; i++) {
+      if (shelter_array[i].uuid === shelterService.getCurrentShelter().uuid) {
+        $rootScope.$broadcast('changedShelter', shelter_array[i]);
+        wasSet = true;
+        break;
+      }
+    }
     var tabs = document.getElementsByClassName("tab-item");
     for (var i=0; i < tabs.length; i++) {
       tabs[i].setAttribute('style', 'display: none;');
@@ -335,6 +347,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       for (var i=0; i < tabs.length; i++) {
         tabs[i].setAttribute('style', 'display: block;');
       }
+      shelterService.setIfCameFromDetails(false);
 
       for (i=0; i < editDeleteButtons.length; i++) {
         editDeleteButtons[i].setAttribute('style', 'display: none;');   // Removes buttons
@@ -2324,6 +2337,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getById($stateParams.shelterId));
     $scope.shelter = shelterService.getById($stateParams.shelterId);
     $scope.latlng = shelterService.getLatLng($stateParams.shelterId);
+    $scope.shelterService = shelterService;
+
+    $rootScope.$on('changedShelter', function(event, param) {
+      $scope.shelter = param;
+    });
+
     if ($scope.latlng.lat === -1111 && $scope.latlng.lng === -1111) {
       // Shelter is not on server, it's only on the database. Get correct geom
       var shelters = shelterService.getAllLocalShelters();
