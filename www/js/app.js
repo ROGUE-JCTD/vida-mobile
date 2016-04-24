@@ -44,6 +44,7 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
         }
 
         var iosDatabaseLocation = 'Library'; // This is where we keep iOS databases
+        var mapDBName = "mbTilesdb.mbtiles"; // Name of the Offline Disconnected Map
 
         db = $cordovaSQLite.openDB({name: "localDB.db", location: iosDatabaseLocation});
         DBHelper.addDB('localDB', db);
@@ -66,7 +67,6 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
 
         // Disconnected Map:
         // Check if there's a map, if not, copy the default one that's pre-loaded
-        var dbName = "osm_va.mbtiles";
         var final_dbLocation = cordova.file.applicationStorageDirectory; // we want a database to be here
         var local_dbLocation = cordova.file.applicationDirectory + "www/databases/"; // pre-loaded database
 
@@ -74,22 +74,22 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
           final_dbLocation += 'databases/'; // This is where we keep Android databases
 
         // See if we already have a map file
-        $cordovaFile.checkFile(final_dbLocation, dbName).then(function() {
+        $cordovaFile.checkFile(final_dbLocation, mapDBName).then(function() {
           // Found file
-          mapDB = $cordovaSQLite.openDB({name: dbName, location: iosDatabaseLocation});
+          mapDB = $cordovaSQLite.openDB({name: mapDBName, location: iosDatabaseLocation});
           console.log("Found map that was already here! DB Location: ", final_dbLocation);
           console.log("Map database Obj: ", mapDB);
 
         }, function(err) {
           if (err.message === "NOT_FOUND_ERR") {
-            $cordovaFile.checkFile(local_dbLocation, dbName).then(function() {
+            $cordovaFile.checkFile(local_dbLocation, mapDBName).then(function() {
               // Found file
 
               // Move osm_va.db to final_dbLocation
-              $cordovaFile.copyFile(local_dbLocation, dbName,
-                final_dbLocation, dbName).then(function() {
+              $cordovaFile.copyFile(local_dbLocation, mapDBName,
+                final_dbLocation, mapDBName).then(function() {
                 // Done and done
-                mapDB = $cordovaSQLite.openDB({name: dbName, location: iosDatabaseLocation});
+                mapDB = $cordovaSQLite.openDB({name: mapDBName, location: iosDatabaseLocation});
                 console.log("Created new map from on-phone DB Location: ", local_dbLocation);
                 console.log("Map database Obj: ", mapDB);
               }, function(error) {
