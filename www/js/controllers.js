@@ -1510,8 +1510,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   console.log('---------------------------------- PersonCreateCtrl');
 })
 
-.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter, $cordovaGeolocation, $ionicPopup,
-                                     networkService, $translate, $cordovaProgress, $cordovaNetwork, uploadService, $cordovaFile, $q, shelterService, $rootScope){
+.controller('SettingsCtrl', function($scope, $location, peopleService, optionService, VIDA_localDB, $cordovaToast, $filter,
+                                     $cordovaGeolocation, $ionicPopup, networkService, $translate, $cordovaProgress, $cordovaNetwork,
+                                     uploadService, $cordovaFile, $q, shelterService, $rootScope, $http){
   console.log('---------------------------------- SettingsCtrl');
 
   $scope.networkAddr = networkService.getServerAddress();
@@ -2177,28 +2178,24 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   if ($scope.current_language === undefined)
     $scope.current_language = $scope.language_options[0];
-})
 
-.controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast, VIDA_localDB,
-                                $ionicPopup){
-  console.log('---------------------------------- loginCtrl');
-
-  $scope.loginRequest = 0;
+  // Login controls
   $scope.credentials = {};
+  $scope.loginAttempt = 0;
+  $scope.curr_credentials = {};
 
   var doLogin = function(credentials, success, error){
+    $scope.curr_credentials = networkService.getUsernamePassword();
     networkService.setAuthentication(credentials.username, credentials.password);
     var config = networkService.getAuthenticationHeader();
 
     $http.get(networkService.getAuthenticationURL(), config).then(function(xhr) {
       if (xhr.status === 200){
         success();
+        $cordovaToast.showShortBottom(($filter('translate')('successfully_logged_in')));
       } else {
-        error(xhr.status);
-        $ionicPopup.alert({
-          title: 'Error',
-          template: xhr.status
-        });
+        networkService.setAuthentication($scope.curr_credentials.username, $scope.curr_credentials.password);
+        error(xhr);
       }
     }, function(e) {
       if (e) {
@@ -2212,27 +2209,28 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         }
       }
 
+      networkService.setAuthentication($scope.curr_credentials.username, $scope.curr_credentials.password);
       error(e);
     });
   };
 
-  $scope.login = function(url) {
+  $scope.login = function() {
     // Request authorization
     if (($scope.credentials.username) && ($scope.credentials.password)) {
-      $scope.loginRequest++;
+      $scope.loginAttempt++;
+      $cordovaProgress.showSimpleWithLabelDetail(true, 'Login', "Attempting to login..");
       doLogin($scope.credentials,
-      function() {
-        // Success!
-        $location.path(url);
-        VIDA_localDB.queryDB_update_settings();
-        $scope.loginRequest--;
-      },
-      function(error) {
-        // Error!
-
-        $scope.loginRequest--;
-      });
-
+        function() {
+          // Success!
+          $cordovaProgress.hide();
+          VIDA_localDB.queryDB_update_settings();
+          $scope.loginAttempt--;
+        },
+        function(error) {
+          // Error!
+          $cordovaProgress.hide();
+          $scope.loginAttempt--;
+        });
     } else {
       if (!($scope.credentials.username) && !($scope.credentials.password)) {
         $cordovaToast.showShortBottom($filter('translate')('dialog_error_username_password'));
@@ -2243,6 +2241,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       }
     }
   };
+})
+
+.controller('loginCtrl', function($scope, $location, $http, networkService, $filter, $cordovaToast, VIDA_localDB,
+                                $ionicPopup){
+  console.log('---------------------------------- loginCtrl');
+
 })
 
 .controller('createCtrl', function($scope, $cordovaBarcodeScanner, uploadService, $location){

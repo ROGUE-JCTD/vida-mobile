@@ -20,12 +20,27 @@
             <input type="text" placeholder="" ng-model-options='{debounce: 1500}' ng-change="saveServerIP(networkAddr)" ng-model="networkAddr">
           </label>
         </div>
+        <br>
         <div class="text-center">
           <b>Logged in as:</b>
-          <p>{{networkService.getUsernamePassword().username || "Not Logged In"}}</p>
+          <p ng-if="loginAttempt <= 0">{{networkService.getUsernamePassword().username || "Not Logged In"}}</p>
+          <p ng-if="loginAttempt > 0">{{'attempting_login' | translate}}</p>
         </div>
-        <br>
-        <button class="button button-positive button-block" ng-click="logout('/login')">{{'button_logout' | translate}}</button>
+        &nbsp;
+        <!--<button class="button button-positive button-block" ng-click="logout('/login')">{{'button_logout' | translate}}</button>-->
+        <div>
+          <ion-list>
+            <label class="item item-input">
+              <span class="input-label">{{'login_username' | translate}}</span>
+              <input type="text" placeholder="" ng-model="credentials.username">
+            </label>
+            <label class="item item-input">
+              <span class="input-label">{{'login_password' | translate}}</span>
+              <input type="password" placeholder="" ng-model="credentials.password">
+            </label>
+          </ion-list>
+          <button class="button button-positive button-block" ng-click="login()">{{'button_login' | translate}}</button>
+        </div>
       </form>
     </ion-content>
   </ion-pane>

@@ -1187,8 +1187,8 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     var default_configurations = {};
     default_configurations.configuration = {};
     default_configurations.configuration.serverURL = "192.168.33.15";
-    default_configurations.configuration.username = "admin"; // TODO: Change this so no default admin powers
-    default_configurations.configuration.password = "admin"; // TODO: Change this so no default admin powers
+    default_configurations.configuration.username = "vida_user";
+    default_configurations.configuration.password = "vida_pass";
     default_configurations.configuration.protocol = "http";
     default_configurations.configuration.language = "English";
     default_configurations.configuration.workOffline = "false";

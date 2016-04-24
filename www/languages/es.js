@@ -105,6 +105,8 @@
     'dialog_location_title':'Found Previous Location!',
     'dialog_location_prev_location': 'Use Previous Location',
     'dialog_location_curr_location': 'Use Current Location',
+    'attempting_login': 'Attempting Login..',
+    'successfully_logged_in': 'Successfully logged in!',
   };
 
   var module = angular.module('vida-translations-es', ['pascalprecht.translate']);
