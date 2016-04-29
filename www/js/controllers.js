@@ -486,7 +486,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 })
 
 .controller('PersonDetailEditCtrl', function($scope, $state, $rootScope, $stateParams, $http, peopleService, shelter_array, $cordovaToast, $ionicPopup, $cordovaGeolocation,
-                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService, $cordovaProgress) {
+                                             networkService, $filter, $cordovaActionSheet, $cordovaCamera, optionService, shelterService, $cordovaProgress, $cordovaBarcodeScanner) {
   console.log('---------------------------------- PersonDetailEditCtrl');
 
   $scope.peopleService = peopleService;
@@ -1008,6 +1008,18 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_shelter = $scope.shelter_array[0];
       document.getElementById('shelter').selectedIndex = 0;
     }
+  };
+
+  $scope.scanBarcode = function() {
+    $cordovaBarcodeScanner.scan().then(function(barcodeData){
+      if (barcodeData.cancelled === false) {
+        // Success!
+        //$scope.person.barcode.format = barcodeData.format;
+        document.getElementById('barcode').value = barcodeData.text;
+      }
+    }, function(error){
+      // Error!
+    });
   };
 
   // Startup
