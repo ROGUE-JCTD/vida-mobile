@@ -777,139 +777,144 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       changedPerson[saveFields[i]] = ((person[saveFields[i]] !== documentValues[saveFields[i]])) ? documentValues[saveFields[i]] : undefined;
     }
 
-    // specific cases
-    changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
-    if (changedPerson.photo !== undefined) {
-      if (changedPerson.photo === peopleService.getPlaceholderImage()) {
-        if (person.pic_filename) {
-          // Went from picture to no picture
-          changedPerson.photo = undefined; //TODO? is it worth it?
-        } else
-          changedPerson.photo = undefined;
-      } else if (changedPerson.photo.startsWith('file:///')) {
-        changedPerson.photo = undefined; // Using a file from on disk already
-      }
-    }
+    if (changedPerson['given_name'] !== '') {
 
-    // all dropdowns (gender, injury, nationality, shelter_id)
-    var dropdownOptions = optionService.getAllDropdownOptions();
-    dropdownOptions.push({
-      dropdown: 'shelter_id',
-      options: $scope.shelter_array
-    });
-    var originalPersonValue, documentValue, originalDropdownValue;
-    for (var j = 0; j < dropdownOptions.length; j++) {
-      originalPersonValue = person[dropdownOptions[j].dropdown];
-      documentValue = documentValues[dropdownOptions[j].dropdown];
-      originalDropdownValue = dropdownOptions[j].options[0].value;
-
-
-      changedPerson[dropdownOptions[j].dropdown] =
-        ((originalPersonValue !== documentValue) &&
-        documentValue !== originalDropdownValue)
-        ? documentValue : undefined;
-
-      if (changedPerson[dropdownOptions[j].dropdown] === undefined) {
-        // See if they are trying to change back to "None"
-        if (documentValue === originalDropdownValue &&
-          (originalPersonValue !== originalDropdownValue &&
-           originalPersonValue !== "")) {
-          changedPerson[dropdownOptions[j].dropdown] = originalDropdownValue;
+      // specific cases
+      changedPerson.photo = ((networkService.getFileServiceURL() + person.pic_filename + '/download/') !== documentValues.photo) ? documentValues.photo : undefined;
+      if (changedPerson.photo !== undefined) {
+        if (changedPerson.photo === peopleService.getPlaceholderImage()) {
+          if (person.pic_filename) {
+            // Went from picture to no picture
+            changedPerson.photo = undefined; //TODO? is it worth it?
+          } else
+            changedPerson.photo = undefined;
+        } else if (changedPerson.photo.startsWith('file:///')) {
+          changedPerson.photo = undefined; // Using a file from on disk already
         }
       }
-    }
 
-    changedPerson.id = person.id;
+      // all dropdowns (gender, injury, nationality, shelter_id)
+      var dropdownOptions = optionService.getAllDropdownOptions();
+      dropdownOptions.push({
+        dropdown: 'shelter_id',
+        options: $scope.shelter_array
+      });
+      var originalPersonValue, documentValue, originalDropdownValue;
+      for (var j = 0; j < dropdownOptions.length; j++) {
+        originalPersonValue = person[dropdownOptions[j].dropdown];
+        documentValue = documentValues[dropdownOptions[j].dropdown];
+        originalDropdownValue = dropdownOptions[j].options[0].value;
 
-    if (person.pic_filename)
-      changedPerson.pic_filename = person.pic_filename;
 
-    changedPerson.created_at = new Date().toISOString();
-    //changedPerson.created_by = networkService.getUsernamePassword().username;
+        changedPerson[dropdownOptions[j].dropdown] =
+          ((originalPersonValue !== documentValue) &&
+          documentValue !== originalDropdownValue)
+            ? documentValue : undefined;
 
-    var geom = {};
-    if (person.geom) {
-      if (person.geom !== "") {
-        var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this again
-        geom.lat = split_geom[0];
-        geom.long = split_geom[1];
+        if (changedPerson[dropdownOptions[j].dropdown] === undefined) {
+          // See if they are trying to change back to "None"
+          if (documentValue === originalDropdownValue &&
+            (originalPersonValue !== originalDropdownValue &&
+            originalPersonValue !== "")) {
+            changedPerson[dropdownOptions[j].dropdown] = originalDropdownValue;
+          }
+        }
       }
-    }
 
-    // If no shelter ID, or no location usage
-    if (changedPerson.shelter_id !== undefined) {
-      // See if they have shelter
-      if ($scope.LocationDropdownDisabled == true) {
+      changedPerson.id = person.id;
+
+      if (person.pic_filename)
+        changedPerson.pic_filename = person.pic_filename;
+
+      changedPerson.created_at = new Date().toISOString();
+      //changedPerson.created_by = networkService.getUsernamePassword().username;
+
+      var geom = {};
+      if (person.geom) {
+        if (person.geom !== "") {
+          var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this again
+          geom.lat = split_geom[0];
+          geom.long = split_geom[1];
+        }
+      }
+
+      // If no shelter ID, or no location usage
+      if (changedPerson.shelter_id !== undefined) {
+        // See if they have shelter
+        if ($scope.LocationDropdownDisabled == true) {
+          // Check for possible new location
+          if (geom.lat !== $scope.current_location.lat &&
+            geom.long !== $scope.current_location.long)
+            changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
+        } else {
+          // Use possibly new shelter location
+          if (person.geom !== $scope.current_shelter.geom)
+            changedPerson.geom = $scope.current_shelter.geom;
+          else
+            changedPerson.geom = undefined;
+        }
+      } else if ($scope.LocationDropdownDisabled == true) {
         // Check for possible new location
         if (geom.lat !== $scope.current_location.lat &&
           geom.long !== $scope.current_location.long)
           changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
-      } else {
-        // Use possibly new shelter location
-        if (person.geom !== $scope.current_shelter.geom)
-          changedPerson.geom = $scope.current_shelter.geom;
-        else
-          changedPerson.geom = undefined;
       }
-    } else if ($scope.LocationDropdownDisabled == true) {
-      // Check for possible new location
-      if (geom.lat !== $scope.current_location.lat &&
-        geom.long !== $scope.current_location.long)
-        changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
-    }
 
-    // Show loading dialog
-    // TODO: Translate
-    $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving changes to " + person.given_name);
-    $scope.saveChangesRequest++;
-    peopleService.editPerson_saveChanges(changedPerson, function(success) {
-      if (peopleService.getRetrievedPersonByID()) {
-        // Success
-        $scope.saveChangesRequest--;
-        $cordovaProgress.hide();
-        // TODO: Translate
-        $cordovaProgress.showSimpleWithLabelDetail(true, "Complete", "Changes saved! Returning to details..");
-        peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function () {  // This will reload the person in details
-          var prevSearchQuery = peopleService.getStoredSearchQuery();
-          if (!isDisconnected) {
-            // Update current Shelter on detail page
-            var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
-            var wasSet = false;
-            for (var i = 1; i < $scope.shelter_array.length; i++) {
-              if ($scope.shelter_array[i].uuid === shelterID) {
-                shelterService.setCurrentShelter(shelter_array[i]);
-                shelterService.getAll();
-                wasSet = true;
-                break;
+      // Show loading dialog
+      // TODO: Translate
+      $cordovaProgress.showSimpleWithLabelDetail(true, "Saving", "Saving changes to " + person.given_name);
+      $scope.saveChangesRequest++;
+      peopleService.editPerson_saveChanges(changedPerson, function (success) {
+        if (peopleService.getRetrievedPersonByID()) {
+          // Success
+          $scope.saveChangesRequest--;
+          $cordovaProgress.hide();
+          // TODO: Translate
+          $cordovaProgress.showSimpleWithLabelDetail(true, "Complete", "Changes saved! Returning to details..");
+          peopleService.searchPersonByID(peopleService.getRetrievedPersonByID().id, function () {  // This will reload the person in details
+            var prevSearchQuery = peopleService.getStoredSearchQuery();
+            if (!isDisconnected) {
+              // Update current Shelter on detail page
+              var shelterID = peopleService.getRetrievedPersonByID().shelter_id;
+              var wasSet = false;
+              for (var i = 1; i < $scope.shelter_array.length; i++) {
+                if ($scope.shelter_array[i].uuid === shelterID) {
+                  shelterService.setCurrentShelter(shelter_array[i]);
+                  shelterService.getAll();
+                  wasSet = true;
+                  break;
+                }
               }
+              if (!wasSet)
+                shelterService.setCurrentShelter('None');
+              shelterService.setIsUpdatingShelter(true);
             }
-            if (!wasSet)
-              shelterService.setCurrentShelter('None');
-            shelterService.setIsUpdatingShelter(true);
-          }
-          peopleService.searchForPerson(networkService.getSearchURL(), prevSearchQuery, function () {
-            // will successfully reload
-            $state.go('vida.person-search.person-detail');
-            $cordovaProgress.hide();
+            peopleService.searchForPerson(networkService.getSearchURL(), prevSearchQuery, function () {
+              // will successfully reload
+              $state.go('vida.person-search.person-detail');
+              $cordovaProgress.hide();
+            }, function () {
+              // will not successfully reload
+              $state.go('vida.person-search.person-detail');
+              $cordovaProgress.hide();
+
+              // TODO: Translate
+              $cordovaToast.showShortBottom('Something went with retrieving updated person. Please check your connection.');
+            }); // This will reload search query
           }, function () {
-            // will not successfully reload
-            $state.go('vida.person-search.person-detail');
-            $cordovaProgress.hide();
 
-            // TODO: Translate
-            $cordovaToast.showShortBottom('Something went with retrieving updated person. Please check your connection.');
-          }); // This will reload search query
-        }, function () {
-
-        });
-      }
-    }, function(error) {
-      // Error
-      //TODO: SHOW ERROR
-      $scope.saveChangesRequest--;
-      $state.go('vida.person-search.person-detail');
-      $cordovaProgress.hide();
-    });
+          });
+        }
+      }, function (error) {
+        // Error
+        //TODO: SHOW ERROR
+        $scope.saveChangesRequest--;
+        $state.go('vida.person-search.person-detail');
+        $cordovaProgress.hide();
+      });
+    } else {
+      $cordovaToast.showShortBottom($filter('translate')('dialog_error_person_no_name_edit'));
+    }
   };
 
   $rootScope.buttonPersonCancel = function() {
@@ -1268,7 +1273,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     };
 
     $scope.clearAllFields = function() {
-      $scope.person.given_name = '';
+      $scope.person.given_name = undefined; // Important
       $scope.person.photo = undefined;
       $scope.person.family_name = '';
       $scope.person.fathers_given_name = '';

@@ -18,6 +18,7 @@
     'dialog_retrieving_list_complete': 'List retrieval completed!',
     'dialog_error_person_exists': 'Person already exists!',
     'dialog_error_person_no_name': 'Please enter at least a name to upload a new person.',
+    'dialog_error_person_no_name_edit': 'Please enter at least a name to complete your saved changes.',
     'dialog_error_username_password': 'Please enter a Username and Password!',
     'dialog_error_username': 'Please enter a Username!',
     'dialog_error_password': 'Please enter a Password!',

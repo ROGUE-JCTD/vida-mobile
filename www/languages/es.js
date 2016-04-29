@@ -18,6 +18,7 @@
     'dialog_retrieving_list_complete': 'Recuperacion Lista terminada!',
     'dialog_error_person_exists': 'La persona ya existe!',
     'dialog_error_person_no_name': 'Introduzca por lo menos un nombre para cargar una nueva persona.',
+    'dialog_error_person_no_name_edit': 'Please enter at least a name to complete your saved changes.',
     'dialog_error_username_password': 'Por favor, introduzca un nombre de usuario y contrasena!',
     'dialog_error_username': 'Por favor, introduzca un nombre de usuario!',
     'dialog_error_password': 'Por favor, introduzca un nombre de contrasena!',
