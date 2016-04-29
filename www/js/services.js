@@ -617,7 +617,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
               if (results[i].deleted != true)
                 peopleInShelter.push(results[i]);
             }
-            peopleInShelter.sort(); // Results comes up weird sometimes, better off just sorting it
+            if (peopleInShelter.length > 0)
+              peopleInShelter.sort(); // Results comes up weird sometimes, better off just sorting it
+            else
+              $cordovaToast.showLongBottom($filter('translate')('error_no_results'));
+
             if (success)
               success();
           }, whereAt);
