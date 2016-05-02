@@ -507,6 +507,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.current_location.long = -1111;
   $scope.previous_shelter_label = "None";
 
+  $rootScope.$on('updateShelterList', function() {
+    $scope.shelter_array = shelterService.getAllLocalShelters();
+  });
+
   $scope.checkDisconnected = function() {
     return isDisconnected;
   };
@@ -1034,7 +1038,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
 .controller('PersonCreateCtrl', function($scope, $location, $http, $cordovaCamera, $cordovaActionSheet, $filter, $ionicModal, $rootScope,
                                          $cordovaToast, $cordovaBarcodeScanner, peopleService, uploadService, networkService, $cordovaFile,
-                                          optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup, $cordovaGeolocation){
+                                          optionService, $q, shelter_array, $cordovaProgress, VIDA_localDB, $ionicPopup, $cordovaGeolocation,
+                                          shelterService){
     $scope.person = {};
     $scope.person.photo = null;
     $scope.person.barcode = {};
@@ -1067,6 +1072,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_shelter = $scope.shelter_array[0];
       document.getElementById('shelter').selectedIndex = 0;
     }
+
+    $rootScope.$on('updateShelterList', function() {
+      $scope.shelter_array = shelterService.getAllLocalShelters();
+    });
 
     // Helper function
     var fixUndefined = function(str){
@@ -1848,7 +1857,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.updateSyncDatabase = function() {
       var dirtyArr = [];
       var allPeople = [];
-      var peopleUpdated = 0, peopleUploaded = 0, sheltersAdded = 0, imagesDownloaded = 0;
+      var peopleUpdated = 0, peopleUploaded = 0, sheltersAdded = 0, imagesDownloaded = 0, sheltersRemoved = 0;
 
       var determineNewerValue = function (_dateOne, _dateTwo) {
         var parseDate = function (str) {
@@ -2072,6 +2081,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
           // Loop through shelters.
           var localShelters = shelterService.getAllLocalShelters();
+          var prevAmountShelters = localShelters.length - 1; // Account for "None"
 
           if (allShelters.length <= 0) {
             // No shelters on server. Check for any shelters on local DB
@@ -2081,77 +2091,62 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
               }
             }
           } else {
-            for (var i = 0; i < allShelters.length; i++) {
-              var foundShelterOnDB = false;
+            // Remove all shelters in DB, and add all new
+            VIDA_localDB.queryDB_deleteAllEntries('shelters', function() {
 
-              for (var j = 1; j < localShelters.length; j++) { // Start at 1 because "None"
-                if (localShelters[j].uuid === allShelters[i].uuid) {
-                  foundShelterOnDB = true;
-
-                  // If UUID matches, see if anything is different.
-                  //    If so, remove old and store new.
-                  if (isShelterDifferent(localShelters[j], allShelters[i])) {
-                    shelterService.removeShelterByUUID(localShelters[j].uuid);
-                    shelterService.addShelter(allShelters[i], true);
-                    sheltersAdded++;
-                  }
-
-                  break;
-                }
-              }
-
-              // If UUID in database wasn't found, add as new shelter.
-              if (!foundShelterOnDB) {
+              localShelters = [];
+              shelterService.clearShelters();
+              shelterService.addShelter(optionService.getDefaultShelterData(), false); // add None
+              for (var i = 0; i < allShelters.length; i++) {
                 shelterService.addShelter(allShelters[i], true);
-                sheltersAdded++;
               }
-            }
-          }
 
-          // Check to see if any local shelters should be removed
-          for (var j = 1; j < localShelters.length; j++) {
-            var foundShelterOnServer = false;
+              sheltersAdded = allShelters.length - prevAmountShelters;
 
-            for (var k = 0; k < allShelters.length; k++) {
-              if (localShelters[j].uuid === allShelters[k].uuid) {
-                foundShelterOnServer = true;
+              if (sheltersAdded < 0) {
+                // Shelter(s) were removed!
+                sheltersRemoved = Math.abs(sheltersAdded);
+                sheltersAdded = 0;
               }
-            }
 
-            if (!foundShelterOnServer) {
-              // Remove Shelter from local DB
-              shelterService.removeShelterByUUID(localShelters[j].uuid);
-            }
+              $rootScope.$broadcast('updateShelterList');
+
+              // Update search screen because it will hold the old results (old pictures, info, etc.)
+              peopleService.refreshSearchQuery(function() {
+                // END FOURTH TASK
+                $cordovaProgress.hide();
+
+                // START FIFTH TASK
+                taskFive_ShowPostSyncScreen();
+              }, function() {
+                // END FOURTH TASK
+                $cordovaProgress.hide();
+
+                // START FIFTH TASK
+                taskFive_ShowPostSyncScreen();
+              });
+            });
           }
-
-          // Update search screen because it will hold the old results (old pictures, info, etc.)
-          peopleService.refreshSearchQuery(function() {
-            // END FOURTH TASK
-            $cordovaProgress.hide();
-
-            // START FIFTH TASK
-            taskFive_ShowPostSyncScreen();
-          }, function() {
-            // END FOURTH TASK
-            $cordovaProgress.hide();
-
-            // START FIFTH TASK
-            taskFive_ShowPostSyncScreen();
-          });
         });
       };
 
       var taskFive_ShowPostSyncScreen = function () {
         $scope.resetSyncButton();
 
+        var resultsString = "People uploaded: " + peopleUploaded + "<br>" +
+          "People updated: " + peopleUpdated + "<br>" +
+          "Thumbnails downloaded: " + imagesDownloaded + "<br>" +
+          "Shelters added: " + sheltersAdded + "<br>";
+
+        if (sheltersRemoved > 0) {
+          resultsString += "Shelters removed: " + sheltersRemoved + "<br>";
+        }
+
         // TODO: Translate
         $ionicPopup.alert({
           title: "Sync Complete!",
           cssClass: "text-center",
-          template: "People uploaded: " + peopleUploaded + "<br>" +
-          "People updated: " + peopleUpdated + "<br>" +
-          "Thumbnails downloaded: " + imagesDownloaded + "<br>" +
-          "Shelters added: " + sheltersAdded + "<br>"
+          template: resultsString
         });
       };
 
@@ -2371,80 +2366,80 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.showAllSheltersOnMap();
 })
 
-.controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService, $rootScope) {
-  console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getById($stateParams.shelterId));
-    $scope.shelter = shelterService.getById($stateParams.shelterId);
-    $scope.latlng = shelterService.getLatLng($stateParams.shelterId);
-    $scope.shelterService = shelterService;
-
-    $rootScope.$on('changedShelter', function(event, param) {
+.controller('ShelterDetailCtrl', function ($scope, $state, $stateParams, shelterService, $rootScope, shelter) {
+  console.log("---- ShelterDetailCtrl. shelter id: ", $stateParams.shelterId, shelterService.getByIdOnline($stateParams.shelterId));
+  $scope.shelterService = shelterService;
+  $scope.shelter = shelter;
+  $scope.latlng = shelterService.getLatLngFromShelter($scope.shelter);
+  
+  $rootScope.$on('changedShelter', function(event, param) {
       $scope.shelter = param;
     });
 
-    if ($scope.latlng.lat === -1111 && $scope.latlng.lng === -1111) {
-      // Shelter is not on server, it's only on the database. Get correct geom
-      var shelters = shelterService.getAllLocalShelters();
-      for (var i = 0; i < shelters.length; i++) {
-        if (shelters[i].id === $stateParams.shelterId){
-          var trimParens = /^\s*\(?(.*?)\)?\s*$/;
-          var coordinateString = shelters[i].geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
-          var tokens = coordinateString.split(' ');
-          var lng = parseFloat(tokens[0]);
-          var lat = parseFloat(tokens[1]);
-          $scope.latlng = {lat: lat, lng: lng};
-        }
+  if ($scope.latlng.lat === -1111 && $scope.latlng.lng === -1111) {
+    // Shelter is not on server, it's only on the database. Get correct geom
+    var shelters = shelterService.getAllLocalShelters();
+    for (var i = 0; i < shelters.length; i++) {
+      if (shelters[i].id === $stateParams.shelterId){
+        var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+        var coordinateString = shelters[i].geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+        var tokens = coordinateString.split(' ');
+        var lng = parseFloat(tokens[0]);
+        var lat = parseFloat(tokens[1]);
+        $scope.latlng = {lat: lat, lng: lng};
       }
     }
+  }
 
-    $rootScope.buttonBack = function() {
-      // Put edit/delete buttons back
-      var tabs = document.getElementsByClassName("tab-item");
-      for (var i=0; i < tabs.length; i++) {
-        tabs[i].setAttribute('style', 'display: none;');
-      }
+  $rootScope.buttonBack = function() {
+    // Put edit/delete buttons back
+    var tabs = document.getElementsByClassName("tab-item");
+    for (var i=0; i < tabs.length; i++) {
+      tabs[i].setAttribute('style', 'display: none;');
+    }
 
-      var backButton = document.getElementsByClassName("button-person-back");
-      var editDeleteButtons = document.getElementsByClassName("button-person-edit");
-      for (i=0; i < editDeleteButtons.length; i++) {
-        editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
-      }
-      for (i=0; i < backButton.length; i++) {
-        backButton[i].setAttribute('style', 'display: none;');   // Remove button
-      }
+    var backButton = document.getElementsByClassName("button-person-back");
+    var editDeleteButtons = document.getElementsByClassName("button-person-edit");
+    for (i=0; i < editDeleteButtons.length; i++) {
+      editDeleteButtons[i].setAttribute('style', 'display: block;');    // Enables buttons
+    }
+    for (i=0; i < backButton.length; i++) {
+      backButton[i].setAttribute('style', 'display: none;');   // Remove button
+    }
 
-      window.history.back();
-    };
+    window.history.back();
+  };
 
-    $scope.$on("$destroy", function(){
-      var backButton = document.getElementsByClassName("button-person-back");
+  $scope.$on("$destroy", function(){
+    var backButton = document.getElementsByClassName("button-person-back");
 
-      for (i=0; i < backButton.length; i++) {
-        backButton[i].setAttribute('style', 'display: none;');   // Remove button
-      }
-    });
+    for (i=0; i < backButton.length; i++) {
+      backButton[i].setAttribute('style', 'display: none;');   // Remove button
+    }
+  });
 
-    $scope.buttonShelterHome = function() {
-      shelterService.getAll();
+  $scope.buttonShelterHome = function() {
+    shelterService.getAll();
 
-      var tabs = document.getElementsByClassName("tab-item");
-      for (var i=0; i < tabs.length; i++) {
-        tabs[i].setAttribute('style', 'display: block;');
-      }
+    var tabs = document.getElementsByClassName("tab-item");
+    for (var i=0; i < tabs.length; i++) {
+      tabs[i].setAttribute('style', 'display: block;');
+    }
 
-      var backButton = document.getElementsByClassName("button-person-back");
-      var editDeleteButtons = document.getElementsByClassName("button-person-edit");
-      var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
+    var backButton = document.getElementsByClassName("button-person-back");
+    var editDeleteButtons = document.getElementsByClassName("button-person-edit");
+    var saveCancelButtons = document.getElementsByClassName("button-person-post-edit");
 
-      for (i=0; i < saveCancelButtons.length; i++) {
-        saveCancelButtons[i].setAttribute('style', 'display: none;');  // remove buttons
-      }
-      for (i=0; i < editDeleteButtons.length; i++) {
-        editDeleteButtons[i].setAttribute('style', 'display: none;');    // remove buttons
-      }
-      for (i=0; i < backButton.length; i++) {
-        backButton[i].setAttribute('style', 'display: none;');   // Remove button
-      }
+    for (i=0; i < saveCancelButtons.length; i++) {
+      saveCancelButtons[i].setAttribute('style', 'display: none;');  // remove buttons
+    }
+    for (i=0; i < editDeleteButtons.length; i++) {
+      editDeleteButtons[i].setAttribute('style', 'display: none;');    // remove buttons
+    }
+    for (i=0; i < backButton.length; i++) {
+      backButton[i].setAttribute('style', 'display: none;');   // Remove button
+    }
 
-      $state.go('vida.shelter-search');
-    };
+    $state.go('vida.shelter-search');
+  };
 });

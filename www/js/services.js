@@ -344,7 +344,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 })
 
-.service('shelterService', function($http, networkService, $resource, $q, VIDA_localDB, optionService) {
+.service('shelterService', function($http, networkService, $resource, $q, VIDA_localDB, optionService, $cordovaProgress) {
   var service = this;
   var shelters = [];
   var current_shelter = {};
@@ -355,7 +355,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
   this.addShelter = function(shelter, addToDatabase) {
     for (var i = 0; i < shelters.length; i++){
-      if (shelters[i].value === shelter.uuid)
+      if (shelters[i].uuid === shelter.uuid)
         return;
     }
 
@@ -378,6 +378,12 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         var shelterObj = "\'" + shelter.name + "\', ";
         shelterObj += "\'" + shelter.id + "\', ";
         shelterObj += "\'" + shelter.uuid + "\', ";
+        shelterObj += "\'" + shelter.description + "\', ";
+        shelterObj += "\'" + shelter.street_and_number + "\', ";
+        shelterObj += "\'" + shelter.neighborhood + "\', ";
+        shelterObj += "\'" + shelter.city + "\', ";
+        shelterObj += "\'" + shelter.province_or_state + "\', ";
+        shelterObj += "\'" + shelter.notes + "\', ";
         shelterObj += "\'" + shelter.geom + "\'";
         VIDA_localDB.queryDB_insert('shelters', shelterObj, function () {
           // After inserting
@@ -418,12 +424,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
         success: function (data) {
           if (data.objects.length > 0) {
             for (var i = 0; i < data.objects.length; i++) {
-              array.push({
-                name: data.objects[i].name,
-                uuid: data.objects[i].uuid,
-                id: data.objects[i].id,
-                geom: data.objects[i].geom
-              });
+              array.push(data.objects[i]);
             }
           } else {
             console.log('No shelters returned - check url: ' + networkService.getShelterURL() + ' or none are available');
@@ -507,13 +508,42 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     return undefined;
   };
 
+  this.getByIdOnline = function(id) {
+    if (!isDisconnected) {
+      var promise = $q.defer();
+
+      this.getAll().then(function(allShelters) {
+        for (var i = 0; i < allShelters.length; i++){
+          if (allShelters[i].id == id) {
+            $cordovaProgress.hide();
+            promise.resolve(allShelters[i]);
+          }
+        }
+
+        $cordovaProgress.hide();
+        promise.reject();
+      });
+
+      return promise.promise;
+    } else {
+      // Last ditch effort (check offline)
+      for (var i = 0; i < shelters.length; i++) {
+        if (shelters[i].id == id) {
+          $cordovaProgress.hide();
+          return shelters[i];
+        }
+      }
+
+      $cordovaProgress.hide();
+      return undefined;
+    }
+  };
+
   this.getById = function(id) {
-    for(var i = 0; i < shelters.length; i++) {
+    for (var i = 0; i < shelters.length; i++) {
       if (shelters[i].id == id)
         return shelters[i];
     }
-
-    return undefined;
   };
 
   this.getCurrentShelter = function() {
@@ -527,7 +557,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       current_shelter.link = '#/vida/shelter-search/shelter-detail/' + shelter.id;
     } else {
       current_shelter.str = 'None';
-      current_shelter.uuid = 'None'
+      current_shelter.uuid = 'None';
       current_shelter.link = 'None';
     }
   };
@@ -536,10 +566,21 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     return shelters;
   };
 
+  this.getLatLngFromShelter = function(shelter) {
+    // look for 'point' in wkt and get the pair of numbers in the string after it
+    var trimParens = /^\s*\(?(.*?)\)?\s*$/;
+    var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
+    var tokens = coordinateString.split(' ');
+    var lng = parseFloat(tokens[0]);
+    var lat = parseFloat(tokens[1]);
+    return {lat: lat, lng: lng};
+  };
+
   this.getLatLng = function(id) {
     var shelter = service.getById(id);
     if (shelter === undefined)
       return {lat: -1111, lng: -1111}; // Not on the server, only in the database
+
     // look for 'point' in wkt and get the pair of numbers in the string after it
     var trimParens = /^\s*\(?(.*?)\)?\s*$/;
     var coordinateString = shelter.geom.toLowerCase().split('point')[1].replace(trimParens, '$1').trim();
@@ -1172,11 +1213,30 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'uuid',
       type: 'TEXT'
     }, {
+      column: 'description',
+      type: 'TEXT'
+    }, {
+      column: 'street_and_number',
+      type: 'TEXT'
+    }, {
+      column: 'neighborhood',
+      type: 'TEXT'
+    }, {
+      column: 'city',
+      type: 'TEXT'
+    }, {
+      column: 'province_or_state',
+      type: 'TEXT'
+    }, {
+      column: 'notes',
+      type: 'TEXT'
+    }, {
       column: 'geom',
       type: 'TEXT'
     }];
 
-    var default_shelter = {name: 'None', uuid: '', id: 0, geom: ''};
+    var default_shelter = {name: 'None', uuid: '', id: 0, description: '', street_and_number: '', neighborhood: '',
+      city: '', province_or_state: '', notes: '', geom: ''};
 
     var settings_and_configurations = ['serverURL', 'username', 'password', 'protocol', 'language', 'workOffline'];
 

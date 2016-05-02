@@ -14,7 +14,7 @@ var isDisconnected = false; // Will store non-globally once fully working
 angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controllers', 'vida.services', 'leaflet-directive',
     'pascalprecht.translate', 'vida-translations-en', 'vida-translations-es', 'ngResource'])
 
-.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile, $ionicPopup) {
+.run(function($ionicPlatform, $window, $cordovaSQLite, networkService, optionService, DBHelper, $cordovaFile) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs).
@@ -215,6 +215,13 @@ angular.module('vida', ['ionic', 'ngCordova', 'vida.directives', 'vida.controlle
     views: {
       'view-shelter-search@vida': {
         templateUrl: 'views/shelter-detail.html',
+        resolve: {
+          shelter : function(shelterService, $stateParams, $cordovaProgress) {
+            //TODO: TRANSLATE
+            $cordovaProgress.showSimpleWithLabelDetail(true, "Retrieving Shelter", "Retrieving all details of this shelter..");
+            return shelterService.getByIdOnline(Number($stateParams.shelterId));
+          }
+        },
         controller: 'ShelterDetailCtrl'
       }
     }

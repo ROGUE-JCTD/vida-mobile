@@ -1,46 +1,47 @@
 <ion-view title="{{'title_shelter_details' | translate}}">
   <ion-pane>
     <ion-content padding="true" class="has-header">
-      <div class="list card">
-        <div class="item item-divider">{{shelter.name}}</div>
-        <div class="item item-body">
-          <p>Coordinates:<br>
-            <b>lat</b> {{latlng.lat}}<br>
-            <b>lng</b> {{latlng.lng}}
-          </p>
-        </div>
-        <div class="item item-body">
-          <p><b>Description:</b><br>
-            {{shelter.description || ""}}<br>
-          </p>
-          <p>
-            <b>Address:</b><br>
-            {{shelter.street_and_number || ""}}<br>
-          </p>
-          <p>
-            <b>Neighborhood:</b><br>
-            {{shelter.neighborhood || ""}}<br>
-          </p>
-          <p>
-            <b>City:</b><br>
-            {{shelter.city || ""}}<br>
-          </p>
-          <p>
-            <b>Province/State:</b><br>
-            {{shelter.province_or_state || ""}}<br>
-          </p>
-          <p>
-            <b>Notes:</b><br>
-            {{shelter.notes || ""}}<br>
-          </p>
+      <div ng-if="shelter != undefined">
+        <div class="list card">
+          <div class="item item-divider">{{shelter.name}}</div>
+          <div class="item item-body">
+            <p>Coordinates:<br>
+              <div ng-if="latlng.lat != -1111">
+                <b>lat</b> {{latlng.lat}}<br>
+                <b>lng</b> {{latlng.lng}}
+              </div>
+            </p>
+          </div>
+          <div class="item item-body">
+            <p><b>Description:</b><br>
+              {{shelter.description || ""}}<br>
+            </p>
+            <p>
+              <b>Address:</b><br>
+              {{shelter.street_and_number || ""}}<br>
+            </p>
+            <p>
+              <b>Neighborhood:</b><br>
+              {{shelter.neighborhood || ""}}<br>
+            </p>
+            <p>
+              <b>City:</b><br>
+              {{shelter.city || ""}}<br>
+            </p>
+            <p>
+              <b>Province/State:</b><br>
+              {{shelter.province_or_state || ""}}<br>
+            </p>
+            <p>
+              <b>Notes:</b><br>
+              {{shelter.notes || ""}}<br>
+            </p>
+          </div>
         </div>
       </div>
-      <!--<form>
-        <label class="item item-input">
-          <i class="icon ion-search placeholder-icon"></i>
-          <input type="search" placeholder="Find people with keyword">
-        </label>
-      </form>-->
+      <div ng-if="shelter == undefined">
+        <p><b>{{'error_shelter_retrieval' | translate}}</b></p>
+      </div>
       <button ng-if="!(shelterService.getIfCameFromDetails())"
               class="button button-positive button-block icon fa-home" ng-click="buttonShelterHome()">{{'button_shelter_search' | translate}}</button>
     </ion-content>
