@@ -382,7 +382,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.checkLocationWithUUID = function(shelter_uuid, person_geom) {
     // Shelter to display?
-    if (shelter_uuid != null && shelter_uuid != "None") {
+    if (shelter_uuid != null && shelter_uuid != "" && shelter_uuid != "None") {
       $scope.hasLocation = true;
       var shelter = shelterService.getByUUID(shelter_uuid);
       $scope.locationString = shelter.name;
@@ -506,7 +506,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.current_location = {};
   $scope.current_location.lat = -1111;
   $scope.current_location.long = -1111;
-  $scope.previous_shelter_label = "None";
+  $scope.previous_shelter_label = "None"; // Always want to go back to "None"
+  $scope.previous_shelter_index = 0;
 
   $rootScope.$on('updateShelterList', function() {
     $scope.shelter_array = shelterService.getAllLocalShelters();
@@ -600,15 +601,19 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('race');
 
     $scope.shelter_array = shelter_array;
+    $scope.current_shelter = $scope.shelter_array[0];
+    $scope.current_shelter.name = "None"; // Fix for VERY SPECIFIC duct-tape fix
     if ($scope.shelter_array) {
       // Look at person and see what shelter they are assigned to
       var isAssigned = false;
-      for (var j = 1; j < shelter_array.length; j++) {
-        if (person.shelter_id === shelter_array[j].uuid) {
-          $scope.current_shelter = $scope.shelter_array[j];
-          $scope.previous_shelter_label = $scope.shelter_array[j].name;
-          isAssigned = true;
-          break;
+      if (person.shelter_id !== "" && person.shelter_id !== "None") {
+        for (var j = 1; j < shelter_array.length; j++) {
+          if (person.shelter_id === shelter_array[j].uuid) {
+            $scope.current_shelter = $scope.shelter_array[j];
+            $scope.previous_shelter_index = j;
+            isAssigned = true;
+            break;
+          }
         }
       }
 
@@ -625,7 +630,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             $scope.LocationDropdownDisabled = true;
             document.getElementById('locationItemLabel').setAttribute("class", "item-input-wrapper item-select grayout");
             document.getElementById('shelter').disabled = true;
-            document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+            document.getElementById('shelter').selectedIndex = 0;
+            document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location"; // Label "None"
+            $scope.current_shelter.name = "Using Curr Location"; // AHHHHH DUCT TAPE BECAUSE IONIC ISN'T FUN
             $scope.current_location.lat = personLocation.lat;
             $scope.current_location.long = personLocation.long;
           } else {
@@ -661,12 +668,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     var shelterElement = document.getElementById('shelter');
     shelterElement.disabled = false;
 
-    for (var i = 0; i < shelterElement.options.length; i++) {
-      if ($scope.previous_shelter_label === shelterElement.options[i].innerText){ // checking innerText because that holds the original
-        shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // revert label back
-        shelterElement.selectedIndex = i;
-      }
-    }
+    shelterElement.selectedIndex = 0; // Switch to "None"
+    shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // Revert label back
+    shelterElement.selectedIndex = $scope.previous_shelter_index; // Switch to last shelter selected
+
+    $scope.current_location.lat = -1111;
+    $scope.current_location.long = -1111;
   };
 
   $scope.useLocation = function() {
@@ -684,8 +691,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
       $scope.current_location.lat = position.coords.latitude;
       $scope.current_location.long = position.coords.longitude;
-      $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
-      document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location";
+      $scope.previous_shelter_index = document.getElementById('shelter').selectedIndex; // Store previous label
+      document.getElementById('shelter').selectedIndex = 0; // Switch to "None"
+      document.getElementById('shelter').selectedOptions[0].label = "Using Curr Location"; // Label "None"
 
       $cordovaProgress.hide();
       $cordovaToast.showLongBottom("Location found! Using this location.");
@@ -723,7 +731,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.changeShelter = function() {
     $scope.current_shelter = this.current_shelter;
 
-    $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
+    $scope.previous_shelter_index = document.getElementById('shelter').selectedIndex;
   };
 
   $scope.setupSaveCancelButtons = function() {
@@ -769,8 +777,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     doc.status              = statusElement.options[statusElement.selectedIndex].label;
     var raceElement         = document.getElementById('race');
     doc.race                = raceElement.options[raceElement.selectedIndex].label;
+
     var shelterElement      = document.getElementById('shelter');
     doc.shelter_id          = $scope.shelter_array[shelterElement.selectedIndex].uuid;
+
+    if ($scope.LocationDropdownDisabled == true) {
+      doc.shelter_id = "";
+    }
 
     doc.photo               = document.getElementById('personal_photo').src;
   };
@@ -845,19 +858,20 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       if (person.geom) {
         if (person.geom !== "") {
           var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this again
-          geom.lat = split_geom[0];
-          geom.long = split_geom[1];
+          geom.long = Number(split_geom[0]);
+          geom.lat = Number(split_geom[1]);
         }
       }
 
-      // If no shelter ID, or no location usage
+      // See if they have shelter
       if (changedPerson.shelter_id !== undefined) {
-        // See if they have shelter
+        // Check for possible new location
         if ($scope.LocationDropdownDisabled == true) {
-          // Check for possible new location
+          // Check for updated location
           if (geom.lat !== $scope.current_location.lat &&
-            geom.long !== $scope.current_location.long)
+            geom.long !== $scope.current_location.long) {
             changedPerson.geom = "SRID=4326;POINT (" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
+          }
         } else {
           // Use possibly new shelter location
           if ($scope.current_shelter.geom === "") {
@@ -872,8 +886,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       } else if ($scope.LocationDropdownDisabled == true) {
         // Check for possible new location
         if (geom.lat !== $scope.current_location.lat &&
-          geom.long !== $scope.current_location.long)
+          geom.long !== $scope.current_location.long) {
           changedPerson.geom = "SRID=4326;POINT (" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
+        }
+      } else {
+        changedPerson.geom = "SRID=4326;POINT (0.0000000000000000 0.0000000000000000)";
       }
 
       // Show loading dialog
@@ -1133,8 +1150,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
         var ShelterID;
         if ($scope.current_shelter !== undefined) {
-          if ($scope.current_shelter.uuid !== $scope.shelter_array[0].uuid)
-            ShelterID = $scope.current_shelter.uuid;
+          if ($scope.current_shelter.uuid !== $scope.shelter_array[0].uuid) {
+            if ($scope.LocationDropdownDisabled == false)
+              ShelterID = $scope.current_shelter.uuid;
+            else
+              ShelterID = "";
+          }
         }
 
         var Photo;
@@ -1441,11 +1462,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.changeShelter = function() {
       $scope.current_shelter = this.current_shelter;
 
-      $scope.previous_shelter_label = document.getElementById('shelter').selectedOptions[0].label;
+      $scope.previous_shelter_index = document.getElementById('shelter').selectedIndex;
     };
 
     $scope.LocationDropdownDisabled = false;
     $scope.previous_shelter_label = "None";
+    $scope.previous_shelter_index = 0;
 
     $scope.revertLocation = function() {
       // Reset back to normal
@@ -1455,12 +1477,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var shelterElement = document.getElementById('shelter');
       shelterElement.disabled = false;
 
-      for (var i = 0; i < shelterElement.options.length; i++) {
-        if ($scope.previous_shelter_label === shelterElement.options[i].innerText){ // checking innerText because that holds the original
-          shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // revert label back
-          shelterElement.selectedIndex = i;
-        }
-      }
+      shelterElement.selectedIndex = 0; // Switch to "None"
+      shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // Revert label back
+      shelterElement.selectedIndex = $scope.previous_shelter_index; // Switch to last shelter selected
+
+      $scope.current_location.lat = -1111;
+      $scope.current_location.long = -1111;
     };
 
     $scope.useLocation = function() {
@@ -1498,7 +1520,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Gray out shelters section and fill with "Using Current Location"
         $scope.LocationDropdownDisabled = true;
         document.getElementById('locationItemLabel').setAttribute( "class", "item-input-wrapper item-select grayout" );
-        $scope.previous_shelter_label = shelterElement.selectedOptions[0].label;
+        $scope.previous_shelter_index = shelterElement.selectedIndex;
+        shelterElement.selectedIndex = 0; // Switch to "None"
+
+        // Re-label "None"
         // TODO TRANSLATE
         if (prevLocation)
           shelterElement.selectedOptions[0].label = "Using Prev Location";
