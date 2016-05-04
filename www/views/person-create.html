@@ -76,6 +76,13 @@
           </select>
         </label>
         <label class="item item-input item-select">
+          <span class="input-label">{{'person_race' | translate}}</span>
+          <select id="race" ng-init="current_race == current_race || race_options[0]"
+                  ng-model="current_race" ng-change="changeRace()"
+                  ng-options="option.name | translate for option in race_options">
+          </select>
+        </label>
+        <label class="item item-input item-select">
           <span class="input-label">{{'person_injury' | translate}}</span>
           <select id="injury" ng-init="current_injury == current_injury || injury_options[0]"
                   ng-model="current_injury" ng-change="changeInjury()"

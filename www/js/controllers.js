@@ -500,6 +500,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.injury_options = optionService.getInjuryOptions();
   $scope.nationality_options = optionService.getNationalityOptions();
   $scope.status_options = optionService.getStatusOptions();
+  $scope.race_options = optionService.getRaceOptions();
 
   $scope.LocationDropdownDisabled = false;
   $scope.current_location = {};
@@ -596,6 +597,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     setupDropdown('injury');
     setupDropdown('nationality');
     setupDropdown('status');
+    setupDropdown('race');
 
     $scope.shelter_array = shelter_array;
     if ($scope.shelter_array) {
@@ -714,6 +716,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.current_status = this.current_status;
   };
 
+  $scope.changeRace = function() {
+    $scope.current_race = this.current_race;
+  };
+
   $scope.changeShelter = function() {
     $scope.current_shelter = this.current_shelter;
 
@@ -761,6 +767,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     doc.nationality         = nationalityElement.options[nationalityElement.selectedIndex].label;
     var statusElement       = document.getElementById('status');
     doc.status              = statusElement.options[statusElement.selectedIndex].label;
+    var raceElement         = document.getElementById('race');
+    doc.race                = raceElement.options[raceElement.selectedIndex].label;
     var shelterElement      = document.getElementById('shelter');
     doc.shelter_id          = $scope.shelter_array[shelterElement.selectedIndex].uuid;
 
@@ -849,19 +857,23 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           // Check for possible new location
           if (geom.lat !== $scope.current_location.lat &&
             geom.long !== $scope.current_location.long)
-            changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
+            changedPerson.geom = "SRID=4326;POINT (" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
         } else {
           // Use possibly new shelter location
-          if (person.geom !== $scope.current_shelter.geom)
-            changedPerson.geom = $scope.current_shelter.geom;
-          else
-            changedPerson.geom = undefined;
+          if ($scope.current_shelter.geom === "") {
+            changedPerson.geom = "SRID=4326;POINT (0.0000000000000000 0.0000000000000000)";
+          } else {
+            if (person.geom !== $scope.current_shelter.geom)
+              changedPerson.geom = $scope.current_shelter.geom;
+            else
+              changedPerson.geom = "SRID=4326;POINT (0.0000000000000000 0.0000000000000000)";
+          }
         }
       } else if ($scope.LocationDropdownDisabled == true) {
         // Check for possible new location
         if (geom.lat !== $scope.current_location.lat &&
           geom.long !== $scope.current_location.long)
-          changedPerson.geom = "SRID=4326; POINT(" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
+          changedPerson.geom = "SRID=4326;POINT (" + $scope.current_location.long + " " + $scope.current_location.lat + ")";
       }
 
       // Show loading dialog
@@ -1011,6 +1023,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     document.getElementById('injury').selectedIndex = 0;
     $scope.current_status = $scope.status_options[0];
     document.getElementById('status').selectedIndex = 0;
+    $scope.current_race = $scope.race_options[0];
+    document.getElementById('race').selectedIndex = 0;
 
     $scope.revertLocation();
     if ($scope.shelter_array) {
@@ -1055,11 +1069,13 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     $scope.injury_options = optionService.getInjuryOptions();
     $scope.nationality_options = optionService.getNationalityOptions();
     $scope.status_options = optionService.getStatusOptions();
+    $scope.race_options = optionService.getRaceOptions();
 
     $scope.current_gender = $scope.gender_options[0];
     $scope.current_injury = $scope.injury_options[0];
     $scope.current_nationality = $scope.nationality_options[0];
     $scope.current_status = $scope.status_options[0];
+    $scope.current_race = $scope.race_options[0];
 
     $cordovaProgress.hide();
 
@@ -1109,6 +1125,12 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             Status = $scope.current_status.value;
         }
 
+        var Race;
+        if ($scope.current_race !== undefined) {
+          if ($scope.current_race.value !== $scope.race_options[0].value)
+            Race = $scope.current_race.value;
+        }
+
         var ShelterID;
         if ($scope.current_shelter !== undefined) {
           if ($scope.current_shelter.uuid !== $scope.shelter_array[0].uuid)
@@ -1146,6 +1168,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         newPerson.street_and_number   = fixUndefined($scope.person.street_and_number);
         newPerson.date_of_birth       = fixUndefined($scope.person.date_of_birth);
         newPerson.status              = Status;
+        newPerson.race                = Race;
         newPerson.phone_number        = fixUndefined($scope.person.phone_number);
         newPerson.injury              = Injury; // will always be defined
         newPerson.nationality         = Nationality; // will always be defined
@@ -1164,7 +1187,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
           if (newPerson.shelter_id !== undefined) {
             newPerson.geom = $scope.current_shelter.geom;
           } else {
-            newPerson.geom = undefined;
+            newPerson.geom = "SRID=4326;POINT (0.0000000000000000 0.0000000000000000)";
           }
         }
 
@@ -1305,6 +1328,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       document.getElementById('injury').selectedIndex = 0;
       $scope.current_status = $scope.status_options[0];
       document.getElementById('status').selectedIndex = 0;
+      $scope.current_race = $scope.race_options[0];
+      document.getElementById('race').selectedIndex = 0;
 
       $scope.revertLocation();
       if ($scope.shelter_array) {
@@ -1409,6 +1434,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       $scope.current_status = this.current_status;
     };
 
+    $scope.changeRace = function() {
+      $scope.current_race = this.current_race;
+    };
+
     $scope.changeShelter = function() {
       $scope.current_shelter = this.current_shelter;
 
@@ -1510,12 +1539,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         success: function (data) {
           if (data.objects.length > 0) {
             for (var i = 0; i < data.objects.length; i++) {
-              array.push({
-                name: data.objects[i].name,
-                value: data.objects[i].uuid,
-                id: data.objects[i].id,
-                geom: data.objects[i].geom
-              });
+              array.push(data.objects[i]);
             }
             $scope.shelter_array = array;
           } else {
@@ -1859,89 +1883,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       var allPeople = [];
       var peopleUpdated = 0, peopleUploaded = 0, sheltersAdded = 0, imagesDownloaded = 0, sheltersRemoved = 0;
 
-      var determineNewerValue = function (_dateOne, _dateTwo) {
-        var parseDate = function (str) {
-          var time = str.split('T');
-          var obj = {};
-          obj.date = {};
-          obj.time = {};
-
-          var ymd = time[0].split('-');
-          var hms = time[1].split(':');
-
-          obj.date = {
-            year: Number(ymd[0]), month: Number(ymd[1]), day: Number(ymd[2])
-          };
-          obj.time = {
-            hour: Number(hms[0]), min: Number(hms[1]), sec: Number(hms[2].split('Z')[0])
-          };
-          return obj;
-        };
-
-        var dateOne = parseDate(_dateOne);
-        var dateTwo = parseDate(_dateTwo);
-        var one = true, two = false;
-
-        //////////////////////
-        // -- Date comparison
-        // Year comparison
-        if (dateOne.date.year > dateTwo.date.year)
-          return one;
-        else if (dateTwo.date.year > dateOne.date.year)
-          return two;
-
-        // Month comparison - Made in same year
-        if (dateOne.date.month > dateTwo.date.month)
-          return one;
-        else if (dateTwo.date.month > dateOne.date.month)
-          return two;
-
-        // Day comparison - Made in same year/month
-        if (dateOne.date.day > dateTwo.date.day)
-          return one;
-        else if (dateTwo.date.day > dateOne.date.day)
-          return two;
-        //////////////////////
-
-        //////////////////////
-        // -- Time comparison
-        // Hour comparison - Was made the same day
-        if (dateOne.time.hour > dateTwo.time.hour)
-          return one;
-        else if (dateTwo.time.hour > dateOne.time.hour)
-          return two;
-
-        // Min comparison - Was made the same hour
-        if (dateOne.time.min > dateTwo.time.min)
-          return one;
-        else if (dateTwo.time.min > dateOne.time.min)
-          return two;
-
-        // Sec comparison - Was made the same minute
-        if (dateOne.time.sec > dateTwo.time.sec)
-          return one;
-        else if (dateTwo.time.sec > dateOne.time.sec)
-          return two;
-        //////////////////////
-
-        // If they are exactly the same, the first one will be returned
-        return one;
-      };
-
-      var isShelterDifferent = function (shelterOne, shelterTwo) {
-        // setup easy way instead of inline
-        if (shelterOne.name !== shelterTwo.name)
-          return true;
-
-        if (shelterOne.geom !== shelterTwo.geom)
-          return true;
-
-        if (Number(shelterOne.id) !== Number(shelterTwo.id))
-          return true;
-
-        return false;
-      };
-
       var taskOne_UploadFromDatabase = function () {
         // FIRST TASK: See if anything in the database needs to be uploaded/updated
         VIDA_localDB.queryDB_select('people', '*', function (results) {
@@ -2074,6 +2015,15 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       };
 
       var taskFour_UpdateShelterList = function () {
+
+        var endFourthTask = function() {
+          // END FOURTH TASK
+          $cordovaProgress.hide();
+
+          // START FIFTH TASK
+          taskFive_ShowPostSyncScreen();
+        };
+
         // THIRD TASK: Update shelter list
         // TODO: Translate
         $cordovaProgress.showSimpleWithLabelDetail(true, "Syncing", "Syncing with shelters on server..");
@@ -2090,6 +2040,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
                 shelterService.removeShelterByUUID(localShelters[l].uuid);
               }
             }
+
+            endFourthTask();
           } else {
             // Remove all shelters in DB, and add all new
             VIDA_localDB.queryDB_deleteAllEntries('shelters', function() {
@@ -2113,17 +2065,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
               // Update search screen because it will hold the old results (old pictures, info, etc.)
               peopleService.refreshSearchQuery(function() {
-                // END FOURTH TASK
-                $cordovaProgress.hide();
-
-                // START FIFTH TASK
-                taskFive_ShowPostSyncScreen();
+                endFourthTask();
               }, function() {
-                // END FOURTH TASK
-                $cordovaProgress.hide();
-
-                // START FIFTH TASK
-                taskFive_ShowPostSyncScreen();
+                endFourthTask();
               });
             });
           }
@@ -2371,7 +2315,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
   $scope.shelterService = shelterService;
   $scope.shelter = shelter;
   $scope.latlng = shelterService.getLatLngFromShelter($scope.shelter);
-  
+
   $rootScope.$on('changedShelter', function(event, param) {
       $scope.shelter = param;
     });

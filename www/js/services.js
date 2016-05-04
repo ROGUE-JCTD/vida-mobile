@@ -1088,25 +1088,22 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var nationality_options = [{
       "name": 'person_not_specified',
-      "value": "Not Specified"
+      "value": 'Not Specified'
     }, {
-      "name": 'person_nationality_african',
-      "value": "African American"
+      "name": 'person_nationality_US',
+      "value": 'US'
     }, {
-      "name": 'person_nationality_american_indian',
-      "value": "American Indian"
+      "name": 'person_nationality_UK',
+      "value": 'UK'
     }, {
-      "name": 'person_nationality_asian',
-      "value": "Asian"
+      "name": 'person_nationality_TT',
+      "value": 'TT'
     }, {
-      "name": 'person_nationality_hispanic_latino',
-      "value": "Hispanic/Latino"
-    }, {
-      "name": 'person_nationality_caucasian',
-      "value": "Caucasian/White"
+      "name": 'person_nationality_GE',
+      "value": 'GE'
     }, {
       "name": 'person_nationality_other',
-      "value": "Other"
+      "value": 'Other'
     }];
 
     var status_options = [{
@@ -1118,6 +1115,29 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
     }, {
       "name": 'person_status_deceased',
       "value": 'Deceased'
+    }];
+
+    var race_options = [{
+      "name": 'person_not_specified',
+      "value": "Not Specified"
+    }, {
+      "name": 'person_race_african',
+      "value": "African American"
+    }, {
+      "name": 'person_race_american_indian',
+      "value": "American Indian"
+    }, {
+      "name": 'person_race_asian',
+      "value": "Asian"
+    }, {
+      "name": 'person_race_hispanic_latino',
+      "value": "Hispanic/Latino"
+    }, {
+      "name": 'person_race_caucasian',
+      "value": "Caucasian/White"
+    }, {
+      "name": 'person_race_other',
+      "value": "Other"
     }];
 
     var people_table_values = [{
@@ -1184,6 +1204,9 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
       column: 'status',
       type: 'TEXT'
     }, {
+      column: 'race',
+      type: 'TEXT'
+    }, {
       column: 'pic_filename',
       type: 'TEXT'
     }, {
@@ -1242,11 +1265,11 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     var info_to_put_to_DB = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
     'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-    'description', 'status', 'pic_filename', 'province_or_state', 'created_at', 'created_by', 'photo', 'geom'];
+    'description', 'status', 'race', 'pic_filename', 'province_or_state', 'created_at', 'created_by', 'photo', 'geom'];
 
     var info_to_upload_extra = ['given_name', 'family_name', 'fathers_given_name', 'mothers_given_name', 'age', 'date_of_birth',
       'street_and_number', 'city', 'phone_number', 'neighborhood', 'gender', 'injury', 'nationality', 'barcode', 'shelter_id',
-      'description', 'pic_filename', 'province_or_state', 'notes', 'status', 'uuid', 'geom'];
+      'description', 'pic_filename', 'province_or_state', 'notes', 'status', 'race', 'uuid', 'geom'];
 
     var default_configurations = {};
     default_configurations.configuration = {};
@@ -1289,6 +1312,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       allOptions.push(option);
 
+      option = {
+        dropdown: 'race',
+        options: race_options
+      };
+
+      allOptions.push(option);
+
       return allOptions;
     };
 
@@ -1314,6 +1344,10 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
     this.getStatusOptions = function() {
       return status_options;
+    };
+
+    this.getRaceOptions = function() {
+      return race_options;
     };
 
     this.getDefaultConfigurations = function() {
