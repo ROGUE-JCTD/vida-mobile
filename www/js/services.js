@@ -563,6 +563,13 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
   };
 
   this.getAllLocalShelters = function() {
+    // Duct tape
+    if (shelters.length > 0) {
+      if (shelters[0].name !== "None") {
+        shelters[0].name = "None";
+      }
+    }
+
     return shelters;
   };
 

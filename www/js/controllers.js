@@ -454,8 +454,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // First pass *current*: delete entirely from server
         uploadService.deletePerson(peopleService.getRetrievedPersonByID(), function(success) {
           console.log("Deleted person successfully!");
+          $rootScope.$broadcast('databaseUpdateSyncStatus');
         }, function(error) {
           $cordovaToast.showLongBottom(error);
+          $rootScope.$broadcast('databaseUpdateSyncStatus');
           console.log(error);
         });
 
@@ -472,12 +474,14 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Re-update search results
         peopleService.searchForPerson(networkService.getPeopleURL(), peopleService.getStoredSearchQuery(), function(){
           // Everything was successful
-          window.history.back();
+          $state.go('vida.person-search');
+          $rootScope.$broadcast('databaseUpdateSyncStatus');
           $cordovaProgress.hide();
         }, function(error) {
           // Something went wrong
           console.log("Error - ButtonDelete - After Update: " + error);
-          window.history.back();
+          $state.go('vida.person-search');
+          $rootScope.$broadcast('databaseUpdateSyncStatus');
           $cordovaProgress.hide();
         });
       });
@@ -1480,9 +1484,6 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
       shelterElement.selectedIndex = 0; // Switch to "None"
       shelterElement.selectedOptions[0].label = $scope.previous_shelter_label; // Revert label back
       shelterElement.selectedIndex = $scope.previous_shelter_index; // Switch to last shelter selected
-
-      $scope.current_location.lat = -1111;
-      $scope.current_location.long = -1111;
     };
 
     $scope.useLocation = function() {
@@ -1498,6 +1499,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         var prevLocation = false;
         // Is there a previous location stored?
         if ($scope.person.location.lat !== -1111 && $scope.person.location.long !== -1111) {
+          var prevLoc = {};
+          prevLoc.lat = $scope.person.location.lat;
+          prevLoc.long = $scope.person.location.long;
+
           // Why bother asking if it's the same
           if (!($scope.person.location.lat === position.coords.latitude &&
                 $scope.person.location.long === position.coords.longitude)) {
@@ -1512,6 +1517,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
             $cordovaActionSheet.show(options).then(function (btnIndex) {
               if (btnIndex == 1) {
                 prevLocation = true;
+                $scope.person.location.lat = prevLoc.lat;
+                $scope.person.location.long = prevLoc.long;
+                shelterElement.selectedOptions[0].label = "Using Prev Location";
               }
             });
           }
@@ -1612,6 +1620,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       if (num_entries > 0) {
         $scope.button_update_database_str = $filter('translate')('button_update_database') + ": " + num_entries;
+      } else {
+        $scope.resetSyncButton();
       }
     };
 
@@ -1626,7 +1636,9 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // Could just return results[i]?
         var allPeople = [];
         for (var i = 0; i < results.length; i++) {
-          allPeople.push(results[i]);
+          if (Number(results[i].deleted) == false) { // Don't update deleted people
+            allPeople.push(results[i]);
+          }
         }
         prom.resolve(allPeople);
       }, where);
@@ -1912,8 +1924,10 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         // FIRST TASK: See if anything in the database needs to be uploaded/updated
         VIDA_localDB.queryDB_select('people', '*', function (results) {
           for (var d = 0; d < results.length; d++) {
-            if (Number(results[d].isDirty) == true) {
-              dirtyArr.push(results[d]);
+            if (Number(results[d].isDirty) == true) { // Setup to upload isDirty flags
+              if (Number(results[d].deleted) == false) { // Don't update deleted people
+                dirtyArr.push(results[d]);
+              }
             }
           }
 
