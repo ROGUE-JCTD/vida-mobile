@@ -796,7 +796,7 @@ angular.module('vida.services', ['ngCordova', 'ngResource'])
 
       for (var i = 0; i < peopleArr.length; i++){
         var newPerson = peopleArr[i];
-        newPerson.score = scoreArr[i][1].toFixed(7);
+        newPerson.score = Number(scoreArr[i][1]).toFixed(7);
         peopleInShelter.push(peopleArr[i]);
       }
     };
