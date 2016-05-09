@@ -100,7 +100,8 @@
         <div class="item item-input-inset">
           <label class="item-input-wrapper margin-right-8px">
             <span class="input-label">{{'person_barcode' | translate}}</span>
-            <input id="barcode" type="text" placeholder="" ng-model="person.barcode.code">
+            <input id="barcode" type="text" placeholder="" ng-model="person.barcode.code"
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           </label>
           <button class="button button-small button-stable icon ion-pricetag" ng-click="scanBarcode()"></button>
         </div>

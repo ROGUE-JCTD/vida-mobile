@@ -137,7 +137,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.scanBarcode = function() {
       $cordovaBarcodeScanner.scan().then(function(barcodeData){
-        if (barcodeData.cancelled === false) {
+        if (barcodeData.cancelled == false) {
           // Success!
           $scope.searchText = barcodeData.text;
           $scope.searchPerson(barcodeData.text);
@@ -1056,7 +1056,7 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
   $scope.scanBarcode = function() {
     $cordovaBarcodeScanner.scan().then(function(barcodeData){
-      if (barcodeData.cancelled === false) {
+      if (barcodeData.cancelled == false) {
         // Success!
         //$scope.person.barcode.format = barcodeData.format;
         document.getElementById('barcode').value = barcodeData.text;
@@ -1271,10 +1271,11 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
     $scope.scanBarcode = function() {
       $cordovaBarcodeScanner.scan().then(function(barcodeData){
-        if (barcodeData.cancelled === false) {
+        if (barcodeData.cancelled == false) {
           // Success!
           //$scope.person.barcode.format = barcodeData.format;
           $scope.person.barcode.code = barcodeData.text;
+          document.getElementById('barcode').value = barcodeData.text; // Just in case
         }
       }, function(error){
         // Error!
