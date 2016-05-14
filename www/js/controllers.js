@@ -399,8 +399,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
     if (person_geom) {
       var split_geom = person_geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this
       var personLocation = {};
-      personLocation.lat = split_geom[0];
-      personLocation.long = split_geom[1];
+      personLocation.long = split_geom[0];
+      personLocation.lat = split_geom[1];
 
       // Is there a Geom to display?
       var hasGeom_NotZero = true;
@@ -413,8 +413,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
 
       if (hasGeom_NotZero) {
         $scope.hasLocation = true;
-        $scope.locationString = "Lat: " + Number(personLocation.lat).toFixed(5) + ",  " +
-          "Long: " +  Number(personLocation.long).toFixed(5);
+        $scope.locationString = "Long: " + Number(personLocation.long).toFixed(5) + ",  " +
+          "Lat: " +  Number(personLocation.lat).toFixed(5);
         return true;
       }
     }
@@ -627,8 +627,8 @@ angular.module('vida.controllers', ['ngCordova.plugins.camera', 'pascalprecht.tr
         if (person.geom !== "") {
           var split_geom = person.geom.split('(')[1].split(')')[0].split(' '); // wow I'm bad at this
           var personLocation = {};
-          personLocation.lat = split_geom[0];
-          personLocation.long = split_geom[1];
+          personLocation.long = split_geom[0];
+          personLocation.lat = split_geom[1];
           if (Number(personLocation.lat) !== 0.0 && Number(personLocation.long) !== 0.0) {
             // Gray out shelters section and fill with "Using Current Location"
             $scope.LocationDropdownDisabled = true;
